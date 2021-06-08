@@ -1,0 +1,116 @@
+// dbdiagram.io schema
+// $ npm i -g @dbml/cli
+// $ dbml2sql --postgres --out-file "SCHEMA.sql" yuugure.dbml
+//
+// We use the resulting SCHEMA.sql to seed docker containers.
+//
+
+table account {
+  id           int         [pk, increment]
+  username     varchar(32) [not null]
+  email        text        [not null]
+  password     varchar(60) [not null]
+  state        bigint      [not null, default: 0]
+  registered   timestamptz [not null, default: `now()`]
+
+  indexes {
+    `lower(username)`     [unique]
+  }
+}
+
+table sessions {
+  id      int         [pk, increment]
+  token   varchar(32) [not null]
+  account int         [not null, ref:> account.id]
+  created timestamptz [not null, default: `now()`]
+  expires timestamptz [not null]
+
+  indexes {
+    token
+  }
+}
+
+table media { // used as a cache of sorts for seen media. if duplicate uploads are enabled in config, we'll hit this table first to avoid caclulcating extra hashes
+  id     int          [pk, increment]
+  sha256 varchar(64)  [not null] // our own internal hash because why do people still use md5?
+  md5    varchar(32)  [not null] // necessary for compatible searches with other services that still md5 hash files
+  phash  varchar(256) [not null] // will be used in the future for hamming distance stuff (similar image detection)
+  mime   text         [not null] // used for rendering (e.g. video detection)
+
+  indexes {
+    sha256
+    md5
+    (sha256, md5) [name: "both_hash_idx"]
+    phash // we'll index phash for easier searching later
+  }
+}
+
+table media_meta { // meta is attached as a second step and not present on initial upload
+  id             int     [pk, increment]
+  media          int     [not null, unique, ref:> media.id]
+  width          int     [not null]
+  height         int     [not null]
+  video          boolean [not null]
+  video_duration real    [not null, default: `0`]
+  has_audio      boolean [not null, default: `false`]
+  audio_duration real    [not null, default: `0`]
+
+  indexes {
+    media [unique, name: "media_meta_media_unique"]
+    video
+    has_audio
+  }
+}
+
+table upload { // used for individual uploads since media serves as an upload cache based on the sha. if dupes are allowed via config, this is necessary to differentiate between user uploads
+  id          int       [pk, increment]
+  media       int       [not null, ref:> media.id]
+  parent      int       [ref:> media.id]
+  owner       int       [not null, ref:> account.id]
+  upload_date timestamp
+  state       bigint    [not null, default: 0] // state is a bitfield that denotes whether something is deleted, awaiting moderation, etc. i'm doing it this way to avoid another "media_state" table or adding 15 more columns here.
+
+  indexes {
+    media
+    owner
+    parent // for moderation aggregation
+    upload_date
+  }
+}
+
+table processing_queue { // processing is handled by slave processes so we need a master source to hand out jobs
+  id         int       [pk, increment]
+  upload     int       [ref:> upload.id]
+  queued_at  timestamp [not null, default: `now()`]
+  dequeued   boolean   [not null, default: `false`]
+  errored    boolean   [not null, default: `false`]
+  error_text text
+  finished   boolean   [not null, default: `false`]
+
+  indexes {
+    queued_at
+    upload
+    dequeued
+    errored
+    finished
+  }
+}
+
+table audits {
+  id          int       [pk, increment]
+  account     int       [not null, ref:> account.id]
+  target_type text      [not null]
+  target_id   text      [not null]
+  action      text      [not null]
+  tstamp      timestamp [not null, default: `now()`]
+  details     text      [not null, default: ""]
+
+  indexes {
+    account
+    (target_type, target_id)
+    action
+    (account, action)
+    (account, action, target_type)
+    tstamp
+  }
+}

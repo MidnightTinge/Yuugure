@@ -1,0 +1,21 @@
+{
+  "http": {
+    "host": "127.0.0.1",
+    "port": 64174,
+    "realIPHeader": null,
+    "auth": {
+      "cookie_name": "ysess",
+      "session_expires": "2d",
+      "domain": "",
+      "secure": true
+    }
+  },
+  "postgres": {
+    "url": "jdbc:postgresql://127.0.0.1:5432/yuugure",
+    "username": "yuugure",
+    "password": "password"
+  },
+  "redis": {
+    "url": "redis://localhost:6379/1"
+  }
+}

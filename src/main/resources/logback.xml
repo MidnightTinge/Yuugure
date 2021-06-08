@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true">
+  <logger name="reactor" level="WARN"/>
+  <logger name="io.netty" level="WARN"/>
+  <logger name="reactor.retry" level="DEBUG"/>
+  <logger name="org.mongodb.driver" level="WARN"/>
+  <logger name="com.mitchellbosecke.pebble" level="WARN"/>
+  <logger name="io.undertow.request" level="INFO"/>
+  <logger name="com.zaxxer.hikari.pool" level="WARN"/>
+  <logger name="com.zaxxer.hikari.HikariConfig" level="ERROR"/>
+  <logger name="org.xnio.nio" level="INFO"/>
+
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%yellow(%d{ISO8601}) [%highlight(%5p)] [%magenta(%12.12t)] %cyan(%-30.30logger{29}): %msg%n%throwable</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>data/logs/d4j.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <maxFileSize>100MB</maxFileSize>
+      <maxHistory>90</maxHistory>
+    </rollingPolicy>
+    <encoder>
+      <charset>UTF-8</charset>
+      <Pattern>%d{ISO8601} [%5p] [%12.12t] %-30.30logger{29}: %msg%n%throwable</Pattern>
+    </encoder>
+    <prudent>true</prudent>
+  </appender>
+
+  <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>512</queueSize>
+    <appender-ref ref="FILE"/>
+  </appender>
+
+  <root level="DEBUG">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="ASYNC"/>
+  </root>
+</configuration>
