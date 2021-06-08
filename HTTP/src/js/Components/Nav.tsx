@@ -2,9 +2,9 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faSpinnerThird} from '@fortawesome/pro-solid-svg-icons';
 import {useState} from 'react';
 import * as React from 'react';
-import {Link} from 'react-router-dom';
-import {XHR} from '../../classes/XHR';
-import {authStateSelector, reloadAuthState} from '../../Stores/AuthStore';
+import {Link, useHistory} from 'react-router-dom';
+import {XHR} from '../classes/XHR';
+import {authStateSelector, reloadAuthState} from '../Stores/AuthStore';
 
 export type NavActive = 'index' | 'upload' | 'profile' | 'search' | 'login' | 'register' | '404';
 
@@ -30,6 +30,7 @@ export type NavProps = {
 
 export default function Nav(props: NavProps) {
   const [loggingOut, setLoggingOut] = useState(false);
+  const history = useHistory();
 
   const authState = authStateSelector();
 
@@ -43,6 +44,7 @@ export default function Nav(props: NavProps) {
     }).then(() => {
       setLoggingOut(false);
       reloadAuthState();
+      history.push('/');
     });
   }
 
@@ -51,7 +53,9 @@ export default function Nav(props: NavProps) {
       <div className="mr-auto">
         <NavList>
           <NavItem href="/" active={props.active === 'index'}>Home</NavItem>
-          <NavItem href="/upload" active={props.active === 'upload'}>Upload</NavItem>
+          {authState.authed ? (
+            <NavItem href="/upload" active={props.active === 'upload'}>Upload</NavItem>
+          ) : null}
         </NavList>
       </div>
       <div>

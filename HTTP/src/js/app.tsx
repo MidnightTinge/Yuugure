@@ -3,7 +3,7 @@ import {render} from 'react-dom';
 import {Provider} from 'react-redux';
 
 import {BrowserRouter as Router, Switch, Route} from 'react-router-dom';
-import PageRenderer from './Components/PageRenderer/PageRenderer';
+import PageRenderer from './Components/PageRenderer';
 import Page404 from './Pages/404/Page404';
 import PageIndex from './Pages/Index/PageIndex';
 import PageLogin from './Pages/Login/PageLogin';
@@ -27,7 +27,7 @@ function App() {
             </PageRenderer>
           </Route>
           <Route path="/upload">
-            <PageRenderer active="upload">
+            <PageRenderer active="upload" authControlled>
               <PageUpload/>
             </PageRenderer>
           </Route>

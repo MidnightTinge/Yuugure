@@ -4,6 +4,7 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faSpinnerThird} from '@fortawesome/pro-solid-svg-icons';
 import {XHR} from '../../classes/XHR';
 import FormBlock from '../../Components/FormBlock';
+import CenteredBlockPage from '../../Components/CenteredBlockPage';
 
 export type LoginProps = {
   //
@@ -73,30 +74,27 @@ export default function PageLogin(props: LoginProps) {
   }
 
   return (
-    <div className="--Page-Login flex items-center justify-center h-screen w-screen">
-      <div className="bg-gray-200 border border-gray-300 px-5 pt-5 pb-2 rounded shadow w-11/12 sm:w-96">
-        <p className="text-gray-600 text-xl text-center">Log In</p>
-        <form onSubmit={handleSubmit} method="post" action="/auth/login">
-          <FormBlock ref={txtEmail} type="text" name="email" className="mb-2" autoComplete="email" invalid={emailInvalid} validationError={emailError} disabled={posting} required>Email</FormBlock>
-          <FormBlock ref={txtPassword} type="password" name="password" className="mb-3" autoComplete="current-password" invalid={pwInvalid} validationError={pwError} disabled={posting} required>Password</FormBlock>
+    <CenteredBlockPage>
+      <p className="text-gray-600 text-xl text-center">Log In</p>
+      <form onSubmit={handleSubmit} method="post" action="/auth/login">
+        <FormBlock ref={txtEmail} type="text" name="email" className="mb-2" autoComplete="email" invalid={emailInvalid} validationError={emailError} disabled={posting} required>Email</FormBlock>
+        <FormBlock ref={txtPassword} type="password" name="password" className="mb-3" autoComplete="current-password" invalid={pwInvalid} validationError={pwError} disabled={posting} required>Password</FormBlock>
 
-          <button type="submit" className="block w-full bg-green-500 py-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" disabled={posting}>
-            {posting ? (
-              <>
-                <FontAwesomeIcon icon={faSpinnerThird} spin/> Logging in...
-              </>
-            ) : `Log In`}
-          </button>
-          {error != null ? (
-            <p className="text-red-500 text-sm text-center font-mono my-2">{error}</p>
-          ) : null}
-          <div className="text-right">
-            <a href="/auth/recover" className="text-sm text-blue-400 hover:text-blue-500 focus:text-blue-500 mr-3">Recover Account</a>
-            <a href="/auth/register" className="text-sm text-blue-400 hover:text-blue-500 focus:text-blue-500">Register</a>
-          </div>
-        </form>
-        <hr/>
-      </div>
-    </div>
+        <button type="submit" className="block w-full bg-green-500 py-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" disabled={posting}>
+          {posting ? (
+            <>
+              <FontAwesomeIcon icon={faSpinnerThird} spin/> Logging in...
+            </>
+          ) : `Log In`}
+        </button>
+        {error != null ? (
+          <p className="text-red-500 text-sm text-center font-mono my-2">{error}</p>
+        ) : null}
+        <div className="text-right">
+          <a href="/auth/recover" className="text-sm text-blue-400 hover:text-blue-500 focus:text-blue-500 mr-3">Recover Account</a>
+          <a href="/auth/register" className="text-sm text-blue-400 hover:text-blue-500 focus:text-blue-500">Register</a>
+        </div>
+      </form>
+    </CenteredBlockPage>
   );
 }
