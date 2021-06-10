@@ -1,6 +1,7 @@
 package com.mtinge.yuugure.services.messaging;
 
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.core.MoshiFactory;
 import com.mtinge.yuugure.services.IService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,10 +85,18 @@ public class Messaging implements IService {
    * Publish a payload to a topic. All subscribed sockets will receive the payload.
    *
    * @param topic The topic to publish to.
-   * @param payload The payload to publish.
+   * @param payload The payload to publish. If it is not a string, we attempt to convert to JSON.
+   *   If that fails, we fallback to {@link String#valueOf}
    */
-  public void publish(String topic, String payload) {
+  public void publish(String topic, Object payload) {
+    String toSend;
+    try {
+      toSend = MoshiFactory.create().adapter(Object.class).toJson(payload);
+    } catch (Exception e) {
+      toSend = String.valueOf(payload);
+    }
+
     externalSocket.sendMore(topic);
-    externalSocket.send(payload);
+    externalSocket.send(toSend);
   }
 }

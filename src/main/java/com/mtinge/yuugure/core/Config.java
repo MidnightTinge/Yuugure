@@ -34,6 +34,7 @@ public final class Config {
 
 
   public final HTTP http;
+  public final Upload upload;
   public final Postgres postgres;
   public final Redis redis;
   public final ZeroMQ zeromq;
@@ -41,6 +42,7 @@ public final class Config {
 
   private Config() {
     this.http = new HTTP();
+    this.upload = new Upload();
     this.postgres = new Postgres();
     this.redis = new Redis();
     this.zeromq = new ZeroMQ();
@@ -76,6 +78,21 @@ public final class Config {
         this.domain = "";
         this.secure = true;
       }
+    }
+  }
+
+  @AllArgsConstructor
+  public static final class Upload {
+    public final String tempDir;
+    public final String finalDir;
+    public final long maxFileSize;
+    public final String validMimesPattern;
+
+    public Upload() {
+      this.tempDir = "./data/uploads/temp/";
+      this.finalDir = "./data/uploads/final/";
+      this.maxFileSize = -1;
+      this.validMimesPattern = "^(image|video)/.{2,}$";
     }
   }
 
