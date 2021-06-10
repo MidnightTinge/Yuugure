@@ -1,13 +1,8 @@
 package com.mtinge.yuugure.services.http.routes;
 
-import com.mtinge.yuugure.services.http.Responder;
-import com.mtinge.yuugure.services.http.handlers.RequireAuthHandler;
 import com.mtinge.yuugure.services.http.handlers.ViewHandler;
 import io.undertow.Handlers;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
-import io.undertow.server.handlers.PathTemplateHandler;
-import io.undertow.util.PathTemplateMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

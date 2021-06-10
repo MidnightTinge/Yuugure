@@ -5,9 +5,8 @@ import com.mtinge.yuugure.core.MoshiFactory;
 import com.mtinge.yuugure.services.http.Responder;
 import com.squareup.moshi.Moshi;
 import io.undertow.Handlers;
-import io.undertow.server.*;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
-import io.undertow.util.Methods;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

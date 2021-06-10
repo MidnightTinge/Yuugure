@@ -17,5 +17,11 @@
   },
   "redis": {
     "url": "redis://localhost:6379/1"
+  },
+  "zeromq": {
+    "bind": {
+      "internal": "tcp://127.0.0.1:50328",
+      "external": "tcp://0.0.0.0:39250"
+    }
   }
 }

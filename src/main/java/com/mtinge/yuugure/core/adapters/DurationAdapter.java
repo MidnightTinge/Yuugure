@@ -36,7 +36,8 @@ public class DurationAdapter extends JsonAdapter<Duration> {
 
   @Override
   public Duration fromJson(JsonReader reader) throws IOException {
-    if (reader.peek() != JsonReader.Token.STRING) throw new JsonDataException("Expected a string for duration");
+    if (reader.peek() != JsonReader.Token.STRING)
+      throw new JsonDataException("Expected a string for duration");
     var toParse = reader.nextString();
     if (toParse.isBlank()) throw new JsonDataException("Invalid input received");
 
