@@ -101,7 +101,7 @@
     </dependency>
   </dependencies>
   <build>
-    <finalName>Midori</finalName>
+    <finalName>Yuugure</finalName>
     <plugins>
       <!--<plugin>
         <groupId>com.github.eirslett</groupId>
@@ -166,7 +166,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>net.mtinge.midori.Main</mainClass>
+              <mainClass>com.mtinge.yuugure.App</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
