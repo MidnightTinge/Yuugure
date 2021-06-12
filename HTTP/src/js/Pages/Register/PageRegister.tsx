@@ -1,5 +1,3 @@
-import {faSpinnerThird} from '@fortawesome/pro-solid-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {FormEvent, useRef, useState} from 'react';
 import * as React from 'react';
 import {XHR} from '../../classes/XHR';
@@ -129,7 +127,7 @@ export default function PageRegister(props: PageRegisterProps) {
         <button type="submit" className="block w-full bg-green-500 py-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" disabled={posting}>
           {posting ? (
             <>
-              <FontAwesomeIcon icon={faSpinnerThird} spin/> Creating account...
+              <i className="fas fa-spinner fa-pulse" /> Creating account...
             </>
           ) : `Register`}
         </button>

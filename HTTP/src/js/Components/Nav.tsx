@@ -1,5 +1,3 @@
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faSpinnerThird} from '@fortawesome/pro-solid-svg-icons';
 import {useState} from 'react';
 import * as React from 'react';
 import {Link, useHistory} from 'react-router-dom';
@@ -66,7 +64,7 @@ export default function Nav(props: NavProps) {
               <NavItem href="/profile" active={props.active === 'profile'}>Profile</NavItem>
               {loggingOut ? (
                 <li className={`p-2 mr-1`}>
-                  <span className="text-gray-300 cursor-not-allowed select-none"><FontAwesomeIcon icon={faSpinnerThird} spin/> Logging out...</span>
+                  <span className="text-gray-300 cursor-not-allowed select-none"><i className="fas fa-spinner fa-pulse" /> Logging out...</span>
                 </li>
               ) : (
                 <NavItem href="/auth/logout" onClick={handleLogoutClick}>Logout</NavItem>

@@ -1,7 +1,5 @@
 import {FormEvent, useEffect, useRef, useState} from 'react';
 import * as React from 'react';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faSpinnerThird} from '@fortawesome/pro-solid-svg-icons';
 import {XHR} from '../../classes/XHR';
 import FormBlock from '../../Components/FormBlock';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
@@ -83,7 +81,7 @@ export default function PageLogin(props: LoginProps) {
         <button type="submit" className="block w-full bg-green-500 py-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" disabled={posting}>
           {posting ? (
             <>
-              <FontAwesomeIcon icon={faSpinnerThird} spin/> Logging in...
+              <i className="fas fa-spinner fa-pulse" /> Logging in...
             </>
           ) : `Log In`}
         </button>

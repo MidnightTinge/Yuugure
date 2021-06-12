@@ -58,7 +58,7 @@ public class RouteUpload extends Route {
     var account = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
     var isAuthed = account != null;
     if (!isAuthed) {
-      resp.notAuthorized();
+      resp.status(StatusCodes.UNAUTHORIZED).view("app");
     } else {
       if (validateMethods(exchange, Methods.GET, Methods.POST)) {
         if (exchange.getRequestMethod().equals(Methods.GET)) {

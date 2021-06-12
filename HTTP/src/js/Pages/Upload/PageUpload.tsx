@@ -1,6 +1,3 @@
-import {faCheckCircle} from '@fortawesome/pro-duotone-svg-icons';
-import {faSpinner} from '@fortawesome/pro-solid-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import * as React from 'react';
 import {useRef, useState} from 'react';
 import {useHistory} from 'react-router-dom';
@@ -101,7 +98,7 @@ export default function PageUpload(props: PageUploadProps) {
             <button type="button" className="block w-full py-1 border bg-blue-400 border-blue-500 text-white rounded-md cursor-pointer shadow-sm hover:bg-blue-500 hover:border-blue-600 hover:text-gray-100" onClick={handleFormReset}>
               {uploading ? (
                 <>
-                  <FontAwesomeIcon icon={faSpinner} spin/> Uploading...
+                  <i className="fas fa-spinner fa-pulse" /> Uploading...
                 </>
               ) : `Upload Another`}
             </button>

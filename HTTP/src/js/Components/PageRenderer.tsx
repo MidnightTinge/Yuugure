@@ -1,9 +1,7 @@
 import * as React from 'react';
 import {authStateSelector, reloadAuthState} from '../Stores/AuthStore';
-import Nav, {NavActive} from './Nav';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faExclamationTriangle} from '@fortawesome/pro-duotone-svg-icons';
 import CenteredBlockPage from './CenteredBlockPage';
+import Nav, {NavActive} from './Nav';
 
 export type PageRendererProps = {
   children: React.ReactElement;
@@ -23,7 +21,7 @@ export default function PageRenderer(props: PageRendererProps) {
       <CenteredBlockPage pageBackground="bg-red-100" cardBackground="bg-red-400" className="text-white">
         <div className="text-center">
           <p className="text-xl font-bold mb-4">Access Restricted</p>
-          <FontAwesomeIcon icon={faExclamationTriangle} size="3x" className="mb-4"/>
+          <i className="fas fa-exclamation-triangle fa-3x mb-4"/>
           <p>You must be logged in to view this resource.</p>
         </div>
       </CenteredBlockPage>

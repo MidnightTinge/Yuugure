@@ -14,7 +14,7 @@
     "build:build:prod": "cross-env NODE_ENV=production gulp build",
     "build:build:dev": "cross-env NODE_ENV=development gulp build",
     "build:watch": "cross-env NODE_ENV=development gulp watch",
-    "schema": "dbml2sql --out-file ../SCHEMA/schema.sql ../SCHEMA/schema.dbml"
+    "schema": "dbml2sql --out-file ../SCHEMA/schema.sql ../SCHEMA/yuugure.dbml"
   },
   "keywords": [],
   "author": "MidnightTinge",
@@ -63,12 +63,6 @@
     "webpack-stream": "^5.2.1"
   },
   "dependencies": {
-    "@fortawesome/fontawesome-svg-core": "^1.2.35",
-    "@fortawesome/pro-duotone-svg-icons": "^5.15.3",
-    "@fortawesome/pro-light-svg-icons": "^5.15.3",
-    "@fortawesome/pro-regular-svg-icons": "^5.15.3",
-    "@fortawesome/pro-solid-svg-icons": "^5.15.3",
-    "@fortawesome/react-fontawesome": "^0.1.14",
     "@pixi/filter-drop-shadow": "^3.1.1",
     "@popperjs/core": "^2.5.3",
     "anchorme": "^2.1.2",
