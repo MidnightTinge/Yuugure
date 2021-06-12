@@ -9,6 +9,8 @@ Full-stack tag-based image archive.
 * PostgreSQL 13
 * Redis 6
 * Java 15
+* NodeJS 15.8.0+ (front-end builds)
+  * The maven build will automatically download a NodeJS distribution for automated builds, you only need NodeJS yourself if you want to build the front-end manually.
 
 # Other Requirements
 
