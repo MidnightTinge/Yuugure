@@ -1,6 +1,7 @@
 package com.mtinge.yuugure.services.http.handlers;
 
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.data.postgres.DBAccount;
 import com.mtinge.yuugure.data.postgres.DBSession;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -17,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 public class SessionHandler implements HttpHandler {
-  public static final AttachmentKey<Integer> ATTACHMENT_KEY = AttachmentKey.create(Integer.class);
+  public static final AttachmentKey<DBAccount> ATTACHMENT_KEY = AttachmentKey.create(DBAccount.class);
 
   private static final Logger logger = LoggerFactory.getLogger(SessionHandler.class);
   private static final ConcurrentHashMap<String, Byte> ignoredPaths = new ConcurrentHashMap<>();
@@ -84,7 +85,7 @@ public class SessionHandler implements HttpHandler {
     return false;
   }
 
-  public static Integer tokenToAccount(String token, boolean purgeIfExpired) {
+  public static DBAccount tokenToAccount(String token, boolean purgeIfExpired) {
     return App.database().jdbi().withHandle(handle -> {
       var session = handle.createQuery("SELECT * FROM sessions WHERE token = :token")
         .bind("token", token)
@@ -105,7 +106,10 @@ public class SessionHandler implements HttpHandler {
 
           return null;
         } else {
-          return session.account;
+          return handle.createQuery("SELECT * FROM account WHERE id = :id")
+            .bind("id", session.account)
+            .map(DBAccount.Mapper)
+            .first();
         }
       }
 
