@@ -13,6 +13,6 @@ type UploadResult = {
   success: boolean;
   inputErrors: Record<string, string[]>;
   errors: string[];
-  media: DBMedia | false;
-  upload: DBUpload | false;
+  media?: DBMedia;
+  upload?: DBUpload;
 }

@@ -7,8 +7,12 @@ Full-stack tag-based image archive.
 # Software Needed
 
 * PostgreSQL 13
-* Redis 5
+* Redis 6
 * Java 15
+
+# Other Requirements
+
+This project makes use of some FontAwesome Pro icons, and the front-end will not display some of them properly without a license.
 
 # License
 
