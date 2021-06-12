@@ -1,12 +1,10 @@
 package com.mtinge.yuugure.data.postgres;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import org.jdbi.v3.core.mapper.RowMapper;
 
 import java.sql.Timestamp;
 
-@Getter
 @AllArgsConstructor
 public class DBAccount {
   public final int id;

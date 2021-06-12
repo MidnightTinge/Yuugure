@@ -289,9 +289,9 @@ public class RouteAuth extends Route {
   }
 
   private void check(HttpServerExchange exchange) {
-    var aId = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
+    var account = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
 
-    Responder.with(exchange).json(Response.good().addData(AuthStateResponse.class, new AuthStateResponse(aId != null, aId)));
+    Responder.with(exchange).json(Response.good().addData(AuthStateResponse.class, new AuthStateResponse(account != null, account != null ? account.id : null)));
   }
 
   public PathHandler wrap(PathHandler chain) {

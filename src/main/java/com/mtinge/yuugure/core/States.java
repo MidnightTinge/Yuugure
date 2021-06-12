@@ -4,10 +4,21 @@ package com.mtinge.yuugure.core;
 public final class States {
   // @formatter:off
   public static final class User {
-    public static final long DEACTIVATED       = 1L << 0L; // 0b1
+    public static final long DEACTIVATED         = 1L << 0L; // 0b1
+    public static final long DELETED             = 1L << 1L; // 0b10
+    public static final long BANNED              = 1L << 2L; // 0b100...
+    public static final long UPLOAD_RESTRICTED   = 1L << 3L;
+    public static final long COMMENTS_RESTRICTED = 1L << 3L;
+    public static final long TRUSTED_UPLOADS     = 1L << 3L;
+  }
+
+  public static final class Upload {
+    public static final long PRIVATE           = 1L << 0L; // 0b1
     public static final long DELETED           = 1L << 1L; // 0b10
-    public static final long BANNED            = 1L << 2L; // 0b100...
-    public static final long UPLOAD_RESTRICTED = 1L << 3L;
+    public static final long DMCA              = 1L << 2L; // 0b100...
+    public static final long LOCKED_TAGS       = 1L << 3L;
+    public static final long LOCKED_COMMENTS   = 1L << 4L;
+    public static final long MODERATION_QUEUED = 1L << 5L;
   }
   // @formatter:on
 

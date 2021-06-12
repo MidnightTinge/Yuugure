@@ -27,12 +27,6 @@ function css() {
     .pipe(gulp.dest(`${outRoot}/static/css/`));
 }
 
-function cssVend() {
-  return gulp.src(`${inRoot}/vend/css/**/*.css`)
-    .pipe(require('gulp-concat')('vend.css'))
-    .pipe(gulp.dest(`${outRoot}/static/css/`));
-}
-
 function frags() {
   return gulp.src(`${inRoot}/vend/frags/**/*`)
     .pipe(gulp.dest(`${outRoot}/static/`));
@@ -103,7 +97,6 @@ function js() {
 function watch(cb) {
   gulp.watch([`${inRoot}/js/**/*.ts`, `${inRoot}/js/**/*.tsx`, `${inRoot}/js/**/*.js`, `${inRoot}/js/**/*.jsx`], gulp.series(js));
   gulp.watch(`${inRoot}/css/**/*.css`, gulp.series(css));
-  gulp.watch(`${inRoot}/vend/css/**/*.css`, gulp.series(cssVend));
   gulp.watch(`${inRoot}/vend/frags/**/*`, gulp.series(frags));
   gulp.watch(`${inRoot}/views/**/*`, gulp.series(views));
   cb();
@@ -117,8 +110,7 @@ function defaultTask(cb) {
 exports.views = views;
 exports.js = js;
 exports.css = css;
-exports.cssVend = cssVend;
 exports.frags = frags;
 exports.watch = watch;
-exports.build = gulp.parallel(views, css, cssVend, frags, js);
+exports.build = gulp.parallel(views, css, frags, js);
 exports.default = defaultTask;

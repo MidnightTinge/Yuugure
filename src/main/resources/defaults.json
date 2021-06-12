@@ -10,6 +10,12 @@
       "secure": true
     }
   },
+  "upload": {
+    "tempDir": "./data/uploads/temp/",
+    "finalDir": "./data/uploads/final/",
+    "maxFileSize": -1,
+    "validMimesPattern": "^(image|video)/.{2,}$"
+  },
   "postgres": {
     "url": "jdbc:postgresql://127.0.0.1:5432/yuugure",
     "username": "yuugure",
@@ -17,5 +23,11 @@
   },
   "redis": {
     "url": "redis://localhost:6379/1"
+  },
+  "zeromq": {
+    "bind": {
+      "internal": "tcp://127.0.0.1:50328",
+      "external": "tcp://0.0.0.0:39250"
+    }
   }
 }

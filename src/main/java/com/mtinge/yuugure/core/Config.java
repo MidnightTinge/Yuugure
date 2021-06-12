@@ -4,17 +4,13 @@ package com.mtinge.yuugure.core;
 import com.mtinge.yuugure.core.adapters.DurationAdapter;
 import com.squareup.moshi.Json;
 import com.squareup.moshi.Moshi;
-import com.zaxxer.hikari.HikariConfig;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
 import okio.Okio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.time.Duration;
-import java.util.List;
 
 @AllArgsConstructor
 public final class Config {
@@ -38,14 +34,18 @@ public final class Config {
 
 
   public final HTTP http;
+  public final Upload upload;
   public final Postgres postgres;
   public final Redis redis;
+  public final ZeroMQ zeromq;
 
 
   private Config() {
     this.http = new HTTP();
+    this.upload = new Upload();
     this.postgres = new Postgres();
     this.redis = new Redis();
+    this.zeromq = new ZeroMQ();
   }
 
   @AllArgsConstructor
@@ -82,6 +82,21 @@ public final class Config {
   }
 
   @AllArgsConstructor
+  public static final class Upload {
+    public final String tempDir;
+    public final String finalDir;
+    public final long maxFileSize;
+    public final String validMimesPattern;
+
+    public Upload() {
+      this.tempDir = "./data/uploads/temp/";
+      this.finalDir = "./data/uploads/final/";
+      this.maxFileSize = -1;
+      this.validMimesPattern = "^(image|video)/.{2,}$";
+    }
+  }
+
+  @AllArgsConstructor
   public static final class Redis {
     public final String url;
 
@@ -100,6 +115,26 @@ public final class Config {
       this.url = "jdbc:postgresql://127.0.0.1:5432/yuugure";
       this.username = "yuugure";
       this.password = "password";
+    }
+  }
+
+  @AllArgsConstructor
+  public static final class ZeroMQ {
+    public final Bind bind;
+
+    public ZeroMQ() {
+      this.bind = new Bind();
+    }
+
+    @AllArgsConstructor
+    public static final class Bind {
+      public final String internal;
+      public final String external;
+
+      public Bind() {
+        this.internal = "tcp://127.0.0.1:50328";
+        this.external = "tcp://0.0.0.0:39250";
+      }
     }
   }
 
