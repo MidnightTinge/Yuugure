@@ -68,7 +68,8 @@ public class RouteUpload extends Route {
           var form = exchange.getAttachment(FormDataParser.FORM_DATA);
           if (form != null) {
             // check if upload should be marked as private
-            boolean isPrivate = form.getFirst("private") != null && form.getFirst("private").getValue().equalsIgnoreCase("on");
+            var frmPrivate = form.getFirst("private") == null ? "false" : form.getFirst("private").getValue();
+            boolean isPrivate = frmPrivate.equalsIgnoreCase("true") || frmPrivate.equalsIgnoreCase("on");
 
             // ensure we have a file
             var frmFile = form.getFirst("file");
