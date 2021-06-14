@@ -30,7 +30,6 @@
     "@dbml/cli": "^2.3.0",
     "@tailwindcss/forms": "^0.3.3",
     "@types/debounce": "^1.2.0",
-    "@types/pixi.js": "^5.0.0",
     "@types/react": "^17.0.9",
     "@types/react-dom": "^17.0.6",
     "@types/react-redux": "^7.1.16",
@@ -63,7 +62,6 @@
     "webpack-stream": "^5.2.1"
   },
   "dependencies": {
-    "@pixi/filter-drop-shadow": "^3.1.1",
     "@popperjs/core": "^2.5.3",
     "anchorme": "^2.1.2",
     "crel": "^4.2.1",
@@ -71,8 +69,6 @@
     "hyperlist": "^1.0.0",
     "interactjs": "^1.10.3",
     "marked": "^2.0.0",
-    "pixi-viewport": "^4.18.1",
-    "pixi.js": "^5.3.3",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-redux": "^7.2.4",

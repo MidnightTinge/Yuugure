@@ -7,9 +7,7 @@ import com.mitchellbosecke.pebble.loader.Loader;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.services.IService;
 import com.mtinge.yuugure.services.http.handlers.*;
-import com.mtinge.yuugure.services.http.routes.RouteAuth;
-import com.mtinge.yuugure.services.http.routes.RouteIndex;
-import com.mtinge.yuugure.services.http.routes.RouteUpload;
+import com.mtinge.yuugure.services.http.routes.*;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.handlers.form.EagerFormParsingHandler;
@@ -119,10 +117,12 @@ public class WebServer implements IService {
                   new SessionHandler(
                     new RouteUpload().wrap(
                       new RouteAuth().wrap(
-                        // IMPORTANT: Keep index last, it adds a prefixPath for `/` to handle
-                        // static files
-                        new RouteIndex().wrap(
-                          Handlers.path()
+                        new RouteAPI().wrap(
+                          // IMPORTANT: Keep index last, it adds a prefixPath for `/` to handle
+                          // static files
+                          new RouteIndex().wrap(
+                            Handlers.path()
+                          )
                         )
                       )
                     )

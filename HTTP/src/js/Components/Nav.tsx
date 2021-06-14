@@ -1,10 +1,10 @@
-import {useState} from 'react';
 import * as React from 'react';
+import {useState} from 'react';
 import {Link, useHistory} from 'react-router-dom';
 import {XHR} from '../classes/XHR';
 import {authStateSelector, reloadAuthState} from '../Stores/AuthStore';
 
-export type NavActive = 'index' | 'upload' | 'profile' | 'search' | 'login' | 'register' | '404';
+export type NavActive = 'index' | 'upload' | 'view' | 'profile' | 'search' | 'login' | 'register' | '404';
 
 function NavList({children}: { children: React.ReactElement | React.ReactElement[] }) {
   return (
@@ -64,7 +64,7 @@ export default function Nav(props: NavProps) {
               <NavItem href="/profile" active={props.active === 'profile'}>Profile</NavItem>
               {loggingOut ? (
                 <li className={`p-2 mr-1`}>
-                  <span className="text-gray-300 cursor-not-allowed select-none"><i className="fas fa-spinner fa-pulse" /> Logging out...</span>
+                  <span className="text-gray-300 cursor-not-allowed select-none"><i className="fas fa-spinner fa-pulse"/> Logging out...</span>
                 </li>
               ) : (
                 <NavItem href="/auth/logout" onClick={handleLogoutClick}>Logout</NavItem>

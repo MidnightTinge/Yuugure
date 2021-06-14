@@ -16,3 +16,12 @@ type UploadResult = {
   media?: DBMedia;
   upload?: DBUpload;
 }
+
+type RenderableUpload = {
+  account: {
+    id: number;
+    username: string;
+  };
+  media: DBMedia;
+  upload: DBUpload;
+};

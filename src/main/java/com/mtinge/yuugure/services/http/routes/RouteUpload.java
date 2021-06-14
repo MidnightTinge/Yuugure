@@ -27,14 +27,10 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 public class RouteUpload extends Route {
   private static final Logger logger = LoggerFactory.getLogger(RouteUpload.class);
-  private static RouteUpload instance;
-  private static final Object _lock = new Object();
-  private static final AtomicLong al = new AtomicLong();
 
   private PathHandler pathHandler;
   private AutoDetectParser tikaParser;
@@ -58,7 +54,11 @@ public class RouteUpload extends Route {
     var account = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
     var isAuthed = account != null;
     if (!isAuthed) {
-      resp.status(StatusCodes.UNAUTHORIZED).view("app");
+      if (resp.wantsJson()) {
+        resp.status(StatusCodes.UNAUTHORIZED).json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING));
+      } else {
+        resp.status(StatusCodes.UNAUTHORIZED).view("app");
+      }
     } else {
       if (validateMethods(exchange, Methods.GET, Methods.POST)) {
         if (exchange.getRequestMethod().equals(Methods.GET)) {
@@ -129,7 +129,7 @@ public class RouteUpload extends Route {
                     var sha256 = Utils.toHex(dgSHA256.digest());
 
                     // move upload to the final dir
-                    final Path outPath = Path.of(finalPath.toString(), sha256);
+                    final Path outPath = Path.of(finalPath.toString(), sha256 + ".full");
                     if (!outPath.toFile().exists()) {
                       file.getFile().toFile().renameTo(outPath.toFile());
                     } // else: this is a duplicate upload

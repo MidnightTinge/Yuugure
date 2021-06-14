@@ -2,11 +2,12 @@ import * as React from 'react';
 import {render} from 'react-dom';
 import {Provider} from 'react-redux';
 
-import {BrowserRouter as Router, Switch, Route} from 'react-router-dom';
+import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import PageRenderer from './Components/PageRenderer';
 import Page404 from './Pages/404/Page404';
 import PageIndex from './Pages/Index/PageIndex';
 import PageLogin from './Pages/Login/PageLogin';
+import PageView from './Pages/PageView';
 import PageRegister from './Pages/Register/PageRegister';
 import PageUpload from './Pages/Upload/PageUpload';
 import {authStateStore} from './Stores/AuthStore';
@@ -36,9 +37,14 @@ function App() {
               <PageIndex/>
             </PageRenderer>
           </Route>
+          <Route path="/view/:uploadId">
+            <PageRenderer active="view">
+              <PageView/>
+            </PageRenderer>
+          </Route>
           <Route path="*">
             <PageRenderer active="404">
-              <Page404 />
+              <Page404/>
             </PageRenderer>
           </Route>
         </Switch>

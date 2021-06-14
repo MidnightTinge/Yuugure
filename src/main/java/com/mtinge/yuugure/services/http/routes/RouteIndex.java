@@ -2,27 +2,146 @@ package com.mtinge.yuugure.services.http.routes;
 
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.MoshiFactory;
+import com.mtinge.yuugure.data.postgres.DBMedia;
+import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.http.Responder;
 import com.squareup.moshi.Moshi;
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.resource.PathResourceManager;
+import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
+import java.util.Map;
+
 public class RouteIndex extends Route {
   private static final Logger logger = LoggerFactory.getLogger(RouteIndex.class);
-  private static RouteIndex instance;
-  private static final Object _lock = new Object();
+  private static final AttachmentKey<DBUpload> ATTACH_UPLOAD = AttachmentKey.create(DBUpload.class);
 
-  private PathHandler pathHandler;
-  private Moshi moshi;
+  private final PathHandler pathHandler;
+  private final Moshi moshi;
+  private final ResourceHandler resourceHandler;
 
   public RouteIndex() {
     this.moshi = MoshiFactory.create();
+    this.resourceHandler = new ResourceHandler(new PathResourceManager(Path.of(App.config().upload.finalDir)));
     this.pathHandler = Handlers.path()
       .addExactPath("/", this::index)
+      .addPrefixPath("/view", Handlers.pathTemplate().add("/{id}", this::renderView))
+      .addPrefixPath("/full", Handlers.pathTemplate().add("/{id}", this::serveFull))
+      .addPrefixPath("/thumb", Handlers.pathTemplate().add("/{id}", this::serveThumb))
       .addPrefixPath("/", App.webServer().staticHandler());
+  }
+
+  private void _attachUpload(HttpServerExchange exchange) {
+    var matches = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
+    if (matches != null) {
+      var uploadId = matches.getParameters().get("id");
+      if (uploadId != null && uploadId.matches("^[0-9]+$")) {
+        exchange.putAttachment(ATTACH_UPLOAD, App.database().getUploadById(Integer.parseInt(uploadId), false));
+      }
+    }
+  }
+
+  private void serveFull(HttpServerExchange exchange) throws Exception {
+    _attachUpload(exchange);
+    var upload = exchange.getAttachment(ATTACH_UPLOAD);
+    if (upload != null) {
+      var media = App.database().getMediaById(upload.media);
+      if (media != null) {
+        _serveFromUploadsDir(exchange, media.sha256 + ".full", media.mime);
+      }
+    }
+  }
+
+  private void serveThumb(HttpServerExchange exchange) throws Exception {
+    if (exchange.isInIoThread()) {
+      exchange.dispatch(this::serveThumb);
+      return;
+    }
+
+    _attachUpload(exchange);
+    var upload = exchange.getAttachment(ATTACH_UPLOAD);
+    if (upload != null) {
+      var media = App.database().getMediaById(upload.media);
+      if (media != null) {
+        var path = Path.of(App.config().upload.finalDir, media.sha256 + ".thumb");
+        if (path.toFile().exists()) {
+          // serve from the filesystem
+          _serveFromUploadsDir(exchange, media.sha256 + ".thumb", "image/png"); // all thumbs are image/png
+        } else {
+          // have to pump the defualt processing png manually
+          exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "image/png");
+          try (var is = App.class.getResourceAsStream("/processing.png")) {
+            if (is != null) {
+              exchange.startBlocking();
+              byte[] chunk = new byte[8192];
+              int read;
+              while ((read = is.read(chunk)) > 0) {
+                exchange.getOutputStream().write(chunk, 0, read);
+                exchange.getOutputStream().flush();
+              }
+            } else {
+              // nothing else to do, our fallback png failed to pump. just end the exchange
+              exchange.setStatusCode(StatusCodes.NOT_FOUND).endExchange();
+            }
+          } finally {
+            exchange.getOutputStream().close();
+          }
+        }
+      }
+    }
+  }
+
+  private void _serveFromUploadsDir(HttpServerExchange exchange, String fileName, String mime) throws Exception {
+    // note: I don't like this, but this is the cleanest way to get everything working without
+    //       ripping out undertow's underlying code for ourselves. This handles etags, byte ranges,
+    //       method validation, directory walking exploits, and everything else we would normally
+    //       want to implement ourselves.
+    exchange.setRelativePath(fileName);
+    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mime);
+    resourceHandler.handleRequest(exchange);
+  }
+
+  private void renderView(HttpServerExchange exchange) {
+    if (validateMethods(exchange, Methods.GET)) {
+      var res = Responder.with(exchange);
+
+      var match = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
+      if (match != null && match.getParameters().get("id") != null && match.getParameters().get("id").matches("^[0-9]+$")) {
+        var upload = App.database().jdbi().withHandle(handle ->
+          handle.createQuery("SELECT * FROM upload WHERE id = CAST(:id AS INT)")
+            .bind("id", match.getParameters().get("id"))
+            .map(DBUpload.Mapper)
+            .findFirst().orElse(null)
+        );
+        if (upload != null) {
+          var meta = App.database().jdbi().withHandle(handle ->
+            handle.createQuery("SELECT * FROM media WHERE id = :id")
+              .bind("id", upload.media)
+              .map(DBMedia.Mapper)
+              .first()
+          );
+
+          res.view("app", Map.of(
+            "meta", Map.of(
+              "og:title", "Upload",
+              "og:type", meta.mime.startsWith("image/") ? "picture" : "video",
+              "og:image", "/thumb/" + upload.id,
+              "og:url", "/view/" + upload.id
+            )
+          ));
+        } else {
+          res.view("app");
+        }
+      } else {
+        res.view("app");
+      }
+    }
   }
 
   @Override
