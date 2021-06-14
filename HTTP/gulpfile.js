@@ -96,7 +96,7 @@ function js() {
 
 function watch(cb) {
   gulp.watch([`${inRoot}/js/**/*.ts`, `${inRoot}/js/**/*.tsx`, `${inRoot}/js/**/*.js`, `${inRoot}/js/**/*.jsx`], gulp.series(js));
-  gulp.watch(`${inRoot}/css/**/*.css`, gulp.series(css));
+  gulp.watch([`${inRoot}/css/**/*.css`, `./tailwind.config.js`], gulp.series(css));
   gulp.watch(`${inRoot}/vend/frags/**/*`, gulp.series(frags));
   gulp.watch(`${inRoot}/views/**/*`, gulp.series(views));
   cb();

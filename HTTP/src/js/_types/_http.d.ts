@@ -18,10 +18,11 @@ type UploadResult = {
 }
 
 type RenderableUpload = {
-  account: {
+  upload: DBUpload;
+  media: DBMedia;
+  media_meta: DBMediaMeta;
+  owner: {
     id: number;
     username: string;
   };
-  media: DBMedia;
-  upload: DBUpload;
 };

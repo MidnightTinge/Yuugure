@@ -47,7 +47,7 @@ export default function Nav(props: NavProps) {
   }
 
   return (
-    <nav className="w-full flex flex-row flex-nowrap bg-gray-200 text-gray-500 border-solid border-b border-gray-300">
+    <nav className="w-full h-nav px-4 flex-grow-0 flex-shrink flex flex-row flex-nowrap bg-gray-200 text-gray-500 border-solid border-b border-gray-300">
       <div className="mr-auto">
         <NavList>
           <NavItem href="/" active={props.active === 'index'}>Home</NavItem>
