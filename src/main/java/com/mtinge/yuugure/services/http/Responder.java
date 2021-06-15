@@ -210,6 +210,11 @@ public class Responder {
     _send((String) toSend);
   }
 
+  public void end() {
+    exchange.getResponseSender().close();
+    exchange.endExchange();
+  }
+
   private void _send(String toSend) {
     if (this.exchange.isResponseComplete())
       return;

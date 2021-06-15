@@ -1,3 +1,10 @@
+type RouterResponse<A = any, B = any, C = any, D = any, E = any, F = any, G = any> = {
+  status: string;
+  code: number;
+  messages: string[];
+  data: Record<string, (A | B | C | D | E | F | G)[]>;
+};
+
 type AuthResponse = {
   authed: boolean;
   inputErrors: Record<string, string[]>;
@@ -16,3 +23,13 @@ type UploadResult = {
   media?: DBMedia;
   upload?: DBUpload;
 }
+
+type RenderableUpload = {
+  upload: DBUpload;
+  media: DBMedia;
+  media_meta: DBMediaMeta;
+  owner: {
+    id: number;
+    username: string;
+  };
+};

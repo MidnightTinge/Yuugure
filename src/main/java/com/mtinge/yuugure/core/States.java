@@ -23,6 +23,22 @@ public final class States {
   // @formatter:on
 
   /**
+   * Computes a state bitfield starting from 0L
+   *
+   * @param states The states to flag
+   *
+   * @return The computed state
+   */
+  public static long compute(long... states) {
+    long ret = 0L;
+    for (var flag : states) {
+      ret |= flag;
+    }
+
+    return ret;
+  }
+
+  /**
    * Checks if the given state has the requested flag.
    *
    * @param curState The fully computed state bitfield.
@@ -38,12 +54,16 @@ public final class States {
    * Computes a new bitfield with the requested flag set to 'on'.
    *
    * @param curState The current fully computed state bitfield.
-   * @param toAdd The flag to set 'on'.
+   * @param toAdd The flag(s) to set 'on'.
    *
    * @return The newly computed state bitfield with the requested flag set to 'on'.
    */
-  public static long addFlag(long curState, long toAdd) {
-    return (curState | toAdd);
+  public static long addFlag(long curState, long... toAdd) {
+    long ret = curState;
+    for (var flag : toAdd) {
+      ret |= flag;
+    }
+    return ret;
   }
 
   /**
@@ -54,7 +74,11 @@ public final class States {
    *
    * @return The newly computed state bitfield with the requested flag set to 'off'.
    */
-  public static long removeFlag(long curState, long toRemove) {
-    return curState & ~toRemove;
+  public static long removeFlag(long curState, long... toRemove) {
+    long ret = curState;
+    for (var flag : toRemove) {
+      ret &= ~flag;
+    }
+    return ret;
   }
 }

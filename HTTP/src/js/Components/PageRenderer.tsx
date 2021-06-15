@@ -29,7 +29,7 @@ export default function PageRenderer(props: PageRendererProps) {
   }
 
   return (
-    <div className="flex flex-col w-full h-full">
+    <div className="flex flex-col w-screen h-screen">
       <Nav active={props.active}/>
       {toRender}
     </div>

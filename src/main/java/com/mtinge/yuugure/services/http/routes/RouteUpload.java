@@ -27,14 +27,10 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 public class RouteUpload extends Route {
   private static final Logger logger = LoggerFactory.getLogger(RouteUpload.class);
-  private static RouteUpload instance;
-  private static final Object _lock = new Object();
-  private static final AtomicLong al = new AtomicLong();
 
   private PathHandler pathHandler;
   private AutoDetectParser tikaParser;
@@ -58,7 +54,11 @@ public class RouteUpload extends Route {
     var account = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
     var isAuthed = account != null;
     if (!isAuthed) {
-      resp.status(StatusCodes.UNAUTHORIZED).view("app");
+      if (resp.wantsJson()) {
+        resp.status(StatusCodes.UNAUTHORIZED).json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING));
+      } else {
+        resp.status(StatusCodes.UNAUTHORIZED).view("app");
+      }
     } else {
       if (validateMethods(exchange, Methods.GET, Methods.POST)) {
         if (exchange.getRequestMethod().equals(Methods.GET)) {
@@ -129,7 +129,7 @@ public class RouteUpload extends Route {
                     var sha256 = Utils.toHex(dgSHA256.digest());
 
                     // move upload to the final dir
-                    final Path outPath = Path.of(finalPath.toString(), sha256);
+                    final Path outPath = Path.of(finalPath.toString(), sha256 + ".full");
                     if (!outPath.toFile().exists()) {
                       file.getFile().toFile().renameTo(outPath.toFile());
                     } // else: this is a duplicate upload
@@ -137,67 +137,68 @@ public class RouteUpload extends Route {
                     // insert the upload into the database
                     var mtx = App.redis().getMutex("ul:" + sha256);
                     try {
-                      mtx.acquire();
-                      App.database().jdbi().useHandle(h -> {
-                        var handle = h.begin();
-                        boolean committed = false;
+                      if (mtx.acquire()) {
+                        App.database().jdbi().useHandle(h -> {
+                          var handle = h.begin();
+                          boolean committed = false;
 
-                        try {
-                          var media = handle.createQuery("SELECT * FROM media WHERE sha256 = :sha256")
-                            .bind("sha256", sha256)
-                            .map(DBMedia.Mapper)
-                            .findFirst().orElse(null);
-                          if (media == null) {
-                            media = handle.createQuery("INSERT INTO media (sha256, md5, phash, mime) VALUES (:sha256, :md5, :phash, :mime) RETURNING *")
+                          try {
+                            var media = handle.createQuery("SELECT * FROM media WHERE sha256 = :sha256")
                               .bind("sha256", sha256)
-                              .bind("md5", md5)
-                              .bind("phash", "")
-                              .bind("mime", mime)
                               .map(DBMedia.Mapper)
                               .findFirst().orElse(null);
-                          }
-                          if (media != null) {
-                            var dupedForOwner = handle.createQuery("SELECT EXISTS (SELECT id FROM upload WHERE owner = :owner AND media = :media) AS \"exists\"")
-                              .bind("owner", account.id)
-                              .bind("media", media.id)
-                              .map((r, c) -> r.getBoolean("exists"))
-                              .findFirst().orElse(false);
-                            if (dupedForOwner) {
-                              uploadResult.addInputError("file", "You have already uploaded this file.");
-                            } else {
-                              long uploadState = States.flagged(account.state, States.User.TRUSTED_UPLOADS) ? 0L : States.Upload.MODERATION_QUEUED;
-                              if (isPrivate) {
-                                uploadState = States.addFlag(uploadState, States.Upload.PRIVATE);
-                              }
-
-                              var toRet = handle.createQuery("INSERT INTO upload (media, owner, state, upload_date) VALUES (:media, :owner, :state, now()) RETURNING *")
-                                .bind("media", media.id)
-                                .bind("owner", account.id)
-                                .bind("state", uploadState)
-                                .map(DBUpload.Mapper)
+                            if (media == null) {
+                              media = handle.createQuery("INSERT INTO media (sha256, md5, phash, mime) VALUES (:sha256, :md5, :phash, :mime) RETURNING *")
+                                .bind("sha256", sha256)
+                                .bind("md5", md5)
+                                .bind("phash", "")
+                                .bind("mime", mime)
+                                .map(DBMedia.Mapper)
                                 .findFirst().orElse(null);
-                              if (toRet != null) {
-                                uploadResult.setSuccess(true);
-                                uploadResult.setMedia(media);
-                                uploadResult.setUpload(toRet);
-                                handle.commit();
-                                committed = true;
-                              } else {
-                                uploadResult.addError("An internal server error occurred.");
-                              }
                             }
-                          } else {
-                            logger.error("Failed to create media for upload {}.", sha256);
-                          }
-                        } catch (Exception e) {
-                          handle.rollback();
-                          logger.error("Caught an SQL error during upload.", e);
-                        } finally {
-                          if (!committed) {
+                            if (media != null) {
+                              var dupedForOwner = handle.createQuery("SELECT EXISTS (SELECT id FROM upload WHERE owner = :owner AND media = :media) AS \"exists\"")
+                                .bind("owner", account.id)
+                                .bind("media", media.id)
+                                .map((r, c) -> r.getBoolean("exists"))
+                                .findFirst().orElse(false);
+                              if (dupedForOwner) {
+                                uploadResult.addInputError("file", "You have already uploaded this file.");
+                              } else {
+                                long uploadState = States.flagged(account.state, States.User.TRUSTED_UPLOADS) ? 0L : States.Upload.MODERATION_QUEUED;
+                                if (isPrivate) {
+                                  uploadState = States.addFlag(uploadState, States.Upload.PRIVATE);
+                                }
+
+                                var toRet = handle.createQuery("INSERT INTO upload (media, owner, state, upload_date) VALUES (:media, :owner, :state, now()) RETURNING *")
+                                  .bind("media", media.id)
+                                  .bind("owner", account.id)
+                                  .bind("state", uploadState)
+                                  .map(DBUpload.Mapper)
+                                  .findFirst().orElse(null);
+                                if (toRet != null) {
+                                  uploadResult.setSuccess(true);
+                                  uploadResult.setMedia(media);
+                                  uploadResult.setUpload(toRet);
+                                  handle.commit();
+                                  committed = true;
+                                } else {
+                                  uploadResult.addError("An internal server error occurred.");
+                                }
+                              }
+                            } else {
+                              logger.error("Failed to create media for upload {}.", sha256);
+                            }
+                          } catch (Exception e) {
                             handle.rollback();
+                            logger.error("Caught an SQL error during upload.", e);
+                          } finally {
+                            if (!committed) {
+                              handle.rollback();
+                            }
                           }
-                        }
-                      });
+                        });
+                      }
                     } finally {
                       mtx.release();
                     }

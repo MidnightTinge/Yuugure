@@ -20,7 +20,7 @@ public class RootHandler implements HttpHandler {
         if (xch.getStatusCode() == 404 && xch.getRequestMethod().equals(Methods.GET)) {
           var res = Responder.with(xch);
           if (!res.wantsJson()) {
-            res.view("app");
+            res.status(200).view("app");
             return true;
           }
         }
