@@ -53,9 +53,6 @@ jobs:
 
       - name: Run front-end build
         working-directory: './HTTP/'
-        env:
-          npm_config_audit: false
-          npm_config_loglevel: error
         run: |
           npm ci
           npm run build:rebuild
@@ -63,5 +60,4 @@ jobs:
       - name: Run back-end build
         env:
           npm_config_audit: false
-          npm_config_loglevel: error
         run: mvn -B package --file pom.xml
