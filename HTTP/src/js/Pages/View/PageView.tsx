@@ -13,7 +13,7 @@ import InternalSwitch from '../../Components/InternalNav/InternalSwitch';
 import useInternalNavigator from '../../Components/InternalNav/useInternalNavigator';
 import ListGroup from '../../Components/ListGroup/ListGroup';
 import ListGroupItem from '../../Components/ListGroup/ListGroupItem';
-import UploadMedia from '../../Components/UploadMedia';
+import UploadViewer from '../../Components/UploadViewer/UploadViewer';
 import {authStateSelector} from '../../Stores/AuthStore';
 import NotFound from '../404/NotFound';
 
@@ -30,6 +30,8 @@ export default function PageView(props: PageViewProps) {
   const [error, setError] = useState<string>(null);
   const [upload, setUpload] = useState<RenderableUpload>(null);
   const [got404, setGot404] = useState(false);
+  const [censored, setCensored] = useState(false);
+  const [constrain, setConstrain] = useState(true);
 
   const renderer = useRef<HTMLElement>(null);
   const ws = useRef<WS>(null);
@@ -80,15 +82,8 @@ export default function PageView(props: PageViewProps) {
     console.warn('Need to delete (not yet implemented)');
   }
 
-  function handleNavigation(to: string) {
-    history.push(to);
-  }
-
-  function anchorNavigator(to: string) {
-    return (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-      e.preventDefault();
-      handleNavigation(to);
-    };
+  function handleToggleResize() {
+    setConstrain(!constrain);
   }
 
   function makeNavigator(to: string) {
@@ -124,13 +119,17 @@ export default function PageView(props: PageViewProps) {
             <div className="col-span-4 md:col-span-2">
               <section className="text-right">
                 {authState && authState.authed ? (
-                  <>
+                  <div>
                     {authState.accountId === upload.owner.id ? (
                       <button onClick={handleDelete} className="text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Delete</button>
                     ) : null}
                     <button onClick={handleReport} className="ml-1 text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Report</button>
-                  </>
+                  </div>
                 ) : null}
+                <div>
+                  <a href={`/full/${upload.upload.id}`} target="_blank" className="underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none">Direct Link</a>
+                  <button className="ml-1 underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none" onClick={handleToggleResize}>Toggle Resize</button>
+                </div>
               </section>
               <section className="mt-2">
                 <InternalNavContext.Consumer>
@@ -165,11 +164,7 @@ export default function PageView(props: PageViewProps) {
                   <p>hello actions</p>
                 </InternalRoute>
                 <InternalRoute path="*">
-                  <div className="MediaViewer constrained">
-                    <div className="MediaObject">
-                      <UploadMedia ref={renderer} upload={upload.upload} media={upload.media}/>
-                    </div>
-                  </div>
+                  <UploadViewer upload={upload.upload} media={upload.media} censored={censored} constrained={constrain}/>
                 </InternalRoute>
               </InternalSwitch>
             </div>

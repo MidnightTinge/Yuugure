@@ -1,6 +1,6 @@
 import * as React from 'react';
-import useLS from '../Hooks/useLS';
-import LS_KEYS from '../LS_KEYS';
+import useLS from '../../Hooks/useLS';
+import LS_KEYS from '../../LS_KEYS';
 
 export type UploadMediaProps = {
   upload: DBUpload;

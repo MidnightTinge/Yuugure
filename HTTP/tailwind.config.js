@@ -80,5 +80,15 @@ module.exports = {
   },
   plugins: [
     require('@tailwindcss/forms'),
+
+    // Reset the maxWidth and height constraints set by the tailwind preflight. This allows us to
+    // handle image aspect-ratio resizing on our own. Given the individualized nature of the app,
+    // we need direct control over these things.
+    plugin(({addBase}) =>
+      addBase({
+        'img': {maxWidth: 'none', height: 'unset'},
+        'video': {maxWidth: 'none', height: 'unset'},
+      }),
+    ),
   ],
 };
