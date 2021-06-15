@@ -1,4 +1,5 @@
 const defaultConfig = require('tailwindcss/defaultConfig');
+const plugin = require('tailwindcss/plugin');
 
 const sizingPoints = {
   '1/2': '50%',
@@ -39,6 +40,7 @@ module.exports = {
   purge: [
     './src/views/**/*.pebble',
     './src/js/**/*.tsx',
+    './src/js/**/*.ts',
   ],
   darkMode: false,
   variants: {
@@ -47,6 +49,7 @@ module.exports = {
       opacity: ['responsive', 'disabled', 'group-hover', 'focus-within', 'hover', 'focus'],
       backgroundColor: ['responsive', 'disabled', 'dark', 'group-hover', 'focus-within', 'hover', 'focus'],
       borderColor: ['responsive', 'disabled', 'dark', 'group-hover', 'focus-within', 'hover', 'focus'],
+      borderWidth: ['responsive', 'hover', 'group-hover', 'focus', 'disabled'],
       textColor: ['responsive', 'disabled', 'dark', 'group-hover', 'focus-within', 'hover', 'focus'],
     },
   },
@@ -75,9 +78,6 @@ module.exports = {
       'screen-no-nav': 'calc(100vh - 2.5em)',
     },
   },
-  // corePlugins: {
-  //   preflight: false,
-  // },
   plugins: [
     require('@tailwindcss/forms'),
   ],

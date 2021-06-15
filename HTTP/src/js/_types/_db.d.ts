@@ -1,5 +1,3 @@
-type Extendable<T> = number | T;
-
 type DBMedia = {
   id: number;
   sha256: string;

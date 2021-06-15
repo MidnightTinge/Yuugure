@@ -7,9 +7,9 @@ import PageRenderer from './Components/PageRenderer';
 import Page404 from './Pages/404/Page404';
 import PageIndex from './Pages/Index/PageIndex';
 import PageLogin from './Pages/Login/PageLogin';
-import PageView from './Pages/View/PageView';
 import PageRegister from './Pages/Register/PageRegister';
 import PageUpload from './Pages/Upload/PageUpload';
+import PageView from './Pages/View/PageView';
 import {authStateStore} from './Stores/AuthStore';
 
 function App() {
