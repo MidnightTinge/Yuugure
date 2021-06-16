@@ -76,7 +76,6 @@ export class XHRFetcher {
 
     const contentType = _body_type_map[bodyType] || false;
     if (contentType) {
-      console.debug('got contentType:', contentType);
       this.#req.setRequestHeader('Content-Type', contentType);
     }
 

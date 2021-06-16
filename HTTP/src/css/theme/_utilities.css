@@ -1,0 +1,7 @@
+.h-nav {
+  height: 2.5em;
+}
+
+.censored {
+  filter: blur(10px) grayscale(1) contrast(.25);
+}

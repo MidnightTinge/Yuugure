@@ -1,111 +1,13 @@
 @import "../../vend/css/fa-all.min.css";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*noinspection CssUnknownTarget*/
+@import "tailwindcss/base.css";
+@import "./_base.css";
 
-@layer base {
-  body {
-    @apply bg-gray-50;
-  }
+/*noinspection CssUnknownTarget*/
+@import "tailwindcss/components.css";
+@import "./_components.css";
 
-  pre {
-    @apply font-mono text-sm text-pink-500 bg-gray-100 border-gray-300 shadow rounded-md p-2 whitespace-pre block overflow-auto;
-  }
-}
-
-@layer components {
-  .ListGroup {
-    @apply flex flex-col;
-
-    .ListGroupItem {
-      --bg-normal: theme('colors.gray.200');
-      --bg-hover: theme('colors.gray.300');
-      --fg-normal: theme('colors.gray.700');
-      --fg-hover: theme('colors.gray.800');
-      --border-normal: theme('colors.gray.300');
-      --border-hover: theme('colors.gray.400');
-
-      @apply block relative flex-grow-0 flex-shrink text-left px-3 py-3 focus:outline-none;
-      border: 1px solid var(--border-normal);
-      border-top-color: transparent;
-
-      background-color: var(--bg-normal);
-      color: var(--fg-normal);
-
-      &:hover {
-        background-color: var(--bg-hover);
-        border-color: var(--border-hover);
-        color: var(--fg-hover);
-      }
-
-      &:only-child {
-        @apply rounded-md;
-        border-color: var(--border-normal);
-
-        &:hover {
-          background-color: var(--bg-hover);
-          border-color: var(--border-hover);
-        }
-      }
-
-      &.active, &:focus, &:active {
-        @apply font-semibold;
-        border-color: var(--border-hover);
-        color: var(--fg-hover);
-        background-color: var(--bg-hover);
-      }
-
-      &:not(:only-child):first-child {
-        @apply rounded-t-md;
-        border-top-color: var(--border-normal);
-
-        &:hover, &:active, &:focus, &.active {
-          border-top-color: var(--border-hover);
-        }
-      }
-
-      &:not(:only-child):last-child {
-        @apply rounded-b-md;
-        border-bottom-color: var(--border-normal);
-
-        &:hover, &:active, &:focus, &.active {
-          border-bottom-color: var(--border-hover);
-        }
-      }
-    }
-  }
-
-  .MediaViewer {
-    height: calc(100vh - 2.5em - theme('gap.2') - theme('gap.2'));
-
-    .MediaObject {
-      text-align: center;
-
-      img, video {
-        margin: 0 auto;
-      }
-    }
-
-    &.constrained .MediaObject {
-      width: 100%;
-      height: 100%;
-
-      img, video {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: scale-down;
-      }
-    }
-  }
-}
-
-@layer utilities {
-  .h-nav {
-    height: 2.5em;
-  }
-
-  .censored {
-    filter: blur(10px) grayscale(1) contrast(.25);
-  }
-}
+/*noinspection CssUnknownTarget*/
+@import "tailwindcss/utilities.css";
+@import "./_utilities.css";

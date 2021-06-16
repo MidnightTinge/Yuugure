@@ -39,6 +39,7 @@ const sizingPoints = {
 module.exports = {
   purge: [
     './src/views/**/*.pebble',
+    './src/css/**/*.css',
     './src/js/**/*.tsx',
     './src/js/**/*.ts',
   ],

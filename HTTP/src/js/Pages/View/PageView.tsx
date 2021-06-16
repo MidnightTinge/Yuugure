@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useParams} from 'react-router';
 import {useHistory} from 'react-router-dom';
 import WS from '../../classes/WS';
@@ -13,6 +13,8 @@ import InternalSwitch from '../../Components/InternalNav/InternalSwitch';
 import useInternalNavigator from '../../Components/InternalNav/useInternalNavigator';
 import ListGroup from '../../Components/ListGroup/ListGroup';
 import ListGroupItem from '../../Components/ListGroup/ListGroupItem';
+import {CloseSource} from '../../Components/Modal/Modal';
+import ReportModal from '../../Components/ReportModal';
 import UploadViewer from '../../Components/UploadViewer/UploadViewer';
 import {authStateSelector} from '../../Stores/AuthStore';
 import NotFound from '../404/NotFound';
@@ -32,9 +34,12 @@ export default function PageView(props: PageViewProps) {
   const [got404, setGot404] = useState(false);
   const [censored, setCensored] = useState(false);
   const [constrain, setConstrain] = useState(true);
+  const [showReport, setShowReport] = useState(false);
 
   const renderer = useRef<HTMLElement>(null);
   const ws = useRef<WS>(null);
+
+  const reportable = useMemo<{ type: string, id: number }>(() => (upload ? {type: 'upload', id: upload.upload.id} : {type: null, id: null}), [upload]);
 
   useEffect(function mounted() {
     if (params && params.uploadId) {
@@ -75,7 +80,7 @@ export default function PageView(props: PageViewProps) {
   }, [upload]);
 
   function handleReport() {
-    console.warn('Need to report (not yet implemented)');
+    setShowReport(true);
   }
 
   function handleDelete() {
@@ -93,84 +98,101 @@ export default function PageView(props: PageViewProps) {
     };
   }
 
+  function closeModal() {
+    setShowReport(false);
+  }
+
+  function handleReportSent() {
+    //
+  }
+
+  function handleCloseRequest(cs: CloseSource, posting: boolean) {
+    if (!posting) {
+      closeModal();
+    }
+  }
+
   return (
-    (!fetched ? (
-      <div className="flex flex-col w-full h-full items-center justify-center">
-        <div className="flex-shrink">
-          <div className="block text-center">
-            <i className="fas fa-circle-notch fa-spin fa-4x text-gray-300"/>
+    <>
+      <ReportModal targetType={reportable.type} targetId={reportable.id} onReportSent={handleReportSent} onCloseRequest={handleCloseRequest} show={showReport}/>
+      {!fetched ? (
+        <div className="flex flex-col w-full h-full items-center justify-center">
+          <div className="flex-shrink">
+            <div className="block text-center">
+              <i className="fas fa-circle-notch fa-spin fa-4x text-gray-300"/>
+            </div>
           </div>
         </div>
-      </div>
-    ) : (
-      (error || !upload ? (
-        got404 ? (
-          <NotFound/>
-        ) : (
-          <CenteredBlockPage pageBackground="bg-red-50" cardBackground="bg-red-200" cardBorder="border-red-300">
-            <p className="text-center">Failed to request the upload from the server. Please try again.</p>
-            <p className="text-sm mt-4">Error:</p>
-            <p className="block ml-2 text-sm whitespace-pre-wrap text-gray-800">{error || 'An internal server error occurred. No upload was returned by the server.'}</p>
-          </CenteredBlockPage>
-        )
       ) : (
-        <InternalRouter defaultPath="view">
-          <div className="grid grid-cols-12 gap-2 p-2">
-            <div className="col-span-4 md:col-span-2">
-              <section className="text-right">
-                {authState && authState.authed ? (
+        (error || !upload ? (
+          got404 ? (
+            <NotFound/>
+          ) : (
+            <CenteredBlockPage pageBackground="bg-red-50" cardBackground="bg-red-200" cardBorder="border-red-300">
+              <p className="text-center">Failed to request the upload from the server. Please try again.</p>
+              <p className="text-sm mt-4">Error:</p>
+              <p className="block ml-2 text-sm whitespace-pre-wrap text-gray-800">{error || 'An internal server error occurred. No upload was returned by the server.'}</p>
+            </CenteredBlockPage>
+          )
+        ) : (
+          <InternalRouter defaultPath="view">
+            <div className="grid grid-cols-12 gap-2 p-2">
+              <div className="col-span-4 md:col-span-2">
+                <section className="text-right">
+                  {authState && authState.authed ? (
+                    <div>
+                      {authState.accountId === upload.owner.id ? (
+                        <button onClick={handleDelete} className="text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Delete</button>
+                      ) : null}
+                      <button onClick={handleReport} className="ml-1 text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Report</button>
+                    </div>
+                  ) : null}
                   <div>
-                    {authState.accountId === upload.owner.id ? (
-                      <button onClick={handleDelete} className="text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Delete</button>
-                    ) : null}
-                    <button onClick={handleReport} className="ml-1 text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Report</button>
+                    <a href={`/full/${upload.upload.id}`} target="_blank" className="underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none">Direct Link</a>
+                    <button className="ml-1 underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none" onClick={handleToggleResize}>Toggle Resize</button>
                   </div>
-                ) : null}
-                <div>
-                  <a href={`/full/${upload.upload.id}`} target="_blank" className="underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none">Direct Link</a>
-                  <button className="ml-1 underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none" onClick={handleToggleResize}>Toggle Resize</button>
-                </div>
-              </section>
-              <section className="mt-2">
-                <InternalNavContext.Consumer>
-                  {({path = ''}) => (
-                    <ListGroup>
-                      <ListGroupItem active={path === 'view'} onClick={makeNavigator('view')}><i className="fas fa-image"/> View</ListGroupItem>
-                      <ListGroupItem active={path === 'comments'} onClick={makeNavigator('comments')}><i className="fas fa-comment-alt"/> Comments</ListGroupItem>
-                      <ListGroupItem active={path === 'edit'} onClick={makeNavigator('edit')}><i className="fas fa-pencil-alt"/> Edit</ListGroupItem>
-                      <ListGroupItem active={path === 'actions'} onClick={makeNavigator('actions')}><i className="fas fa-wrench"/> Actions</ListGroupItem>
-                    </ListGroup>
-                  )}
-                </InternalNavContext.Consumer>
-              </section>
-              <section className="mt-2">
-                <div className="rounded bg-gray-200 border border-gray-300 shadow-sm">
-                  <div className="py-0.5 text-center text-gray-700 border-b border-gray-300">Tags</div>
-                  <div className="p-2">
-                    <p className="text-gray-400 italic text-sm text-center select-none">Placeholder</p>
+                </section>
+                <section className="mt-2">
+                  <InternalNavContext.Consumer>
+                    {({path = ''}) => (
+                      <ListGroup>
+                        <ListGroupItem active={path === 'view'} onClick={makeNavigator('view')}><i className="fas fa-image"/> View</ListGroupItem>
+                        <ListGroupItem active={path === 'comments'} onClick={makeNavigator('comments')}><i className="fas fa-comment-alt"/> Comments</ListGroupItem>
+                        <ListGroupItem active={path === 'edit'} onClick={makeNavigator('edit')}><i className="fas fa-pencil-alt"/> Edit</ListGroupItem>
+                        <ListGroupItem active={path === 'actions'} onClick={makeNavigator('actions')}><i className="fas fa-wrench"/> Actions</ListGroupItem>
+                      </ListGroup>
+                    )}
+                  </InternalNavContext.Consumer>
+                </section>
+                <section className="mt-2">
+                  <div className="rounded bg-gray-200 border border-gray-300 shadow-sm">
+                    <div className="py-0.5 text-center text-gray-700 border-b border-gray-300">Tags</div>
+                    <div className="p-2">
+                      <p className="text-gray-400 italic text-sm text-center select-none">Placeholder</p>
+                    </div>
                   </div>
-                </div>
-              </section>
+                </section>
+              </div>
+              <div className="col-span-8 md:col-span-10">
+                <InternalSwitch>
+                  <InternalRoute path="comments">
+                    <p>hello comments</p>
+                  </InternalRoute>
+                  <InternalRoute path="edit">
+                    <p>hello edit</p>
+                  </InternalRoute>
+                  <InternalRoute path="actions">
+                    <p>hello actions</p>
+                  </InternalRoute>
+                  <InternalRoute path="*">
+                    <UploadViewer upload={upload.upload} media={upload.media} censored={censored} constrained={constrain}/>
+                  </InternalRoute>
+                </InternalSwitch>
+              </div>
             </div>
-            <div className="col-span-8 md:col-span-10">
-              <InternalSwitch>
-                <InternalRoute path="comments">
-                  <p>hello comments</p>
-                </InternalRoute>
-                <InternalRoute path="edit">
-                  <p>hello edit</p>
-                </InternalRoute>
-                <InternalRoute path="actions">
-                  <p>hello actions</p>
-                </InternalRoute>
-                <InternalRoute path="*">
-                  <UploadViewer upload={upload.upload} media={upload.media} censored={censored} constrained={constrain}/>
-                </InternalRoute>
-              </InternalSwitch>
-            </div>
-          </div>
-        </InternalRouter>
-      ))
-    ))
+          </InternalRouter>
+        ))
+      )}
+    </>
   );
 }

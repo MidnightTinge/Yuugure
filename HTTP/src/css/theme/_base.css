@@ -1,0 +1,7 @@
+body {
+  @apply bg-gray-50;
+}
+
+pre {
+  @apply font-mono text-sm text-pink-500 bg-gray-100 border-gray-300 shadow rounded-md p-2 whitespace-pre block overflow-auto;
+}
