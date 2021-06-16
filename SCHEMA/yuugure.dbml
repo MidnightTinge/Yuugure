@@ -63,12 +63,12 @@ table media_meta { // meta is attached as a second step and not present on initi
 }
 
 table upload { // used for individual uploads since media serves as an upload cache based on the sha. if dupes are allowed via config, this is necessary to differentiate between user uploads
-  id          int       [pk, increment]
-  media       int       [not null, ref:> media.id]
-  parent      int       [ref:> media.id]
-  owner       int       [not null, ref:> account.id]
-  upload_date timestamp
-  state       bigint    [not null, default: 0] // state is a bitfield that denotes whether something is deleted, awaiting moderation, etc. i'm doing it this way to avoid another "media_state" table or adding 15 more columns here.
+  id          int         [pk, increment]
+  media       int         [not null, ref:> media.id]
+  parent      int         [ref:> media.id]
+  owner       int         [not null, ref:> account.id]
+  upload_date timestamptz [not null, default: `now()`]
+  state       bigint      [not null, default: 0] // state is a bitfield that denotes whether something is deleted, awaiting moderation, etc. i'm doing it this way to avoid another "media_state" table or adding 15 more columns here.
 
   indexes {
     media
@@ -79,13 +79,13 @@ table upload { // used for individual uploads since media serves as an upload ca
 }
 
 table processing_queue { // processing is handled by slave processes so we need a master source to hand out jobs
-  id         int       [pk, increment]
-  upload     int       [ref:> upload.id]
-  queued_at  timestamp [not null, default: `now()`]
-  dequeued   boolean   [not null, default: `false`]
-  errored    boolean   [not null, default: `false`]
+  id         int         [pk, increment]
+  upload     int         [ref:> upload.id]
+  queued_at  timestamptz [not null, default: `now()`]
+  dequeued   boolean     [not null, default: `false`]
+  errored    boolean     [not null, default: `false`]
   error_text text
-  finished   boolean   [not null, default: `false`]
+  finished   boolean     [not null, default: `false`]
 
   indexes {
     queued_at
@@ -97,13 +97,13 @@ table processing_queue { // processing is handled by slave processes so we need 
 }
 
 table audits {
-  id          int       [pk, increment]
-  account     int       [not null, ref:> account.id]
-  target_type text      [not null]
-  target_id   text      [not null]
-  action      text      [not null]
-  tstamp      timestamp [not null, default: `now()`]
-  details     text      [not null, default: ""]
+  id          int         [pk, increment]
+  account     int         [not null, ref:> account.id]
+  target_type text        [not null]
+  target_id   text        [not null]
+  action      text        [not null]
+  tstamp      timestamptz [not null, default: `now()`]
+  details     text        [not null, default: ""]
 
   indexes {
     account
@@ -112,5 +112,25 @@ table audits {
     (account, action)
     (account, action, target_type)
     tstamp
+  }
+}
+
+Table report {
+  id          int         [pk, increment]
+  active      boolean     [not null, default: `true`]
+  account     int         [ref:> account.id]
+  timestamp   timestamptz [not null, default: `now()`]
+  claimed     boolean     [not null, default: `false`]
+  claimed_by  int         [ref:> account.id]
+  target_type text        [not null, default: "upload"]
+  target_id   int         [not null]
+  content     text        [not null]
+
+  indexes {
+    active
+    account
+    claimed
+    (target_type, target_id)
+    (target_type, target_id, active)
   }
 }

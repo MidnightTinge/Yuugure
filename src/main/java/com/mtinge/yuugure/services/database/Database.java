@@ -2,8 +2,7 @@ package com.mtinge.yuugure.services.database;
 
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.States;
-import com.mtinge.yuugure.data.postgres.DBMedia;
-import com.mtinge.yuugure.data.postgres.DBUpload;
+import com.mtinge.yuugure.data.postgres.*;
 import com.mtinge.yuugure.services.IService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -14,6 +13,9 @@ import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.statement.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Accessors(fluent = true)
@@ -83,6 +85,53 @@ public class Database implements IService {
       handle.createQuery("SELECT * FROM media WHERE id = :id")
         .bind("id", id)
         .map(DBMedia.Mapper)
+        .findFirst().orElse(null)
+    );
+  }
+
+  public DBReport createReport(DBUpload target, DBAccount reporter, String reason) {
+    return _report(ReportTargetType.UPLOAD, target.id, reporter.id, reason);
+  }
+
+  public DBReport createReport(DBAccount target, DBAccount reporter, String reason) {
+    return _report(ReportTargetType.ACCOUNT, target.id, reporter.id, reason);
+  }
+
+  public List<DBReport> getReportsOnUser(int target) {
+    return _getReports(ReportTargetType.ACCOUNT, target);
+  }
+
+  public List<DBReport> getReportsOnUpload(int target) {
+    return _getReports(ReportTargetType.UPLOAD, target);
+  }
+
+  private List<DBReport> _getReports(ReportTargetType targetType, int targetId) {
+    return jdbi.withHandle(handle ->
+      handle.createQuery("SELECT * FROM report WHERE target_type = :target_type AND target_id = :target_id ORDER BY timestamp DESC")
+        .bind("target_type", targetType.colVal())
+        .bind("target_id", targetId)
+        .map(DBReport.Mapper)
+        .collect(Collectors.toList())
+    );
+  }
+
+  private DBReport _report(ReportTargetType targetType, int targetId, int reporter, String reason) {
+    return jdbi.withHandle(handle ->
+      handle.createQuery("INSERT INTO report (account, target_type, target_id, content) VALUES (:reporter, :target_type, :target_id, :reason) RETURNING *")
+        .bind("target_type", targetType.colVal())
+        .bind("reporter", reporter)
+        .bind("target_id", targetId)
+        .bind("reason", reason)
+        .map(DBReport.Mapper)
+        .findFirst().orElse(null)
+    );
+  }
+
+  public DBAccount getAccountById(int id) {
+    return jdbi.withHandle(handle ->
+      handle.createQuery("SELECT * FROM account WHERE id = :id")
+        .bind("id", id)
+        .map(DBAccount.Mapper)
         .findFirst().orElse(null)
     );
   }
