@@ -33,3 +33,8 @@ type RenderableUpload = {
     username: string;
   };
 };
+
+type ReportResponse = {
+  report_id: number;
+  reason: string;
+}
