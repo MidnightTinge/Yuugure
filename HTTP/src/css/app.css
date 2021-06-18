@@ -1,1 +1,4 @@
 @import "./theme/_theme.css";
+
+/*noinspection CssUnknownTarget*/
+@import "react-virtualized/styles.css";

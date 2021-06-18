@@ -64,3 +64,8 @@ type SafeAccount = {
   username: string;
   state: AccountState;
 }
+
+type ProfileResponse = {
+  self: boolean;
+  account: SafeAccount;
+}
