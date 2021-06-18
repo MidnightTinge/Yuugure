@@ -9,8 +9,8 @@ import java.sql.Timestamp;
 public class DBAccount {
   public final int id;
   public final String username;
-  public final String email;
-  public final String password;
+  public transient final String email;
+  public transient final String password;
   /**
    * A bitfield denoting various user states, e.g. banned, upload restricted, or anything else
    * needed in the future (field space permitting).

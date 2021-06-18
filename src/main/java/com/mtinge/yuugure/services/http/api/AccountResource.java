@@ -82,11 +82,9 @@ public class AccountResource extends APIResource<DBAccount> {
     var authed = getAuthed(exchange);
     var aId = extractInt(exchange, "account");
     if (aId != null) {
-      var account = App.database().getAccountById(aId);
+      var account = App.database().getAccountById(aId, false);
       if (account != null) {
-        if (States.flagged(account.state, States.compute(States.User.DEACTIVATED, States.User.BANNED, States.User.DELETED))) {
-          return ResourceResult.notFound();
-        } else if (States.flagged(account.state, States.User.PRIVATE) && (authed == null || authed.id != account.id)) {
+        if (States.flagged(account.state, States.Account.PRIVATE) && (authed == null || authed.id != account.id)) {
           return ResourceResult.unauthorized();
         } else {
           return ResourceResult.OK(account);

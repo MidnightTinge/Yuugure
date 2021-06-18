@@ -24,6 +24,15 @@ type UploadResult = {
   upload?: DBUpload;
 }
 
+type UploadState = {
+  PRIVATE: boolean;
+  DELETED: boolean;
+  DMCA: boolean;
+  LOCKED_TAGS: boolean;
+  LOCKED_COMMENTS: boolean;
+  MODERATION_QUEUED: boolean;
+}
+
 type RenderableUpload = {
   upload: DBUpload;
   media: DBMedia;
@@ -32,9 +41,26 @@ type RenderableUpload = {
     id: number;
     username: string;
   };
+  state: UploadState;
 };
 
 type ReportResponse = {
   report_id: number;
   reason: string;
+}
+
+type AccountState = {
+  DEACTIVATED: boolean;
+  DELETED: boolean;
+  BANNED: boolean;
+  UPLOAD_RESTRICTED: boolean;
+  COMMENTS_RESTRICTED: boolean;
+  TRUSTED_UPLOADS: boolean;
+  PRIVATE: boolean;
+}
+
+type SafeAccount = {
+  id: number;
+  username: string;
+  state: AccountState;
 }

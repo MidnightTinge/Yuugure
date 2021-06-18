@@ -165,7 +165,7 @@ public class RouteUpload extends Route {
                               if (dupedForOwner) {
                                 uploadResult.addInputError("file", "You have already uploaded this file.");
                               } else {
-                                long uploadState = States.flagged(account.state, States.User.TRUSTED_UPLOADS) ? 0L : States.Upload.MODERATION_QUEUED;
+                                long uploadState = States.flagged(account.state, States.Account.TRUSTED_UPLOADS) ? 0L : States.Upload.MODERATION_QUEUED;
                                 if (isPrivate) {
                                   uploadState = States.addFlag(uploadState, States.Upload.PRIVATE);
                                 }
