@@ -26,7 +26,7 @@ public class ProfileResource extends APIResource<DBAccount> {
     var authed = getAuthed(exchange);
     var resource = fetchResource(exchange);
     if (resource.state == FetchState.OK) {
-      res.json(Response.good().addData(DBAccount.class, resource.resource).addData(ProfileResponse.class, new ProfileResponse(authed != null && authed.id == resource.resource.id, SafeAccount.fromDb(resource.resource))));
+      res.json(Response.good().addData(ProfileResponse.class, new ProfileResponse(authed != null && authed.id == resource.resource.id, SafeAccount.fromDb(resource.resource))));
     } else {
       sendTerminalForState(exchange, resource.state);
     }
