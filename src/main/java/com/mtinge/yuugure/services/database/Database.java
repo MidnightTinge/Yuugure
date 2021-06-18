@@ -89,6 +89,24 @@ public class Database implements IService {
     );
   }
 
+  public DBMediaMeta getMediaMetaById(int id) {
+    return jdbi.withHandle(handle ->
+      handle.createQuery("SELECT * FROM media_meta WHERE id = :id")
+        .bind("id", id)
+        .map(DBMediaMeta.Mapper)
+        .findFirst().orElse(null)
+    );
+  }
+
+  public DBMediaMeta getMediaMetaByMedia(int media) {
+    return jdbi.withHandle(handle ->
+      handle.createQuery("SELECT * FROM media_meta WHERE media = :media")
+        .bind("media", media)
+        .map(DBMediaMeta.Mapper)
+        .findFirst().orElse(null)
+    );
+  }
+
   public DBReport createReport(DBUpload target, DBAccount reporter, String reason) {
     return _report(ReportTargetType.UPLOAD, target.id, reporter.id, reason);
   }

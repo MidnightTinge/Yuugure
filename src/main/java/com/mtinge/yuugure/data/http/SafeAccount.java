@@ -9,6 +9,7 @@ public class SafeAccount {
   public final String username;
 
   public static SafeAccount fromDb(DBAccount dbAccount) {
+    if (dbAccount == null) return null;
     return new SafeAccount(dbAccount.id, dbAccount.username);
   }
 }
