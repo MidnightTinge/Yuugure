@@ -1,0 +1,43 @@
+.MediaPreview {
+  margin: 0 3px 3px;
+  width: 210px;
+  height: 240px;
+  @apply inline-block bg-gray-200 border border-gray-300 rounded shadow select-none;
+
+  &.thumb-only {
+    height: 210px;
+  }
+
+  &:hover {
+    @apply shadow-md;
+  }
+
+  .ThumbWrapper {
+    width: 200px;
+    height: 200px;
+    @apply relative text-center flex flex-col justify-center items-center;
+
+    .IconsWrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+
+      .OverlayIcon {
+        @apply opacity-80 bg-yellow-50 border border-yellow-100 text-gray-600 text-base leading-4 flex flex-col justify-center items-center rounded p-1 mb-0.5 shadow-sm hover:bg-yellow-100 hover:border-yellow-200 hover:text-gray-700 hover:opacity-100;
+      }
+    }
+  }
+
+  .DetailsWrapper {
+    @apply flex flex-row cursor-default text-lg leading-normal;
+    flex-basis: calc(100% / 3);
+
+    .Detail {
+      i {
+        @apply mr-1;
+      }
+
+      @apply text-center flex-grow flex-shrink-0;
+    }
+  }
+}

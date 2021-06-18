@@ -1,6 +1,8 @@
 import * as React from 'react';
 import {useEffect, useMemo, useReducer, useState} from 'react';
 import {useHistory, useParams} from 'react-router';
+
+import {AutoSizer, List, ListRowProps, Size} from 'react-virtualized';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
@@ -10,6 +12,7 @@ import InternalSwitch from '../../Components/InternalNav/InternalSwitch';
 import useInternalNavigator from '../../Components/InternalNav/useInternalNavigator';
 import ListGroup from '../../Components/ListGroup/ListGroup';
 import ListGroupItem from '../../Components/ListGroup/ListGroupItem';
+import MediaPreviewBlock from '../../Components/MediaPreview/MediaPreviewBlock';
 import {CloseSource} from '../../Components/Modal/Modal';
 import ReportModal from '../../Components/ReportModal';
 import {authStateSelector} from '../../Stores/AuthStore';
@@ -154,6 +157,14 @@ export default function PageProfile(props: PageProfileProps) {
     setShowReport(true);
   }
 
+  function rowRenderer({key, index, isScrolling, isVisible, style}: ListRowProps): React.ReactNode {
+    return (
+      <div key={key} style={style}>
+        <MediaPreviewBlock upload={uploads.uploads[index]}/>
+      </div>
+    );
+  }
+
   return (
     <>
       <ReportModal targetType="account" targetId={fetched && profile ? profile.account.id : null} onReportSent={onReportSent} onCloseRequest={onCloseRequest} show={showReport}/>
@@ -167,7 +178,7 @@ export default function PageProfile(props: PageProfileProps) {
             </div>
           ) : (
             <InternalRouter defaultPath="details">
-              <div className="grid grid-cols-12 gap-2 p-2">
+              <div className="grid grid-cols-12 gap-2 pt-2 pl-2 h-full max-w-screen overflow-x-hidden">
                 <div className="col-span-4 md:col-span-2">
                   <section>
                     <InternalNavContext.Consumer>
@@ -181,6 +192,7 @@ export default function PageProfile(props: PageProfileProps) {
                             </span>
                           </ListGroupItem>
                           <ListGroupItem active={path === 'likes'} onClick={makeNavigator('likes')}><i className="fas fa-heart" aria-hidden={true}/> Likes</ListGroupItem>
+                          <ListGroupItem active={path === 'votes'} onClick={makeNavigator('votes')}><i className="fas fa-check-circle" aria-hidden={true}/> Votes</ListGroupItem>
                           {profile && profile.self ? (
                             <ListGroupItem active={path === 'settings'} onClick={makeNavigator('settings')}><i className="fas fa-user-cog" aria-hidden={true}/> Settings</ListGroupItem>
                           ) : null}
@@ -192,12 +204,19 @@ export default function PageProfile(props: PageProfileProps) {
                 <div className="col-span-8 md:col-span-10">
                   <InternalSwitch>
                     <InternalRoute path="uploads">
-                      <ul>
-                        {uploads.uploads.map((upload, idx) => (<li key={idx}><a href={`/view/${upload.upload.id}`} target="_blank" className="text-blue-400 hover:text-blue-500">{upload.state.PRIVATE ? (<i className="fas fa-lock mr-1" title="This upload is private."/>) : null}{upload.media.sha256}</a></li>))}
-                      </ul>
+                      <div className="h-full">
+                        <AutoSizer>
+                          {({width, height}: Size) => (
+                            <List rowCount={uploads.uploads.length} rowHeight={250} width={width} height={height} rowRenderer={rowRenderer}/>
+                          )}
+                        </AutoSizer>
+                      </div>
                     </InternalRoute>
                     <InternalRoute path="likes">
                       <p>hello likes</p>
+                    </InternalRoute>
+                    <InternalRoute path="votes">
+                      <p>hello votes</p>
                     </InternalRoute>
                     <InternalRoute path="settings">
                       <p>hello settings</p>
