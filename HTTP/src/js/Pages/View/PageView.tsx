@@ -14,7 +14,7 @@ import useInternalNavigator from '../../Components/InternalNav/useInternalNaviga
 import ListGroup from '../../Components/ListGroup/ListGroup';
 import ListGroupItem from '../../Components/ListGroup/ListGroupItem';
 import {CloseSource} from '../../Components/Modal/Modal';
-import ReportModal from '../../Components/ReportModal';
+import ReportModal from '../../Components/modals/ReportModal';
 import UploadViewer from '../../Components/UploadViewer/UploadViewer';
 import {authStateSelector} from '../../Stores/AuthStore';
 import NotFound from '../404/NotFound';
@@ -141,7 +141,7 @@ export default function PageView(props: PageViewProps) {
                 <section className="text-right">
                   {authState && authState.authed ? (
                     <div>
-                      {authState.accountId === upload.owner.id ? (
+                      {authState.account.id === upload.owner.id ? (
                         <button onClick={handleDelete} className="text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Delete</button>
                       ) : null}
                       <button onClick={handleReport} className="ml-1 text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Report</button>

@@ -12,8 +12,15 @@ import com.mtinge.yuugure.services.http.Responder;
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
+import io.undertow.util.Headers;
+import io.undertow.util.Methods;
+import io.undertow.util.StatusCodes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProfileResource extends APIResource<DBAccount> {
+  private static final Logger logger = LoggerFactory.getLogger(ProfileResource.class);
+
   @Override
   public PathTemplateHandler getRoutes() {
     return Handlers.pathTemplate()
@@ -44,7 +51,39 @@ public class ProfileResource extends APIResource<DBAccount> {
 
     if (resource.state == FetchState.OK) {
       if (action.equalsIgnoreCase("uploads")) {
-        res.json(Response.good().addAll(RenderableUpload.class, App.database().getRenderableUploadsForAccount(resource.resource.id, new UploadFetchParams(false, authed != null && authed.id == resource.resource.id))));
+        if (exchange.getRequestMethod().equals(Methods.GET)) {
+          res.json(Response.good().addAll(RenderableUpload.class, App.database().getRenderableUploadsForAccount(resource.resource.id, new UploadFetchParams(false, authed != null && authed.id == resource.resource.id))));
+        } else if (exchange.getRequestMethod().equals(Methods.DELETE)) {
+          if (authed.id != resource.resource.id) {
+            res.json(Response.bad(StatusCodes.FORBIDDEN, StatusCodes.FORBIDDEN_STRING));
+          } else {
+            var token = extractConfirmationToken(exchange);
+            if (token != null) {
+              if (App.redis().confirmToken(token, authed, true)) {
+                try {
+                  var updated = App.database().jdbi().inTransaction(handle ->
+                    handle.createUpdate("UPDATE upload SET state = (state | :delete_state) WHERE owner = :owner AND (state & :delete_state) = 0")
+                      .bind("owner", authed.id)
+                      .bind("delete_state", States.Upload.DELETED)
+                      .execute()
+                  );
+                  res.json(Response.good().addMessage("Deleted " + updated + " uploads."));
+                } catch (Exception e) {
+                  logger.error("Failed to delete uploads for account {}.", authed.id, e);
+                  res.json(Response.bad(StatusCodes.INTERNAL_SERVER_ERROR, StatusCodes.INTERNAL_SERVER_ERROR_STRING));
+                }
+              } else {
+                res.json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING).addMessage("Invalid confirmation token."));
+              }
+            } else {
+              res.json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING).addMessage("Missing confirmation token"));
+            }
+          }
+        } else {
+          res
+            .header(Headers.ALLOW, "GET,DELETE")
+            .json(Response.bad(StatusCodes.METHOD_NOT_ALLOWED, StatusCodes.METHOD_NOT_ALLOWED_STRING));
+        }
       }
     } else {
       sendTerminalForState(exchange, resource.state);
@@ -55,35 +94,6 @@ public class ProfileResource extends APIResource<DBAccount> {
 
   @Override
   protected ResourceResult<DBAccount> fetchResource(HttpServerExchange exchange) {
-    var authed = getAuthed(exchange);
-    var aId = extract(exchange, "account");
-
-    if (!aId.isBlank()) {
-      var isNumeric = aId.matches("^[0-9]+$");
-      if (aId.equalsIgnoreCase("@me") || (authed != null && isNumeric && aId.equals(String.valueOf(authed.id)))) {
-        // requested self
-        if (authed == null) {
-          return ResourceResult.notFound();
-        } else {
-          return ResourceResult.OK(authed);
-        }
-      } else if (isNumeric) {
-        // requested someone else
-        var account = App.database().getAccountById(Integer.parseInt(aId));
-        if (account != null) {
-          if (States.flagged(account.state, States.Account.PRIVATE) && (authed == null || authed.id != account.id)) {
-            return ResourceResult.unauthorized();
-          } else {
-            return ResourceResult.OK(account);
-          }
-        } else {
-          return ResourceResult.notFound();
-        }
-      } else {
-        return ResourceResult.notFound();
-      }
-    } else {
-      return ResourceResult.notFound();
-    }
+    return AccountResource.FetchAccountMeAware(exchange);
   }
 }

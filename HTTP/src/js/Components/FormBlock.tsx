@@ -10,7 +10,7 @@ export type FormBlockProps<T = any> = {
   required?: boolean;
   className?: string;
 
-  invalid: boolean;
+  invalid?: boolean;
   validationError?: string;
 };
 

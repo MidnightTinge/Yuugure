@@ -296,4 +296,59 @@ public class Database implements IService {
       return makeUploadsRenderable(uploads, handle);
     });
   }
+
+  public void deleteAccount(int account) {
+    jdbi.inTransaction(handle -> {
+      // lock objects
+      handle.createQuery("SELECT * FROM upload WHERE owner = :owner FOR UPDATE")
+        .bind("owner", account)
+        .execute((statementSupplier, ctx) -> null);
+      handle.createUpdate("SELECT * FROM sessions WHERE account = :owner FOR UPDATE")
+        .bind("owner", account)
+        .execute();
+      handle.createUpdate("SELECT * FROM account WHERE id = :account FOR UPDATE")
+        .bind("account", account)
+        .execute();
+
+      // set delete states
+      handle.createUpdate("UPDATE account SET state = (state | :state) WHERE id = :account")
+        .bind("account", account)
+        .bind("state", States.Account.DELETED)
+        .execute();
+      handle.createUpdate("UPDATE upload SET state = (state | :state) WHERE owner = :account")
+        .bind("account", account)
+        .bind("state", States.Upload.DELETED)
+        .execute();
+
+      // kill sessions
+      handle.createUpdate("DELETE FROM sessions WHERE account = :account")
+        .bind("account", account)
+        .execute();
+
+      // job done
+      return true;
+    });
+  }
+
+  public int updateAccountEmail(int id, String newEmail, Handle handle) {
+    return handle.createUpdate("UPDATE account SET email = lower(:email) WHERE id = :id")
+      .bind("id", id)
+      .bind("email", newEmail)
+      .execute();
+  }
+
+  public boolean updateAccountEmail(int id, String newEmail) {
+    return jdbi.withHandle(handle -> updateAccountEmail(id, newEmail, handle) != 0);
+  }
+
+  public int updateAccountPassword(int id, String newPasswordHash, Handle handle) {
+    return handle.createUpdate("UPDATE account SET password = :hash WHERE id = :id")
+      .bind("id", id)
+      .bind("hash", newPasswordHash)
+      .execute();
+  }
+
+  public boolean updateAccountPassword(int id, String newPasswordHash) {
+    return jdbi.withHandle(handle -> updateAccountPassword(id, newPasswordHash, handle) != 0);
+  }
 }

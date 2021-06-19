@@ -36,7 +36,7 @@ export default function Nav(props: NavProps) {
     e.preventDefault();
     setLoggingOut(true);
     XHR.for('/auth/logout').get().getJson().then((data) => {
-      console.debug('[logout]', data);
+      // nothing to do
     }).catch((err) => {
       console.error('[logout]', err);
     }).then(() => {

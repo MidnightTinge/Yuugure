@@ -1,10 +1,10 @@
 import * as React from 'react';
 import {useMemo, useState} from 'react';
-import Util from '../classes/Util';
-import {XHR} from '../classes/XHR';
-import Modal, {CloseSource} from './Modal/Modal';
-import ModalBody from './Modal/ModalBody';
-import ModalHeader from './Modal/ModalHeader';
+import Util from '../../classes/Util';
+import {XHR} from '../../classes/XHR';
+import Modal, {CloseSource} from '../Modal/Modal';
+import ModalBody from '../Modal/ModalBody';
+import ModalHeader from '../Modal/ModalHeader';
 
 export type ReportModalProps = & {
   show?: boolean;

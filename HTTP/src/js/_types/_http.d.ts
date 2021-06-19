@@ -5,24 +5,31 @@ type RouterResponse<A = any, B = any, C = any, D = any, E = any, F = any, G = an
   data: Record<string, (A | B | C | D | E | F | G)[]>;
 };
 
-type AuthResponse = {
-  authed: boolean;
+type InputAwareResponse<T> = T & {
   inputErrors: Record<string, string[]>;
   errors: string[];
 }
+
+type AuthResponse = InputAwareResponse<{
+  authed: boolean;
+  authentication_token: string;
+}>
 
 type AuthStateResponse = {
   authenticated: boolean;
-  account_id: number;
+  account: SafeAccount;
 }
 
-type UploadResult = {
+type AuthConfirmResponse = InputAwareResponse<{
+  authenticated: boolean;
+  confirmation_token: string;
+}>
+
+type UploadResult = InputAwareResponse<{
   success: boolean;
-  inputErrors: Record<string, string[]>;
-  errors: string[];
   media?: DBMedia;
   upload?: DBUpload;
-}
+}>
 
 type UploadState = {
   PRIVATE: boolean;

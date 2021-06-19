@@ -2,14 +2,14 @@
   @apply flex flex-col;
 
   .ListGroupItem {
-    --bg-normal: theme('colors.gray.200');
-    --bg-hover: theme('colors.gray.300');
+    --bg-normal: theme('colors.gray.100');
+    --bg-hover: theme('colors.gray.200');
     --fg-normal: theme('colors.gray.700');
     --fg-hover: theme('colors.gray.800');
-    --border-normal: theme('colors.gray.300');
-    --border-hover: theme('colors.gray.400');
+    --border-normal: theme('colors.gray.200');
+    --border-hover: theme('colors.gray.300');
 
-    @apply block relative flex-grow-0 flex-shrink text-left px-3 py-3 focus:outline-none;
+    @apply block shadow relative flex-grow-0 flex-shrink text-left px-3 py-3 focus:outline-none;
     border: 1px solid var(--border-normal);
     border-top-color: transparent;
 

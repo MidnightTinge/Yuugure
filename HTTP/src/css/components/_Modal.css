@@ -35,7 +35,7 @@
   --border: theme('colors.gray.300');
   --radius: theme('borderRadius.sm');
 
-  @apply relative inline-block flex-shrink flex-grow-0 shadow w-9/12 sm:w-auto sm:max-w-9/12 sm:min-w-48;
+  @apply relative inline-block flex-shrink flex-grow-0 shadow w-9/12 sm:w-auto sm:max-w-96 sm:min-w-48;
   border: 1px solid var(--border);
   border-radius: theme('borderRadius.md');
 

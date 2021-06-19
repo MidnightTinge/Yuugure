@@ -14,9 +14,10 @@ import ListGroup from '../../Components/ListGroup/ListGroup';
 import ListGroupItem from '../../Components/ListGroup/ListGroupItem';
 import MediaPreviewBlock from '../../Components/MediaPreview/MediaPreviewBlock';
 import {CloseSource} from '../../Components/Modal/Modal';
-import ReportModal from '../../Components/ReportModal';
+import ReportModal from '../../Components/modals/ReportModal';
 import {authStateSelector} from '../../Stores/AuthStore';
 import NotFound from '../404/NotFound';
+import AccountSettings from './AccountSettings';
 
 type UploadState = {
   uploads: RenderableUpload[];
@@ -66,12 +67,12 @@ export default function PageProfile(props: PageProfileProps) {
 
   const [lastAccountId, setLastAccountId] = useState<string>(null);
 
-  const accountId = useMemo(() => (props.self || (authState.authed && params.accountId && Number(params.accountId) === authState.accountId)) ? '@me' : params.accountId, [params, authState]);
+  const accountId = useMemo(() => (props.self || (authState.authed && params.accountId && Number(params.accountId) === authState.account.id)) ? '@me' : params.accountId, [params, authState]);
 
   // note: It's possible for our authState to not be initialized yet, in which case this can flag
   //       as `false` incorrectly. the back-end corrects for this automatically on the profile API
   //       request.
-  const isSelf = props.self || (authState.authed && params.accountId && Number(params.accountId) === authState.accountId);
+  const isSelf = props.self || (authState.authed && params.accountId && Number(params.accountId) === authState.account.id);
 
   useEffect(function mounted() {
     // TODO listen to profile-specific events on WS
@@ -80,7 +81,6 @@ export default function PageProfile(props: PageProfileProps) {
     setFetched(false);
 
     XHR.for(`/api/profile/${accountId}`).get().getJson<RouterResponse<ProfileResponse>>().then(res => {
-      console.debug('profile res:', res);
       if (res.code === 200 && Array.isArray(res.data.ProfileResponse) && res.data.ProfileResponse[0]) {
         setProfile(res.data.ProfileResponse[0]);
       } else if (res.code === 404) {
@@ -115,7 +115,6 @@ export default function PageProfile(props: PageProfileProps) {
     if (accountId === lastAccountId) return;
     setLastAccountId(accountId);
 
-    console.debug('profile was updated, reloading uploads');
     uploadsDispatch({type: 'set', payload: []});
     setFetchingUploads(true);
     XHR.for(`/api/profile/${accountId}/uploads`).get().getJson<RouterResponse<RenderableUpload>>().then(res => {
@@ -149,8 +148,8 @@ export default function PageProfile(props: PageProfileProps) {
     }
   }
 
-  function onReportSent(report: ReportResponse) {
-    console.debug('report sent:', report);
+  function onReportSent() {
+    // nothing to do
   }
 
   function handleReportClick() {
@@ -219,7 +218,7 @@ export default function PageProfile(props: PageProfileProps) {
                       <p>hello votes</p>
                     </InternalRoute>
                     <InternalRoute path="settings">
-                      <p>hello settings</p>
+                      <AccountSettings account={authState.account} />
                     </InternalRoute>
                     <InternalRoute path="*">
                       {profile && profile.account ? (
