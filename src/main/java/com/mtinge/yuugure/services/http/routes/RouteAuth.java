@@ -2,11 +2,10 @@ package com.mtinge.yuugure.services.http.routes;
 
 import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.core.States;
 import com.mtinge.yuugure.core.Utils;
 import com.mtinge.yuugure.core.Validators;
-import com.mtinge.yuugure.data.http.AuthResponse;
-import com.mtinge.yuugure.data.http.AuthStateResponse;
-import com.mtinge.yuugure.data.http.Response;
+import com.mtinge.yuugure.data.http.*;
 import com.mtinge.yuugure.data.postgres.DBAccount;
 import com.mtinge.yuugure.data.postgres.DBSession;
 import com.mtinge.yuugure.services.http.Responder;
@@ -20,6 +19,7 @@ import io.undertow.util.StatusCodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Instant;
 
@@ -33,7 +33,8 @@ public class RouteAuth extends Route {
       .addExactPath("/login", this::login)
       .addExactPath("/logout", this::logout)
       .addExactPath("/register", this::register)
-      .addExactPath("/check", this::check);
+      .addExactPath("/check", this::check)
+      .addExactPath("/confirm", this::confirm);
   }
 
   private void register(HttpServerExchange exchange) {
@@ -232,8 +233,9 @@ public class RouteAuth extends Route {
 
           if (!authRes.hasErrors()) {
             var user = App.database().jdbi().withHandle(handle ->
-              handle.createQuery("SELECT * FROM account WHERE lower(email) = lower(:email)")
+              handle.createQuery("SELECT * FROM account WHERE lower(email) = lower(:email) AND (state & :bad_state) = 0")
                 .bind("email", frmEmail.getValue().trim()) // email is never null at this point.
+                .bind("bad_state", States.compute(States.Account.DELETED, States.Account.DEACTIVATED))
                 .map(DBAccount.Mapper)
                 .findFirst().orElse(null)
             );
@@ -291,7 +293,44 @@ public class RouteAuth extends Route {
   private void check(HttpServerExchange exchange) {
     var account = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
 
-    Responder.with(exchange).json(Response.good().addData(AuthStateResponse.class, new AuthStateResponse(account != null, account != null ? account.id : null)));
+    Responder.with(exchange).json(Response.good().addData(AuthStateResponse.class, new AuthStateResponse(account != null, SafeAccount.fromDb(account))));
+  }
+
+  private void confirm(HttpServerExchange exchange) {
+    var res = Responder.with(exchange);
+    var authed = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
+    if (authed == null) {
+      res.json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING));
+      return;
+    }
+
+    var form = exchange.getAttachment(FormDataParser.FORM_DATA);
+    if (form != null) {
+      if (form.contains("password")) {
+        var password = form.getFirst("password").getValue();
+        var authRes = new AuthConfirmResponse();
+        if (password.isBlank()) {
+          authRes.addInputError("password", "This field is required.");
+        } else {
+          var verified = BCrypt.verifyer().verify(password.getBytes(StandardCharsets.UTF_8), authed.password.getBytes(StandardCharsets.UTF_8)).verified;
+          authRes.setAuthenticated(verified);
+
+          if (verified) {
+            authRes.setConfirmationToken(App.redis().getConfirmToken(authed));
+          } else {
+            authRes.addInputError("password", "Incorrect Password");
+          }
+        }
+
+        res.json(Response.good().addData(AuthConfirmResponse.class, authRes));
+      } else {
+        res.json(Response.bad(StatusCodes.BAD_REQUEST, StatusCodes.BAD_REQUEST_STRING).addMessage("Missing password."));
+      }
+    } else {
+      res.json(Response.bad(StatusCodes.BAD_REQUEST, StatusCodes.BAD_REQUEST_STRING).addMessage("No actionable form data"));
+    }
+
+    res.end();
   }
 
   public PathHandler wrap(PathHandler chain) {

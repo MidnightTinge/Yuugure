@@ -7,7 +7,7 @@ export type AuthStoreState = {
   authed: boolean;
   fetched: boolean;
   fetching: boolean;
-  accountId?: number;
+  account?: SafeAccount;
   error?: string;
 }
 
@@ -25,7 +25,7 @@ const DEFAULT_STATE: AuthStoreState = {
   authed: false,
   fetched: false,
   fetching: false,
-  accountId: null,
+  account: null,
   error: null,
 };
 
@@ -87,7 +87,7 @@ function _reloadAuth(dispatch: Function, getState: Function) {
       const state: AuthStateResponse = data.data.AuthStateResponse[0];
       setState({
         authed: state.authenticated,
-        accountId: state.account_id,
+        account: state.account,
         error: null,
         fetched: true,
         fetching: false,

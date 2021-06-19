@@ -6,6 +6,8 @@ import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
+import io.undertow.server.handlers.form.FormData;
+import io.undertow.server.handlers.form.FormDataParser;
 import io.undertow.util.PathTemplateMatch;
 import io.undertow.util.StatusCodes;
 
@@ -42,6 +44,33 @@ public abstract class APIResource<T> {
     var extracted = extract(match, key);
     if (!extracted.isBlank() && extracted.matches("^[0-9]+$")) {
       return Integer.parseInt(extracted);
+    }
+
+    return null;
+  }
+
+  protected String extractForm(HttpServerExchange exchange, String key) {
+    return extractForm(exchange.getAttachment(FormDataParser.FORM_DATA), key);
+  }
+
+  protected String extractForm(FormData data, String key) {
+    if (data.contains(key)) {
+      var frm = data.getFirst(key);
+      if (!frm.isFileItem()) {
+        return frm.getValue();
+      }
+    }
+
+    return "";
+  }
+
+  protected String extractConfirmationToken(HttpServerExchange exchange) {
+    var form = exchange.getAttachment(FormDataParser.FORM_DATA);
+    if (form != null && form.contains("confirmation_token")) {
+      var frmToken = form.getFirst("confirmation_token");
+      if (!frmToken.isFileItem()) {
+        return frmToken.getValue();
+      }
     }
 
     return null;

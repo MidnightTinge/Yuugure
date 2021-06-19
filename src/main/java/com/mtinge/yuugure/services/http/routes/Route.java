@@ -1,6 +1,6 @@
 package com.mtinge.yuugure.services.http.routes;
 
-import com.mtinge.yuugure.services.http.Responder;
+import com.mtinge.yuugure.services.http.util.MethodValidator;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.util.HttpString;
@@ -20,19 +20,7 @@ public abstract class Route {
    * @see Methods
    */
   protected boolean validateMethods(HttpServerExchange exchange, HttpString... methods) {
-    boolean found = false;
-
-    for (HttpString method : methods) {
-      if (exchange.getRequestMethod().equals(method)) {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      Responder.with(exchange).methodNotAllowed(methods);
-    }
-    return found;
+    return MethodValidator.handleMethodValidation(exchange, methods);
   }
 
   public abstract PathHandler wrap(PathHandler chain);

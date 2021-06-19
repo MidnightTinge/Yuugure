@@ -5,6 +5,7 @@ import com.mtinge.yuugure.core.MoshiFactory;
 import com.mtinge.yuugure.data.postgres.DBMedia;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.http.Responder;
+import com.mtinge.yuugure.services.http.handlers.ViewHandler;
 import com.squareup.moshi.Moshi;
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
@@ -34,6 +35,8 @@ public class RouteIndex extends Route {
       .addPrefixPath("/view", Handlers.pathTemplate().add("/{id}", this::renderView))
       .addPrefixPath("/full", Handlers.pathTemplate().add("/{id}", this::serveFull))
       .addPrefixPath("/thumb", Handlers.pathTemplate().add("/{id}", this::serveThumb))
+      .addPrefixPath("/profile", new ViewHandler("app")) // our profile
+      .addPrefixPath("/user", new ViewHandler("app")) // someone else's profile
       .addPrefixPath("/", App.webServer().staticHandler());
   }
 

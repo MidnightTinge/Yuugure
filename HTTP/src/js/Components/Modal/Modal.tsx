@@ -1,7 +1,7 @@
 /*! Animation helpers pulled from https://stackoverflow.com/a/54114180 */
 
 import * as React from 'react';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import Util from '../../classes/Util';
 import useDelayUnmount from '../../Hooks/useDelayUnmount';
@@ -22,7 +22,7 @@ function noop() {
 export type ModalProps = React.HTMLProps<HTMLDivElement> & {
   show: boolean;
   children: React.ReactFragment;
-  onCloseRequest: (cs: CloseSource) => any;
+  onCloseRequest?: (cs: CloseSource) => any;
   closeButton?: boolean;
   onOpen?: () => void;
   onClose?: () => void;
@@ -36,6 +36,16 @@ export default function Modal(props: ModalProps) {
 
   const animation = show ? `model-mount ${ANIMATION_LENGTH}ms ease-in` : `model-unmount ${ANIMATION_LENGTH}ms ease-out`;
 
+  // Effect is the only reliable method that is fired to show open/close state change. this fixes
+  // onOpen/onClose not firing seemingly randomly (CU-ykbecg).
+  useEffect(() => {
+    if (show) {
+      onOpen();
+    } else {
+      onClose();
+    }
+  }, [render]);
+
   function handleAnimationEnd(e: React.AnimationEvent) {
     // ensure this component triggered the event rather than a child
     if (e.currentTarget === e.target) {
@@ -43,11 +53,6 @@ export default function Modal(props: ModalProps) {
       setStyle({
         opacity: show ? 1 : 0,
       });
-      if (show) {
-        onOpen();
-      } else {
-        onClose();
-      }
     }
   }
 
@@ -61,11 +66,13 @@ export default function Modal(props: ModalProps) {
     }
   }
 
+  const closeRequestHandler = typeof props.onCloseRequest === 'function' ? props.onCloseRequest : ((e: CloseSource) => e);
+
   return render ? (
     createPortal((
-      <ModalBackdrop onBackdropCloseRequest={onCloseRequest} style={{...style, animation}} onAnimationStart={handleAnimationStart} onAnimationEnd={handleAnimationEnd}>
+      <ModalBackdrop onBackdropCloseRequest={closeRequestHandler} style={{...style, animation}} onAnimationStart={handleAnimationStart} onAnimationEnd={handleAnimationEnd}>
         <div className={Util.joinedClassName('Modal', className)} role="dialog" aria-modal="true" {...elProps}>
-          {closeButton ? (<button className="CloseButton" onClick={() => onCloseRequest(CloseSource.HEADER)}><i className="fas fa-times" aria-hidden="true"/> <span className="sr-only">Close</span></button>) : null}
+          {closeButton ? (<button className="CloseButton" onClick={() => closeRequestHandler(CloseSource.HEADER)}><i className="fas fa-times" aria-hidden="true"/> <span className="sr-only">Close</span></button>) : null}
           {children}
         </div>
       </ModalBackdrop>

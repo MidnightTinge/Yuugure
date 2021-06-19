@@ -3,7 +3,7 @@ package com.mtinge.yuugure.core;
 @SuppressWarnings("ALL")
 public final class States {
   // @formatter:off
-  public static final class User {
+  public static final class Account {
     public static final long DEACTIVATED         = 1L << 0L; // 0b1
     public static final long DELETED             = 1L << 1L; // 0b10
     public static final long BANNED              = 1L << 2L; // 0b100...

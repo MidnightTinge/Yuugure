@@ -5,10 +5,8 @@ import com.mtinge.yuugure.core.States;
 import com.mtinge.yuugure.data.http.RenderableUpload;
 import com.mtinge.yuugure.data.http.ReportResponse;
 import com.mtinge.yuugure.data.http.Response;
-import com.mtinge.yuugure.data.http.SafeAccount;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.http.Responder;
-import com.mtinge.yuugure.services.http.handlers.SessionHandler;
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
@@ -31,13 +29,7 @@ public class UploadResource extends APIResource<DBUpload> {
     var res = Responder.with(exchange);
     var resource = fetchResource(exchange);
     if (resource.state == FetchState.OK) {
-      var renderable = App.database().jdbi().withHandle(handle -> {
-        var media = App.database().getMediaById(resource.resource.id);
-        var meta = App.database().getMediaMetaByMedia(media.id);
-        var owner = SafeAccount.fromDb(App.database().getAccountById(resource.resource.owner));
-
-        return new RenderableUpload(resource.resource, media, meta, owner);
-      });
+      var renderable = App.database().makeUploadRenderable(resource.resource);
       res.json(Response.good().addData(RenderableUpload.class, renderable));
     } else {
       sendTerminalForState(exchange, resource.state);
