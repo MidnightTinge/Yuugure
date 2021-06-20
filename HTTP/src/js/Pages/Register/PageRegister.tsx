@@ -1,8 +1,9 @@
-import {FormEvent, useRef, useState} from 'react';
 import * as React from 'react';
+import {FormEvent, useRef, useState} from 'react';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FormBlock from '../../Components/FormBlock';
+import Spinner from '../../Components/Spinner';
 
 type ValidationState = {
   invalid: boolean;
@@ -125,11 +126,7 @@ export default function PageRegister(props: PageRegisterProps) {
         <FormBlock ref={txtRepeat} type="password" name="repeat" autoComplete="new-password" className="mb-4" invalid={repeatInvalid.invalid} validationError={repeatInvalid.error} disabled={posting} required>Repeat</FormBlock>
 
         <button type="submit" className="block w-full bg-green-500 py-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" disabled={posting}>
-          {posting ? (
-            <>
-              <i className="fas fa-spinner fa-pulse" /> Creating account...
-            </>
-          ) : `Register`}
+          {posting ? (<><Spinner/> Creating account...</>) : `Register`}
         </button>
         {error != null ? (
           <p className="text-red-500 text-sm text-center font-mono my-2">{error}</p>

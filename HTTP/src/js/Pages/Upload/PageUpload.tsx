@@ -4,6 +4,7 @@ import {useHistory} from 'react-router-dom';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FileInput from '../../Components/FileInput';
+import Spinner from '../../Components/Spinner';
 
 export type PageUploadProps = {
   //
@@ -24,11 +25,11 @@ export default function PageUpload(props: PageUploadProps) {
   const cbPrivate = useRef<HTMLInputElement>(null);
 
   function handleClick() {
+    setUploading(true);
     const fd = new FormData();
     fd.append('private', String(cbPrivate.current.checked));
     fd.append('file', files[0]);
-    XHR.for('/upload').post(XHR.BODY_TYPE.FORM_DATA, fd).getJson<RouterResponse<UploadResult>>()
-      .then(res => {
+    XHR.for('/upload').post(XHR.BODY_TYPE.FORM_DATA, fd).getJson<RouterResponse<UploadResult>>().then(res => {
         if (res && res.data) {
           if (res.data.UploadResult && res.data.UploadResult[0]) {
             let ur = res.data.UploadResult[0];
@@ -88,20 +89,16 @@ export default function PageUpload(props: PageUploadProps) {
             <form method="post" action="/upload" encType="multipart/form-data">
               <FileInput label="Image/Video" onFiles={handleFiles} invalid={fileErrors && fileErrors.length > 0} errorText={fileErrors}/>
               <label><input ref={cbPrivate} type="checkbox" name="private"/> Private</label>
-              <button type="button" className="block w-full bg-green-500 py-1 mt-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" onClick={handleClick} disabled={!canUpload}>Upload</button>
+              <button type="button" className="block w-full bg-green-500 py-1 mt-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" onClick={handleClick} disabled={!canUpload}>
+                {uploading ? (<><Spinner/> Uploading...</>) : `Upload Another`}
+              </button>
             </form>
           </>
         ) : (
           <>
             <p className="text-lg text-center">File Uploaded</p>
             <p className="my-3">Your file has been uploaded successfully. Click <a href={`/view/${uploadResult.upload.id}`} onClick={handleUploadNavigation} className="text-blue-500 hover:text-blue-600 focus:text-blue-500">here</a> to view it.</p>
-            <button type="button" className="block w-full py-1 border bg-blue-400 border-blue-500 text-white rounded-md cursor-pointer shadow-sm hover:bg-blue-500 hover:border-blue-600 hover:text-gray-100" onClick={handleFormReset}>
-              {uploading ? (
-                <>
-                  <i className="fas fa-spinner fa-pulse" /> Uploading...
-                </>
-              ) : `Upload Another`}
-            </button>
+            <button type="button" className="block w-full py-1 border bg-blue-400 border-blue-500 text-white rounded-md cursor-pointer shadow-sm hover:bg-blue-500 hover:border-blue-600 hover:text-gray-100" onClick={handleFormReset}>Upload Another</button>
           </>
         )}
         {error ? (

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Spinner from '../../../Components/Spinner';
 
 export type ActionLoadingProps = {
   posting: boolean;
@@ -12,7 +13,7 @@ export default function ActionLoading({posting, error, response, children}: Acti
     posting ? (
       <>
         <p className="text-xl text-gray-600 mb-2">{children || 'Working...'}</p>
-        <i className="fas fa-spinner fa-pulse text-gray-400 fa-4x"/>
+        <Spinner size={4} className="text-gray-400" />
       </>
     ) : (
       error ? (<p className="text-red-500 whitespace-pre-wrap">{error}</p>) : (

@@ -15,6 +15,7 @@ import ListGroupItem from '../../Components/ListGroup/ListGroupItem';
 import MediaPreviewBlock from '../../Components/MediaPreview/MediaPreviewBlock';
 import {CloseSource} from '../../Components/Modal/Modal';
 import ReportModal from '../../Components/modals/ReportModal';
+import Spinner from '../../Components/Spinner';
 import {authStateSelector} from '../../Stores/AuthStore';
 import NotFound from '../404/NotFound';
 import AccountSettings from './AccountSettings';
@@ -187,7 +188,7 @@ export default function PageProfile(props: PageProfileProps) {
                           <ListGroupItem active={path === 'uploads'} onClick={makeNavigator('uploads')}>
                             <i className="fas fa-folder-open" aria-hidden={true}/> Uploads
                             <span className="inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg bg-blue-100 border border-blue-200 text-blue-400 opacity-95 shadow">
-                              {fetchingUploads ? (<i className="fas fa-spinner fa-pulse"/>) : (uploads.uploads.length)}
+                              {fetchingUploads ? (<Spinner />) : (uploads.uploads.length)}
                             </span>
                           </ListGroupItem>
                           <ListGroupItem active={path === 'likes'} onClick={makeNavigator('likes')}><i className="fas fa-heart" aria-hidden={true}/> Likes</ListGroupItem>

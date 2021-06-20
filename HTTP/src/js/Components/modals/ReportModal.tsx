@@ -5,6 +5,7 @@ import {XHR} from '../../classes/XHR';
 import Modal, {CloseSource} from '../Modal/Modal';
 import ModalBody from '../Modal/ModalBody';
 import ModalHeader from '../Modal/ModalHeader';
+import Spinner from '../Spinner';
 
 export type ReportModalProps = & {
   show?: boolean;
@@ -70,7 +71,7 @@ export default function ReportModal(props: ReportModalProps) {
             <div className="text-right mt-3">
               <button type="submit" className="px-2 bg-green-400 border border-green-500 rounded-md text-white hover:bg-green-500 hover:border-green-600 disabled:bg-green-200 disabled:border-green-300 disabled:cursor-not-allowed" disabled={posting}>
                 {posting ? (
-                  <><i className="fas fa-spinner fa-spin"/> Sending...</>
+                  <><Spinner/> Sending...</>
                 ) : `Send`}
               </button>
             </div>

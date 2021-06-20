@@ -5,6 +5,7 @@ import FormBlock from '../../../Components/FormBlock';
 import Modal from '../../../Components/Modal/Modal';
 import ModalBody from '../../../Components/Modal/ModalBody';
 import ModalHeader from '../../../Components/Modal/ModalHeader';
+import Spinner from '../../../Components/Spinner';
 
 export type UpdateEmailProps = {
   //
@@ -99,11 +100,7 @@ export default function UpdateEmail(props: UpdateEmailProps) {
               <div className="text-right mt-2">
                 <button type="button" className="px-2 bg-blue-300 border border-blue-400 hover:bg-blue-400 hover:border-blue-500 rounded-md cursor-pointer mr-2" onClick={handleCloseRequest}>Cancel</button>
                 <button type="submit" className="px-2 bg-red-300 border border-red-400 hover:bg-red-400 hover:border-red-500 rounded-md cursor-pointer">{
-                  posting ? (
-                    <>
-                      <i className="fas fa-spinner fa-pulse"/> Working...
-                    </>
-                  ) : ('Confirm')
+                  posting ? (<><Spinner/> Working...</>) : ('Confirm')
                 }</button>
               </div>
             </form>

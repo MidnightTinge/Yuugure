@@ -5,6 +5,7 @@ import FormBlock from '../FormBlock';
 import Modal from '../Modal/Modal';
 import ModalBody from '../Modal/ModalBody';
 import ModalHeader from '../Modal/ModalHeader';
+import Spinner from '../Spinner';
 
 export type ConfirmPasswordModalProps = {
   onComplete: (authenticated: boolean, confirmationToken: string) => void;
@@ -82,7 +83,7 @@ export default function ConfirmPasswordModal(props: ConfirmPasswordModalProps) {
             <button type="button" disabled={posting} className="px-2 bg-gray-200 border border-gray-300 hover:bg-gray-300 hover:border-gray-400 rounded-md cursor-pointer mr-2 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed" onClick={handleCancelClick}>Cancel</button>
             <button type="submit" disabled={posting} className="px-2 bg-blue-300 border border-blue-400 hover:bg-blue-400 hover:border-blue-500 rounded-md cursor-pointer disabled:bg-blue-200 disabled:border-blue-300 disabled:text-blue-300 disabled:cursor-not-allowed">
               {!posting ? 'Submit' : (
-                <><i className="fas fa-spinner fa-pulse"/> Working...</>
+                <><Spinner/> Working...</>
               )}
             </button>
           </div>
