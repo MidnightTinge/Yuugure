@@ -44,6 +44,8 @@ export default function PageUpload(props: PageUploadProps) {
 
               if (ur.errors.length > 0) {
                 setError(ur.errors.join('\n'));
+              } else {
+                setError('An internal server error occurred. Please reload and try again.');
               }
             }
           }
@@ -90,7 +92,7 @@ export default function PageUpload(props: PageUploadProps) {
               <FileInput label="Image/Video" onFiles={handleFiles} invalid={fileErrors && fileErrors.length > 0} errorText={fileErrors}/>
               <label><input ref={cbPrivate} type="checkbox" name="private"/> Private</label>
               <button type="button" className="block w-full bg-green-500 py-1 mt-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" onClick={handleClick} disabled={!canUpload}>
-                {uploading ? (<><Spinner/> Uploading...</>) : `Upload Another`}
+                {uploading ? (<><Spinner/> Uploading...</>) : `Upload`}
               </button>
             </form>
           </>
@@ -102,7 +104,7 @@ export default function PageUpload(props: PageUploadProps) {
           </>
         )}
         {error ? (
-          <p className="text-red-500 whitespace-pre-wrap">{error}</p>
+          <p className="text-red-500 whitespace-pre-wrap mt-2">{error}</p>
         ) : null}
       </>
     </CenteredBlockPage>
