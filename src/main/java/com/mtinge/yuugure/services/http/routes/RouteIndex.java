@@ -32,6 +32,7 @@ public class RouteIndex extends Route {
     this.resourceHandler = new ResourceHandler(new PathResourceManager(Path.of(App.config().upload.finalDir)));
     this.pathHandler = Handlers.path()
       .addExactPath("/", this::index)
+      .addPrefixPath("/search", new ViewHandler("app"))
       .addPrefixPath("/view", Handlers.pathTemplate().add("/{id}", this::renderView))
       .addPrefixPath("/full", Handlers.pathTemplate().add("/{id}", this::serveFull))
       .addPrefixPath("/thumb", Handlers.pathTemplate().add("/{id}", this::serveThumb))

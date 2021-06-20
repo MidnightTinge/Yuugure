@@ -48,6 +48,7 @@ public class WebServer implements IService {
   @Override
   public void init() throws Exception {
     var engineBuilder = new PebbleEngine.Builder();
+    var notFoundHandler = new NotFoundHandler();
 
     // Set our loader based on VM arguments - if we have a serveLoc defined, we create a loader that
     // loads from the local filesystem and bypasses cache. otherwise we load from the jar resources
@@ -66,7 +67,7 @@ public class WebServer implements IService {
       loader.setSuffix(".pebble");
 
       logger.info("Setting static location to {}", stl.getAbsolutePath());
-      this.staticHandler = new ResourceHandler(new FileResourceManager(stl));
+      this.staticHandler = new ResourceHandler(new FileResourceManager(stl), notFoundHandler);
 
       engineBuilder.cacheActive(!App.isDebug());
     } else {
@@ -74,7 +75,7 @@ public class WebServer implements IService {
       loader.setPrefix("templates/");
       loader.setSuffix(".pebble");
 
-      this.staticHandler = new ResourceHandler(new ClassPathResourceManager(getClass().getClassLoader(), "static/"));
+      this.staticHandler = new ResourceHandler(new ClassPathResourceManager(getClass().getClassLoader(), "static/"), notFoundHandler);
     }
     this.staticHandler.setDirectoryListingEnabled(false);
 
