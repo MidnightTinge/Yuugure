@@ -7,6 +7,7 @@ import com.mtinge.yuugure.core.Utils;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.http.UploadResult;
 import com.mtinge.yuugure.data.postgres.DBMedia;
+import com.mtinge.yuugure.data.postgres.DBProcessingQueue;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
@@ -140,7 +141,7 @@ public class RouteUpload extends Route {
                       if (mtx.acquire()) {
                         App.database().jdbi().useHandle(h -> {
                           var handle = h.begin();
-                          boolean committed = false;
+                          boolean handled = false;
 
                           try {
                             var media = handle.createQuery("SELECT * FROM media WHERE sha256 = :sha256")
@@ -177,11 +178,22 @@ public class RouteUpload extends Route {
                                   .map(DBUpload.Mapper)
                                   .findFirst().orElse(null);
                                 if (toRet != null) {
-                                  uploadResult.setSuccess(true);
-                                  uploadResult.setMedia(media);
-                                  uploadResult.setUpload(toRet);
-                                  handle.commit();
-                                  committed = true;
+                                  var pq = handle.createQuery("INSERT INTO processing_queue (upload) VALUES (:upload) RETURNING *")
+                                    .bind("upload", toRet.id)
+                                    .map(DBProcessingQueue.Mapper)
+                                    .findFirst().orElse(null);
+                                  if (pq != null) {
+                                    uploadResult.setSuccess(true);
+                                    uploadResult.setMedia(media);
+                                    uploadResult.setUpload(toRet);
+                                    handle.commit();
+
+                                    App.mediaProcessor().wakeWorkers();
+                                  } else {
+                                    uploadResult.addError("Failed to insert into the processing queue, the upload has been aborted. Please try again later.");
+                                    handle.rollback();
+                                  }
+                                  handled = true;
                                 } else {
                                   uploadResult.addError("An internal server error occurred.");
                                 }
@@ -192,8 +204,9 @@ public class RouteUpload extends Route {
                           } catch (Exception e) {
                             handle.rollback();
                             logger.error("Caught an SQL error during upload.", e);
+                            uploadResult.addError("Failed to finalize upload. Please wait a minute and try again.");
                           } finally {
-                            if (!committed) {
+                            if (!handled) {
                               handle.rollback();
                             }
                           }

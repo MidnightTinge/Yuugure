@@ -5,6 +5,9 @@ import com.mtinge.yuugure.core.States;
 import com.mtinge.yuugure.data.http.RenderableUpload;
 import com.mtinge.yuugure.data.http.SafeAccount;
 import com.mtinge.yuugure.data.postgres.*;
+import com.mtinge.yuugure.data.processor.MediaMeta;
+import com.mtinge.yuugure.data.processor.ProcessableUpload;
+import com.mtinge.yuugure.data.processor.ProcessorResult;
 import com.mtinge.yuugure.services.IService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -350,5 +353,120 @@ public class Database implements IService {
 
   public boolean updateAccountPassword(int id, String newPasswordHash) {
     return jdbi.withHandle(handle -> updateAccountPassword(id, newPasswordHash, handle) != 0);
+  }
+
+  public ProcessableUpload dequeueUploadForProcessing() {
+    return jdbi.withHandle(this::dequeueUploadForProcessing);
+  }
+
+  public ProcessableUpload dequeueUploadForProcessing(Handle handle) {
+    if (!handle.isInTransaction()) {
+      handle.begin();
+    }
+
+    try {
+      // select and lock a row
+      var id = handle.createQuery("SELECT id FROM processing_queue WHERE NOT dequeued ORDER BY queued_at LIMIT 1 FOR UPDATE")
+        .map((r, c) -> r.getInt("id"))
+        .findFirst().orElse(null);
+
+      if (id != null) {
+        var item = handle.createQuery("UPDATE processing_queue SET dequeued = true WHERE id = :id RETURNING *")
+          .bind("id", id)
+          .map(DBProcessingQueue.Mapper)
+          .first();
+        var upload = getUploadById(item.upload, handle);
+        var media = getMediaById(upload.media, handle);
+        handle.commit();
+
+        return new ProcessableUpload(item, upload, media);
+      } else {
+        handle.commit();
+      }
+    } catch (Exception e) {
+      logger.error("Failed to dequeue an upload for processing.", e);
+      handle.rollback();
+    }
+
+    return null;
+  }
+
+  public void upsertMediaMeta(MediaMeta meta) {
+    jdbi.useHandle(handle -> upsertMediaMeta(meta, handle, true));
+  }
+
+  public void upsertMediaMeta(MediaMeta meta, Handle handle, boolean commit) {
+    if (!handle.isInTransaction()) {
+      handle.begin();
+    }
+
+    boolean handled = false;
+    try {
+      // lock the row
+      var id = handle.createQuery("SELECT id FROM media_meta WHERE media = :media FOR UPDATE")
+        .bind("media", meta.media())
+        .map((r, __) -> r.getInt("id"))
+        .findFirst().orElse(null);
+
+      Query query;
+      if (id == null) {
+        query = handle.createQuery("INSERT INTO media_meta (media, width, height, video, video_duration, has_audio) VALUES (:media, :width, :height, :video, :video_duration, :has_audio) RETURNING *")
+          .bind("media", meta.media());
+      } else {
+        query = handle.createQuery("UPDATE media_meta SET width = :width, height = :height, video = :video, video_duration = :video_duration, has_audio = :has_audio WHERE id = :id RETURNING *")
+          .bind("id", id);
+      }
+
+      var upserted = query
+        .bind("width", meta.width())
+        .bind("height", meta.height())
+        .bind("video", meta.video())
+        .bind("video_duration", meta.videoDuration())
+        .bind("has_audio", meta.hasAudio())
+        .map(DBMediaMeta.Mapper)
+        .findFirst().orElse(null);
+
+      if (upserted != null && commit) {
+        handle.commit();
+        handled = true;
+      }
+    } finally {
+      if (commit && !handled) {
+        handle.rollback();
+      }
+    }
+  }
+
+  public void handleProcessorResult(ProcessorResult result) {
+    jdbi.useHandle(handle -> handleProcessorResult(result, handle));
+  }
+
+  public void handleProcessorResult(ProcessorResult result, Handle handle) {
+    if (!handle.isInTransaction()) {
+      handle.begin();
+    }
+
+    boolean handled = false;
+
+    try {
+      upsertMediaMeta(result.meta(), handle, false);
+
+      // lock the processor_queue row for updates
+      handle.createQuery("SELECT 1 FROM processing_queue WHERE id = :id FOR UPDATE")
+        .bind("id", result.dequeued().queueItem.id);
+
+      handle.createUpdate("UPDATE processing_queue SET finished = true, errored = :errored, error_text = :error_text WHERE id = :id")
+        .bind("id", result.dequeued().queueItem.id)
+        .bind("errored", !result.success())
+        .bind("error_text", result.message())
+        .execute();
+
+      handle.commit();
+      handled = true;
+    } finally {
+      if (!handled) {
+        handle.rollback();
+      }
+    }
   }
 }
