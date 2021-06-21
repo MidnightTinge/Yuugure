@@ -15,7 +15,12 @@
   .ThumbWrapper {
     width: 200px;
     height: 200px;
+    margin: 3px auto 0;
     @apply relative text-center flex flex-col justify-center items-center;
+
+    img.thumbnail {
+      @apply rounded shadow;
+    }
 
     .IconsWrapper {
       position: absolute;

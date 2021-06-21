@@ -32,9 +32,11 @@ public class SessionHandler implements HttpHandler {
   }
 
   private final HttpHandler next;
+  private final Pattern ignoreTouchPattern;
 
   public SessionHandler(HttpHandler next) {
     this.next = next;
+    this.ignoreTouchPattern = Pattern.compile("^/(thumb|view)", Pattern.CASE_INSENSITIVE);
   }
 
   @Override
@@ -46,21 +48,23 @@ public class SessionHandler implements HttpHandler {
           // check if the session is valid
           var aId = SessionHandler.tokenToAccount(sessCookie.getValue(), true);
           if (aId != null) {
-            // touch the session expiry
-            final Instant expires = Instant.now().plus(App.config().http.auth.sessionExpires);
-            var session = App.database().jdbi().withHandle(handle ->
-              handle.createQuery("UPDATE sessions SET expires = :expires WHERE token = :token RETURNING *")
-                .bind("token", sessCookie.getValue())
-                .bind("expires", expires)
-                .map(DBSession.Mapper)
-                .findFirst().orElse(null)
-            );
+            // touch the session expiry if we're on a touchable path
+            if (!ignoreTouchPattern.matcher(exchange.getRequestURI()).find()) {
+              final Instant expires = Instant.now().plus(App.config().http.auth.sessionExpires);
+              var session = App.database().jdbi().withHandle(handle ->
+                handle.createQuery("UPDATE sessions SET expires = :expires WHERE token = :token RETURNING *")
+                  .bind("token", sessCookie.getValue())
+                  .bind("expires", expires)
+                  .map(DBSession.Mapper)
+                  .findFirst().orElse(null)
+              );
 
-            // update the user's cookie expiration
-            if (session != null) {
-              exchange.setResponseCookie(makeSessionCookie(session.token, session.expires.toInstant()));
-            } else {
-              logger.error("Failed to update session for user {}, the update query didn't return a value.", aId);
+              // update the user's cookie expiration
+              if (session != null) {
+                exchange.setResponseCookie(makeSessionCookie(session.token, session.expires.toInstant()));
+              } else {
+                logger.error("Failed to update session for user {}, the update query didn't return a value.", aId);
+              }
             }
 
             // attach the account ID to our session
