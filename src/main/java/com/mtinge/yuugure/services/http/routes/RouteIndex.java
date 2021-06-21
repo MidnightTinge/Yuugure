@@ -1,12 +1,11 @@
 package com.mtinge.yuugure.services.http.routes;
 
 import com.mtinge.yuugure.App;
-import com.mtinge.yuugure.core.MoshiFactory;
 import com.mtinge.yuugure.data.postgres.DBMedia;
 import com.mtinge.yuugure.data.postgres.DBUpload;
+import com.mtinge.yuugure.services.http.ETagHelper;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.ViewHandler;
-import com.squareup.moshi.Moshi;
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
@@ -17,19 +16,48 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
+import java.util.zip.CRC32;
 
 public class RouteIndex extends Route {
   private static final Logger logger = LoggerFactory.getLogger(RouteIndex.class);
   private static final AttachmentKey<DBUpload> ATTACH_UPLOAD = AttachmentKey.create(DBUpload.class);
 
+  private final String PROCESSING_ETAG;
   private final PathHandler pathHandler;
-  private final Moshi moshi;
   private final ResourceHandler resourceHandler;
 
   public RouteIndex() {
-    this.moshi = MoshiFactory.create();
-    this.resourceHandler = new ResourceHandler(new PathResourceManager(Path.of(App.config().upload.finalDir)));
+    this.resourceHandler = new ResourceHandler(PathResourceManager.builder()
+      .setBase(Path.of(App.config().upload.finalDir))
+      .setETagFunction(new ETagHelper())
+      .setFollowLinks(false)
+      .setCaseSensitive(true)
+      .build());
+    this.resourceHandler.setCacheTime(Long.valueOf(Duration.ofHours(12).toSeconds()).intValue());
+    this.resourceHandler.setDirectoryListingEnabled(false);
+
+    try {
+      try (var is = App.class.getResourceAsStream("/processing.png")) {
+        if (is == null) {
+          throw new IllegalStateException("Failed to generate PROCESSING_ETAG. Could not secure an InputStream.");
+        }
+
+        var crc32 = new CRC32();
+        byte[] chunk = new byte[8192];
+        int read;
+
+        while ((read = is.read(chunk)) > 0) {
+          crc32.update(chunk, 0, read);
+        }
+
+        PROCESSING_ETAG = "defproc;" + Long.toHexString(crc32.getValue());
+      }
+    } catch (Exception e) {
+      throw new Error("Failed to generate PROCESSING_ETAG.", e);
+    }
+
     this.pathHandler = Handlers.path()
       .addExactPath("/", this::index)
       .addPrefixPath("/search", new ViewHandler("app"))
@@ -80,6 +108,8 @@ public class RouteIndex extends Route {
         } else {
           // have to pump the defualt processing png manually
           exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "image/png");
+          exchange.getResponseHeaders().put(Headers.ETAG, PROCESSING_ETAG);
+          exchange.getResponseHeaders().put(Headers.CACHE_CONTROL, "public, max-age=300");
           try (var is = App.class.getResourceAsStream("/processing.png")) {
             if (is != null) {
               exchange.startBlocking();
