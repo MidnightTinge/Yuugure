@@ -9,6 +9,7 @@
   <logger name="com.zaxxer.hikari.pool" level="WARN"/>
   <logger name="com.zaxxer.hikari.HikariConfig" level="ERROR"/>
   <logger name="org.xnio.nio" level="INFO"/>
+  <logger name="com.github.kokorin.jaffree" level="ERROR"/>
 
   <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>

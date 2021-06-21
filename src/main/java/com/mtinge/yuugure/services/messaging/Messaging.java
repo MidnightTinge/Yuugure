@@ -2,28 +2,45 @@ package com.mtinge.yuugure.services.messaging;
 
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.MoshiFactory;
+import com.mtinge.yuugure.data.processor.ProcessorResult;
 import com.mtinge.yuugure.services.IService;
+import lombok.Getter;
+import lombok.experimental.Accessors;
+import org.bson.BsonBinaryReader;
+import org.bson.BsonBinaryWriter;
+import org.bson.io.BasicOutputBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@Accessors(fluent = true)
 public class Messaging implements IService {
-  private static final Logger logger = LoggerFactory.getLogger(Messaging.class);
+  /* INCOMING PAYLOADS */
+  public static final byte DEQUEUE_REQUEST = 1;
 
-  private static final String DEQUEUE_REQUEST = "1";
-
+  /* OUTGOING PAYLOADS */
+  public static final byte NO_WORK = 0;
+  public static final byte ERRORED = 100;
+  public static final byte NOT_ACCEPTABLE = 127;
   public static final String TOPIC_UPLOAD = "NEW_UPLOAD";
 
-  AtomicBoolean shutdownRequested;
-  ZContext context;
-  ZMQ.Socket internalSocket;
-  ZMQ.Socket externalSocket;
-  Thread internalThread;
-  Thread externalThread;
+  private static final Logger logger = LoggerFactory.getLogger(Messaging.class);
+  private static final Object dqMonitor = new Object();
+
+  private final AtomicBoolean shutdownRequested;
+  @Getter
+  private ZContext context;
+  private ZMQ.Socket internalSocket;
+  private ZMQ.Socket externalSocket;
+  private Thread supplierThread;
+  private Thread consolidatorThread;
+  private Thread externalThread;
 
   public Messaging() {
     shutdownRequested = new AtomicBoolean(false);
@@ -33,43 +50,84 @@ public class Messaging implements IService {
   public void init() throws Exception {
     context = new ZContext();
 
-    internalThread = new Thread(() -> {
+    supplierThread = new Thread(() -> {
       // TODO yuugure is expected to run on a single box, so it is also expected that sysadmins will
       //      be able to firewall the internal port. that said, we should probably add curve
       //      authentication to lock it down even more.
       internalSocket = context.createSocket(SocketType.REP);
-      internalSocket.bind(App.config().zeromq.bind.internal);
+      internalSocket.bind(App.config().zeromq.bind.internalSupplier);
 
       while (!shutdownRequested.get()) {
-        byte[] reply = internalSocket.recv(0);
+        byte[] request = internalSocket.recv(0);
 
-        if (reply != null) {
-          var recvd = new String(reply, ZMQ.CHARSET);
-          logger.debug("received {}", recvd);
-
+        if (request != null) {
           // note: leaving this as a switch for future expansion.
-          switch (recvd) {
+          switch (request[0]) {
             case DEQUEUE_REQUEST -> {
-              logger.info("got dq request");
+              synchronized (dqMonitor) {
+                var dequeued = App.database().dequeueUploadForProcessing();
+                if (dequeued == null) {
+                  internalSocket.send(new byte[]{NO_WORK});
+                } else {
+                  try {
+                    var bob = new BasicOutputBuffer();
+                    var writer = new BsonBinaryWriter(bob);
+                    dequeued.writeTo(writer);
+
+                    try (var bos = new ByteArrayOutputStream()) {
+                      bob.pipe(bos);
+                      internalSocket.send(bos.toByteArray());
+                    }
+                  } catch (Exception e) {
+                    logger.error("Failed to send ProcessableUpload.", e);
+                    internalSocket.send(new byte[]{ERRORED});
+                  }
+                }
+              }
             }
             default -> {
-              //
+              logger.warn("unhandled packet: {}", request[0]);
+              internalSocket.send(new byte[]{NOT_ACCEPTABLE});
             }
           }
-
         } // else: reply was null, nothing received in the timeout window
       }
-    }, "yuugure-zmq-internal");
+    }, "yuugure-zmq-supplier");
+
+    // TODO I need to write a proper ROUTER-DEALER to handle heartbeat/etc but for now this works
+    //      as a POC of the system to show the pub/sub/push/pull pieces working in tandem.
+    consolidatorThread = new Thread(() -> {
+      var pull = context.createSocket(SocketType.PULL);
+      if (pull.bind(App.config().zeromq.bind.internalConsolidator)) {
+        while (!shutdownRequested.get()) {
+          var recvd = pull.recv(0);
+          if (recvd != null) {
+            ProcessorResult result = null;
+            try {
+              result = ProcessorResult.readFrom(new BsonBinaryReader(ByteBuffer.wrap(recvd)));
+            } catch (Exception e) {
+              logger.error("Failed to process a pulled response.", e);
+            }
+
+            if (result != null) {
+              App.database().handleProcessorResult(result);
+              logger.debug("Marked dequeued item {} complete.", result.dequeued().queueItem.id);
+            }
+          }
+        }
+      }
+    }, "yuugure-zmq-consolidator");
 
     externalThread = new Thread(() -> {
       externalSocket = context.createSocket(SocketType.PUB);
-      externalSocket.bind(App.config().zeromq.bind.external);
+      externalSocket.bind(App.config().zeromq.bind.broadcast);
     }, "yuugure-zmq-external");
   }
 
   @Override
   public void start() throws Exception {
-    internalThread.start();
+    supplierThread.start();
+    consolidatorThread.start();
     externalThread.start();
   }
 
@@ -77,7 +135,8 @@ public class Messaging implements IService {
   public void stop() throws Exception {
     shutdownRequested.set(true);
     context.destroy();
-    internalThread.join();
+    supplierThread.join();
+    consolidatorThread.join();
     externalThread.join();
   }
 

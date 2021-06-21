@@ -53,7 +53,6 @@ table media_meta { // meta is attached as a second step and not present on initi
   video          boolean [not null]
   video_duration real    [not null, default: `0`]
   has_audio      boolean [not null, default: `false`]
-  audio_duration real    [not null, default: `0`]
 
   indexes {
     media [unique, name: "media_meta_media_unique"]

@@ -11,6 +11,8 @@ Full-stack tag-based image archive.
 * Java 15
 * NodeJS 15.8.0+ (front-end builds)
   * The maven build will automatically download a NodeJS distribution for automated builds, you only need NodeJS yourself if you want to build the front-end manually.
+* FFMPEG
+  * Required by the MediaProcessor. Tested with v4.4, but may work for prior versions.
 
 # License
 

@@ -128,12 +128,14 @@ public final class Config {
 
     @AllArgsConstructor
     public static final class Bind {
-      public final String internal;
-      public final String external;
+      public final String broadcast;
+      public final String internalSupplier;
+      public final String internalConsolidator;
 
       public Bind() {
-        this.internal = "tcp://127.0.0.1:50328";
-        this.external = "tcp://0.0.0.0:39250";
+        this.broadcast = "tcp://127.0.0.1:50328";
+        this.internalSupplier = "tcp://0.0.0.0:58378";
+        this.internalConsolidator = "tcp://0.0.0.0:59951";
       }
     }
   }
