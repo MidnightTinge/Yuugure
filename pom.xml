@@ -144,6 +144,15 @@
             <phase>generate-resources</phase>
           </execution>
           <execution>
+            <id>install dependencies</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <configuration>
+              <arguments>install</arguments>
+            </configuration>
+          </execution>
+          <execution>
             <id>run build</id>
             <goals>
               <goal>npm</goal>
