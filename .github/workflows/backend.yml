@@ -39,4 +39,4 @@ jobs:
       - name: Run back-end build
         env:
           npm_config_audit: false
-        run: mvn -B package --file pom.xml
+        run: mvn -B clean compile test -Dskip.npm --file pom.xml
