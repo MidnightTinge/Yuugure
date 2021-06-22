@@ -3,8 +3,6 @@ import {useRef, useState} from 'react';
 import {XHR} from '../../classes/XHR';
 import FormBlock from '../FormBlock';
 import Modal from '../Modal/Modal';
-import ModalBody from '../Modal/ModalBody';
-import ModalHeader from '../Modal/ModalHeader';
 import Spinner from '../Spinner';
 
 export type ConfirmPasswordModalProps = {
@@ -69,8 +67,8 @@ export default function ConfirmPasswordModal(props: ConfirmPasswordModalProps) {
 
   return (
     <Modal show={props.show} onCloseRequest={handleCloseRequest} closeButton={!posting}>
-      <ModalHeader>Confirm Password</ModalHeader>
-      <ModalBody>
+      <Modal.Header>Confirm Password</Modal.Header>
+      <Modal.Body>
         <p>Please confirm your password.</p>
         <form method="POST" action="#" onSubmit={handleSubmit}>
           <FormBlock ref={txtPassword} type="password" name="password" autoComplete="current-password" disabled={posting} invalid={!pwValidity.valid} validationError={pwValidity.error} required>
@@ -88,7 +86,7 @@ export default function ConfirmPasswordModal(props: ConfirmPasswordModalProps) {
             </button>
           </div>
         </form>
-      </ModalBody>
+      </Modal.Body>
     </Modal>
   );
 }

@@ -3,8 +3,6 @@ import {useMemo, useState} from 'react';
 import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
 import Modal, {CloseSource} from '../Modal/Modal';
-import ModalBody from '../Modal/ModalBody';
-import ModalHeader from '../Modal/ModalHeader';
 import Spinner from '../Spinner';
 
 export type ReportModalProps = & {
@@ -55,8 +53,8 @@ export default function ReportModal(props: ReportModalProps) {
 
   return (
     <Modal show={props.show} onCloseRequest={cs => props.onCloseRequest(cs, posting)} className="w-11/12 sm:w-6/12" closeButton={!posting} onClose={handleClose}>
-      <ModalHeader>Report</ModalHeader>
-      <ModalBody>
+      <Modal.Header>Report</Modal.Header>
+      <Modal.Body>
         {reported ? (
           <div className="text-center">
             <i className="fas fa-check-circle text-green-500 fa-4x"/>
@@ -82,7 +80,7 @@ export default function ReportModal(props: ReportModalProps) {
             <p className="text-red-800 whitespace-pre-wrap">{error}</p>
           </div>
         ) : null}
-      </ModalBody>
+      </Modal.Body>
     </Modal>
   );
 }

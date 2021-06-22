@@ -156,10 +156,10 @@ export default function PageView(props: PageViewProps) {
                   <InternalNavContext.Consumer>
                     {({path = ''}) => (
                       <ListGroup>
-                        <ListGroupItem active={path === 'view'} onClick={makeNavigator('view')}><i className="fas fa-image"/> View</ListGroupItem>
-                        <ListGroupItem active={path === 'comments'} onClick={makeNavigator('comments')}><i className="fas fa-comment-alt"/> Comments</ListGroupItem>
-                        <ListGroupItem active={path === 'edit'} onClick={makeNavigator('edit')}><i className="fas fa-pencil-alt"/> Edit</ListGroupItem>
-                        <ListGroupItem active={path === 'actions'} onClick={makeNavigator('actions')}><i className="fas fa-wrench"/> Actions</ListGroupItem>
+                        <ListGroup.Item active={path === 'view'} onClick={makeNavigator('view')}><i className="fas fa-image"/> View</ListGroup.Item>
+                        <ListGroup.Item active={path === 'comments'} onClick={makeNavigator('comments')}><i className="fas fa-comment-alt"/> Comments</ListGroup.Item>
+                        <ListGroup.Item active={path === 'edit'} onClick={makeNavigator('edit')}><i className="fas fa-pencil-alt"/> Edit</ListGroup.Item>
+                        <ListGroup.Item active={path === 'actions'} onClick={makeNavigator('actions')}><i className="fas fa-wrench"/> Actions</ListGroup.Item>
                       </ListGroup>
                     )}
                   </InternalNavContext.Consumer>

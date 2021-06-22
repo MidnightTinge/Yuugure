@@ -1,15 +1,11 @@
-import * as React from 'react';
+import namedContext from '../../classes/NamedContext';
 
 type InternalNavContextProps = {
   path: string;
 }
 
-// need the `extends unknown` to fix an issue with TypeScript detecting it as JSX
-export const CreateNavContext = (defaultValue?: InternalNavContextProps) => {
-  const context = React.createContext(defaultValue);
-  context.displayName = 'NavContext';
-
-  return context;
+export const CreateNavContext = (props?: InternalNavContextProps) => {
+  return namedContext('NavContext', props);
 };
 
 export const InternalNavContext = CreateNavContext();

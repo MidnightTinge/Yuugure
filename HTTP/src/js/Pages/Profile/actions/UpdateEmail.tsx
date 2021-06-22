@@ -3,8 +3,6 @@ import {useRef, useState} from 'react';
 import {XHR} from '../../../classes/XHR';
 import FormBlock from '../../../Components/FormBlock';
 import Modal from '../../../Components/Modal/Modal';
-import ModalBody from '../../../Components/Modal/ModalBody';
-import ModalHeader from '../../../Components/Modal/ModalHeader';
 import Spinner from '../../../Components/Spinner';
 
 export type UpdateEmailProps = {
@@ -86,8 +84,8 @@ export default function UpdateEmail(props: UpdateEmailProps) {
   return (
     <>
       <Modal show={showModal} onCloseRequest={handleCloseRequest} onClose={handleModalClosed} closeButton>
-        <ModalHeader>Update Email</ModalHeader>
-        <ModalBody>
+        <Modal.Header>Update Email</Modal.Header>
+        <Modal.Body>
           {!posted ? (
             <form method="POST" action="#" onSubmit={handleSubmit}>
               <FormBlock ref={txtEmail} type="email" name="email" autoComplete="email" invalid={!emailValidity.valid} validationError={emailValidity.error} required>
@@ -115,7 +113,7 @@ export default function UpdateEmail(props: UpdateEmailProps) {
           {error ? (
             <p className="my-2 text-red-500 whitespace-pre-wrap">{error}</p>
           ) : null}
-        </ModalBody>
+        </Modal.Body>
       </Modal>
       <div>
         <button className="text-blue-400 hover:text-blue-500 focus:outline-none underline" onClick={handleAction}>Update Email</button>

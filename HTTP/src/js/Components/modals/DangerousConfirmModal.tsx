@@ -2,8 +2,6 @@ import * as React from 'react';
 import {useMemo, useState} from 'react';
 import Util from '../../classes/Util';
 import Modal from '../Modal/Modal';
-import ModalBody from '../Modal/ModalBody';
-import ModalHeader from '../Modal/ModalHeader';
 
 export type DangerousConfirmModalProps = {
   confirmPhrase: string;
@@ -54,8 +52,8 @@ export default function DangerousConfirmModal(props: DangerousConfirmModalProps)
 
   return (
     <Modal onCloseRequest={handleCancel} show={props.show} onClose={handleModalClosed} closeButton>
-      <ModalHeader>{props.title || 'Confirm'}</ModalHeader>
-      <ModalBody>
+      <Modal.Header>{props.title || 'Confirm'}</Modal.Header>
+      <Modal.Body>
         {props.children}
         <form method="GET" action="#" onSubmit={handleSubmit}>
           <div>
@@ -67,7 +65,7 @@ export default function DangerousConfirmModal(props: DangerousConfirmModalProps)
             <button type="submit" className="px-2 rounded bg-blue-300 border border-blue-400 hover:bg-blue-400 hover:border-blue-500 disabled:bg-blue-100 disabled:border-blue-200 disabled:text-gray-500 disabled:cursor-not-allowed" disabled={!phraseMatches}>{props.confirmText || 'Confirm'}</button>
           </div>
         </form>
-      </ModalBody>
+      </Modal.Body>
     </Modal>
   );
 }

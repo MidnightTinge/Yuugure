@@ -184,17 +184,17 @@ export default function PageProfile(props: PageProfileProps) {
                     <InternalNavContext.Consumer>
                       {({path = ''}) => (
                         <ListGroup>
-                          <ListGroupItem active={path === 'details'} onClick={makeNavigator('details')}><i className="fas fa-address-card" aria-hidden={true}/> Details</ListGroupItem>
-                          <ListGroupItem active={path === 'uploads'} onClick={makeNavigator('uploads')}>
+                          <ListGroup.Item active={path === 'details'} onClick={makeNavigator('details')}><i className="fas fa-address-card" aria-hidden={true}/> Details</ListGroup.Item>
+                          <ListGroup.Item active={path === 'uploads'} onClick={makeNavigator('uploads')}>
                             <i className="fas fa-folder-open" aria-hidden={true}/> Uploads
                             <span className="inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg bg-blue-100 border border-blue-200 text-blue-400 opacity-95 shadow">
                               {fetchingUploads ? (<Spinner />) : (uploads.uploads.length)}
                             </span>
-                          </ListGroupItem>
-                          <ListGroupItem active={path === 'likes'} onClick={makeNavigator('likes')}><i className="fas fa-heart" aria-hidden={true}/> Likes</ListGroupItem>
-                          <ListGroupItem active={path === 'votes'} onClick={makeNavigator('votes')}><i className="fas fa-check-circle" aria-hidden={true}/> Votes</ListGroupItem>
+                          </ListGroup.Item>
+                          <ListGroup.Item active={path === 'likes'} onClick={makeNavigator('likes')}><i className="fas fa-heart" aria-hidden={true}/> Likes</ListGroup.Item>
+                          <ListGroup.Item active={path === 'votes'} onClick={makeNavigator('votes')}><i className="fas fa-check-circle" aria-hidden={true}/> Votes</ListGroup.Item>
                           {profile && profile.self ? (
-                            <ListGroupItem active={path === 'settings'} onClick={makeNavigator('settings')}><i className="fas fa-user-cog" aria-hidden={true}/> Settings</ListGroupItem>
+                            <ListGroup.Item active={path === 'settings'} onClick={makeNavigator('settings')}><i className="fas fa-user-cog" aria-hidden={true}/> Settings</ListGroup.Item>
                           ) : null}
                         </ListGroup>
                       )}

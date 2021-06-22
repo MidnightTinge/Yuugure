@@ -61,6 +61,7 @@ public class RouteIndex extends Route {
     this.pathHandler = Handlers.path()
       .addExactPath("/", this::index)
       .addPrefixPath("/search", new ViewHandler("app"))
+      .addPrefixPath("/dbg", new ViewHandler("app"))
       .addPrefixPath("/view", Handlers.pathTemplate().add("/{id}", this::renderView))
       .addPrefixPath("/full", Handlers.pathTemplate().add("/{id}", this::serveFull))
       .addPrefixPath("/thumb", Handlers.pathTemplate().add("/{id}", this::serveThumb))

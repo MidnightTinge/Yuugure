@@ -4,8 +4,6 @@ import {create} from 'react-modal-promise';
 import {InstanceProps} from 'react-modal-promise/lib/types';
 import {XHR} from '../../../classes/XHR';
 import Modal from '../../../Components/Modal/Modal';
-import ModalBody from '../../../Components/Modal/ModalBody';
-import ModalHeader from '../../../Components/Modal/ModalHeader';
 import ConfirmPasswordModal from '../../../Components/modals/ConfirmPasswordModal';
 import DangerousConfirmModal from '../../../Components/modals/DangerousConfirmModal';
 import ActionLoading from './ActionLoading';
@@ -87,12 +85,12 @@ export function ResourceDeletion(props: DeleteStatusProps) {
 
   return (
     <Modal show={props.show} onCloseRequest={handleCloseRequest}>
-      <ModalHeader>{`${capitalize(props.resourceDescriptor)} Deletion`}</ModalHeader>
-      <ModalBody>
+      <Modal.Header>{`${capitalize(props.resourceDescriptor)} Deletion`}</Modal.Header>
+      <Modal.Body>
         <div className="text-center px-3 pb-3">
           <ActionLoading posting={posting} error={error} response={res}>{`Deleting ${capitalize(props.resourceDescriptor)}...`}</ActionLoading>
         </div>
-      </ModalBody>
+      </Modal.Body>
     </Modal>
   );
 }
