@@ -54,7 +54,7 @@ public abstract class APIResource<T> {
   }
 
   protected String extractForm(FormData data, String key) {
-    if (data.contains(key)) {
+    if (data != null && data.contains(key)) {
       var frm = data.getFirst(key);
       if (!frm.isFileItem()) {
         return frm.getValue();

@@ -2,7 +2,8 @@ package com.mtinge.yuugure.data.postgres;
 
 public enum ReportTargetType {
   ACCOUNT("account"),
-  UPLOAD("upload");
+  UPLOAD("upload"),
+  COMMENT("comment");
 
   String colVal;
 

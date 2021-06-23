@@ -10,27 +10,30 @@ public class Response {
   private transient List<String> _messages = new ArrayList<String>();
   private transient Map<String, List<Object>> _data = new LinkedHashMap<>();
 
+  public static Response fromCode(int code) {
+    return new Response(StatusCodes.getReason(code), code);
+  }
+
   public static Response bad(int code, String reason) {
     return new Response(reason, code);
   }
 
   public static Response good() {
-    return new Response(StatusCodes.OK_STRING, StatusCodes.OK);
+    return Response.fromCode(StatusCodes.OK);
   }
 
   public static Response good(String message) {
-    return new Response(StatusCodes.OK_STRING, StatusCodes.OK).addMessage(message);
+    return Response.good().addMessage(message);
   }
 
   public static Response exception() {
-    return new Response(StatusCodes.INTERNAL_SERVER_ERROR_STRING, StatusCodes.INTERNAL_SERVER_ERROR).addMessage("An internal server error occurred. Please try again later.");
+    return Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR).addMessage("An internal server error occurred. Please try again later.");
   }
 
   public Response(String status, int code) {
     this.status = status;
     this.code = code;
   }
-
 
   public <Z> Response addAll(Class<Z> mainType, List<Z> datas) {
     return addAll(mainType.getSimpleName(), datas);

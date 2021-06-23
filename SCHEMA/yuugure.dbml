@@ -133,3 +133,21 @@ Table report {
     (target_type, target_id, active)
   }
 }
+
+table comment {
+  id               int         [pk, increment]
+  parent           int         [ref:> comment.id] // for replies
+  account          int         [not null, ref:> account.id]
+  active           boolean     [not null, default: `true`]
+  timestamp        timestamptz [not null, default: `now()`]
+  target_type      text        [not null, default: "upload"] // 'account'|'upload'|'tag' etc
+  target_id        int         [not null]
+  content_raw      text        [not null]
+  content_rendered text        [not null]
+
+  indexes {
+    target_type // future moderation expansion
+    (target_type, target_id)
+    parent
+  }
+}

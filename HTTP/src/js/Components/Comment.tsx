@@ -1,0 +1,68 @@
+import anchorme from 'anchorme';
+import * as React from 'react';
+import {useMemo, useState} from 'react';
+import RelativeTime from '../classes/RelativeTime';
+import {CloseSource} from './Modal/Modal';
+import ReportModal from './modals/ReportModal';
+
+export type CommentProps = {
+  comment: RenderableComment;
+};
+
+export default function Comment({comment}: CommentProps) {
+  const [showReport, setShowReport] = useState(false);
+
+  const parsed = useMemo(() => {
+    return anchorme({
+      input: comment.content_rendered,
+      options: {
+        protocol: 'https://',
+        specialTransform: [
+          {
+            test: /.*/,
+            transform: (input) => {
+              let url = input;
+              if (!/https?:\/\//i.test(input)) url = `https://${input}`;
+
+              return `<a href="/leaving?url=${encodeURIComponent(url)}" class="text-blue-500 hover:text-blue-700 underline" target="_blank" rel="nofollow noopener noreferrer">${input}</a>`;
+            },
+          },
+        ],
+      },
+    });
+  }, [comment.content_rendered]);
+
+  function onReportClicked() {
+    setShowReport(true);
+  }
+
+  function onReportSent() {
+    //
+  }
+
+  function onCloseRequest(cs: CloseSource, posting: boolean) {
+    if (!posting) {
+      setShowReport(false);
+    }
+  }
+
+  return (
+    <>
+      <ReportModal show={showReport} targetType="comment" targetId={comment.id} onReportSent={onReportSent} onCloseRequest={onCloseRequest}/>
+      <div data-comment={comment.id} data-account={comment.account.id} id={`comment-${comment.id}`} className="bg-gray-100 border border-gray-200 rounded-sm shadow flex flex-col mb-2">
+        <div className="flex-shrink flex-grow-0 flex flex-row bg-gray-200 px-1">
+          <div className="flex-grow">
+            <a href={`/user/${comment.account.id}`} target="_blank" className="text-gray-700 font-medium hover:underline hover:text-gray-800">{comment.account.username}</a>
+          </div>
+          <div className="flex-shrink">
+            <button className="text-gray-400 hover:text-gray-500 underline mr-2" onClick={onReportClicked}><i className="fas fa-exclamation-triangle" aria-hidden={true}/><span className="sr-only">Report</span></button>
+            <a href={`#comment-${comment.id}`} className="text-xs text-gray-400 hover:text-gray-500 underline" title={new Date(comment.timestamp).toString()}>{RelativeTime(comment.timestamp)}</a>
+          </div>
+        </div>
+        <div className="py-1 px-1">
+          <p dangerouslySetInnerHTML={{__html: parsed || comment.content_rendered || comment.content_raw}}/>
+        </div>
+      </div>
+    </>
+  );
+}

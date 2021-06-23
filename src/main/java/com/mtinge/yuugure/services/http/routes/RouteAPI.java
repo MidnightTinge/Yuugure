@@ -1,6 +1,7 @@
 package com.mtinge.yuugure.services.http.routes;
 
 import com.mtinge.yuugure.services.http.api.AccountResource;
+import com.mtinge.yuugure.services.http.api.CommentResource;
 import com.mtinge.yuugure.services.http.api.ProfileResource;
 import com.mtinge.yuugure.services.http.api.UploadResource;
 import io.undertow.Handlers;
@@ -18,7 +19,8 @@ public class RouteAPI extends Route {
     this.pathHandler = Handlers.path()
       .addPrefixPath("/upload", new UploadResource().getRoutes())
       .addPrefixPath("/account", new AccountResource().getRoutes())
-      .addPrefixPath("/profile", new ProfileResource().getRoutes());
+      .addPrefixPath("/profile", new ProfileResource().getRoutes())
+      .addPrefixPath("/comment", new CommentResource().getRoutes());
   }
 
   @Override

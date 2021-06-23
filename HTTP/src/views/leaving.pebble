@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="icon" href="/favicon.png"/>
+    <link rel="stylesheet" href="/css/app.css"/>
+    <title>Yuugure - Leaving</title>
+  </head>
+  <body>
+    <main class="w-screen h-screen flex flex-col items-center justify-center bg-yellow-50">
+      <div class="bg-yellow-100 border border-yellow-200 px-5 pb-5 pt-1 rounded shadow w-11/12 sm:w-auto sm:min-w-96">
+        <p class="text-xl text-center">Leaving Yuugure</p>
+        <hr class="mb-4"/>
+        <p>You are about to leave yuugure to visit <span class="font-mono text-red-700">{{ url }}</span></p>
+        <p>If you trust this link, click <a href="{{ url }}" class="underline text-blue-500 hover:text-blue-700">here</a> to continue.</p>
+      </div>
+    </main>
+  </body>
+</html>

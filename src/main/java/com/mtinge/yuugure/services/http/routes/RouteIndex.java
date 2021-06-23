@@ -60,6 +60,7 @@ public class RouteIndex extends Route {
 
     this.pathHandler = Handlers.path()
       .addExactPath("/", this::index)
+      .addPrefixPath("/leaving", this::handleExternalLink)
       .addPrefixPath("/search", new ViewHandler("app"))
       .addPrefixPath("/dbg", new ViewHandler("app"))
       .addPrefixPath("/view", Handlers.pathTemplate().add("/{id}", this::renderView))
@@ -176,6 +177,16 @@ public class RouteIndex extends Route {
       } else {
         res.view("app");
       }
+    }
+  }
+
+  private void handleExternalLink(HttpServerExchange exchange) {
+    var res = Responder.with(exchange);
+    var dqUrl = exchange.getQueryParameters().get("url");
+    if (dqUrl == null || dqUrl.isEmpty()) {
+      res.redirect("/");
+    } else {
+      res.view("leaving", Map.of("url", dqUrl.getFirst()));
     }
   }
 

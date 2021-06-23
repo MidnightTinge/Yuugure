@@ -2,6 +2,7 @@ package com.mtinge.yuugure.services.database;
 
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.States;
+import com.mtinge.yuugure.data.http.RenderableComment;
 import com.mtinge.yuugure.data.http.RenderableUpload;
 import com.mtinge.yuugure.data.http.SafeAccount;
 import com.mtinge.yuugure.data.postgres.*;
@@ -135,6 +136,10 @@ public class Database implements IService {
 
   public DBReport createReport(DBAccount target, DBAccount reporter, String reason) {
     return _report(ReportTargetType.ACCOUNT, target.id, reporter.id, reason);
+  }
+
+  public DBReport createReport(DBComment target, DBAccount reporter, String reason) {
+    return _report(ReportTargetType.COMMENT, target.id, reporter.id, reason);
   }
 
   public List<DBReport> getReportsOnUser(int target) {
@@ -468,5 +473,95 @@ public class Database implements IService {
         handle.rollback();
       }
     }
+  }
+
+  public DBComment getCommentById(int id, boolean includeBadFlagged) {
+    return jdbi.withHandle(handle -> getCommentById(id, includeBadFlagged, handle));
+  }
+
+  public DBComment getCommentById(int id, boolean includeBadFlagged, Handle handle) {
+    Query query;
+    if (includeBadFlagged) {
+      query = handle.createQuery("SELECT * FROM comment WHERE id = :id");
+    } else {
+      query = handle.createQuery("SELECT * FROM comment WHERE id = :id AND active");
+    }
+
+    return query
+      .bind("id", id)
+      .map(DBComment.Mapper)
+      .findFirst().orElse(null);
+  }
+
+  public List<DBComment> getCommentsForUpload(int id, boolean includeBadFlagged) {
+    return jdbi.withHandle(handle -> this.getCommentsForUpload(id, includeBadFlagged, handle));
+  }
+
+  public List<DBComment> getCommentsForUpload(int id, boolean includeBadFlagged, Handle handle) {
+    Query query;
+    if (includeBadFlagged) {
+      query = handle.createQuery("SELECT * FROM comment WHERE target_type = :type AND target_id = :id ORDER BY timestamp DESC");
+    } else {
+      query = handle.createQuery("SELECT * FROM comment WHERE target_type = :type AND target_id = :id AND active ORDER BY timestamp DESC");
+    }
+
+    return query
+      .bind("type", DBComment.TYPE_UPLOAD)
+      .bind("id", id)
+      .map(DBComment.Mapper).collect(Collectors.toList());
+  }
+
+  public DBComment createComment(DBUpload upload, DBAccount account, String raw, String rendered) {
+    return jdbi.withHandle(handle -> createComment(upload, account, raw, rendered, handle));
+  }
+
+  public DBComment createComment(DBUpload upload, DBAccount account, String raw, String rendered, Handle handle) {
+    return handle.createQuery("INSERT INTO comment (target_type, target_id, account, content_raw, content_rendered) VALUES (:type, :id, :account, :raw, :rendered) RETURNING *")
+      .bind("type", DBComment.TYPE_UPLOAD)
+      .bind("id", upload.id)
+      .bind("account", account.id)
+      .bind("raw", raw)
+      .bind("rendered", rendered)
+      .map(DBComment.Mapper)
+      .findFirst().orElse(null);
+  }
+
+  public RenderableComment makeCommentRenderable(DBComment comment) {
+    return jdbi.withHandle(handle -> makeCommentRenderable(comment, handle));
+  }
+
+  public RenderableComment makeCommentRenderable(DBComment comment, Handle handle) {
+    var renderable = makeCommentsRenderable(List.of(comment), handle);
+
+    return renderable != null ? renderable.get(0) : null;
+  }
+
+  public List<RenderableComment> makeCommentsRenderable(List<DBComment> comments) {
+    return jdbi.withHandle(handle -> makeCommentsRenderable(comments, handle));
+  }
+
+  public List<RenderableComment> makeCommentsRenderable(List<DBComment> comments, Handle handle) {
+    var accountCache = new HashMap<Integer, SafeAccount>();
+
+    var ret = new LinkedList<RenderableComment>();
+    for (var comment : comments) {
+      var account = accountCache.get(comment.account);
+      if (account == null) {
+        account = SafeAccount.fromDb(getAccountById(comment.account, handle));
+        accountCache.put(comment.account, account);
+      }
+
+      ret.add(new RenderableComment(comment.id, comment.timestamp, account, comment.contentRaw, comment.contentRendered));
+    }
+
+    return ret;
+  }
+
+  public List<RenderableComment> getRenderableCommentsForUpload(int id, boolean includeBadFlagged) {
+    return jdbi.inTransaction(handle -> getRenderableCommentsForUpload(id, includeBadFlagged, handle));
+  }
+
+  public List<RenderableComment> getRenderableCommentsForUpload(int id, boolean includeBadFlagged, Handle handle) {
+    return makeCommentsRenderable(getCommentsForUpload(id, includeBadFlagged, handle), handle);
   }
 }

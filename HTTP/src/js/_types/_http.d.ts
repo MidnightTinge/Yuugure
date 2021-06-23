@@ -76,3 +76,25 @@ type ProfileResponse = {
   self: boolean;
   account: SafeAccount;
 }
+
+type SafeComment = {
+  id: number;
+  parent: number;
+  account: number;
+  timestamp: number;
+
+  content_raw: string;
+  content_rendered: string;
+}
+
+type RenderableComment = {
+  id: number;
+  timestamp: number;
+  account: SafeAccount;
+  content_raw: string;
+  content_rendered: string;
+}
+
+type CommentResponse = InputAwareResponse<{
+  comment: RenderableComment
+}>
