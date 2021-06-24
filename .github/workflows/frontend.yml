@@ -17,6 +17,7 @@ jobs:
   front_end_build:
     name: 'Front-end build'
     runs-on: ubuntu-latest
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     steps:
       - uses: fkirc/skip-duplicate-actions@v3.4.0
 
