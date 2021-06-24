@@ -1,8 +1,10 @@
 package com.mtinge.yuugure.services.http;
 
 import com.mtinge.AcceptParser.Mime;
+import com.mtinge.RateLimit.CheckResult;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.MoshiFactory;
+import com.mtinge.yuugure.data.http.RateLimitResponse;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.http.views.ViewAndModel;
 import com.mtinge.yuugure.services.http.handlers.AcceptsHandler;
@@ -102,16 +104,33 @@ public class Responder {
     }
   }
 
+  public Responder ratelimitHeaders(CheckResult result) {
+    if (result != null) {
+      exchange.getResponseHeaders()
+        .add(HttpString.tryFromString("X-RateLimit-Strategy"), "rolling-window")
+        .add(HttpString.tryFromString("X-RateLimit-Period"), result.window.toMillis())
+        .add(HttpString.tryFromString("X-RateLimit-MinimumWait"), result.nextAvailable.toMillis())
+        .add(HttpString.tryFromString("X-RateLimit-Items"), result.itemsInWindow)
+        .add(HttpString.tryFromString("X-RateLimit-Maximum"), result.windowMaximum);
+    }
+
+    return this;
+  }
+
   public void ratelimited() {
     if (!customStatus) {
       exchange.setStatusCode(StatusCodes.TOO_MANY_REQUESTS);
     }
 
-    if (wantsJson()) {
-      json(Response.bad(StatusCodes.TOO_MANY_REQUESTS, StatusCodes.TOO_MANY_REQUESTS_STRING));
-    } else {
-      view("429");
+    json(Response.bad(StatusCodes.TOO_MANY_REQUESTS, StatusCodes.TOO_MANY_REQUESTS_STRING));
+  }
+
+  public void ratelimited(CheckResult result) {
+    if (!customStatus) {
+      exchange.setStatusCode(StatusCodes.TOO_MANY_REQUESTS);
     }
+
+    json(Response.fromCode(StatusCodes.TOO_MANY_REQUESTS).addData(RateLimitResponse.class, RateLimitResponse.fromCheck(result)));
   }
 
   public void badRequest() {

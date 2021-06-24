@@ -50,12 +50,14 @@ public class CommentResource extends APIResource<DBComment> {
           if (body != null) {
             var frmReason = body.getFirst("reason");
             if (frmReason != null && !frmReason.isFileItem()) {
-              var report = App.database().createReport(resource.resource, authed, frmReason.getValue());
-              if (report != null) {
-                res.json(Response.good().addData(ReportResponse.class, ReportResponse.fromDb(report)));
-              } else {
-                res.internalServerError();
-                logger.error("Report returned from database on comment {} from user {} was null.", resource.resource.id, resource.resource.id);
+              if (checkRatelimit(exchange, App.webServer().limiters().reportLimiter())) {
+                var report = App.database().createReport(resource.resource, authed, frmReason.getValue());
+                if (report != null) {
+                  res.json(Response.good().addData(ReportResponse.class, ReportResponse.fromDb(report)));
+                } else {
+                  res.internalServerError();
+                  logger.error("Report returned from database on comment {} from user {} was null.", resource.resource.id, resource.resource.id);
+                }
               }
             } else {
               res.badRequest();
@@ -70,7 +72,6 @@ public class CommentResource extends APIResource<DBComment> {
     } else {
       sendTerminalForState(exchange, resource.state);
     }
-
   }
 
   private void handleDirectComment(HttpServerExchange exchange) {
@@ -129,18 +130,22 @@ public class CommentResource extends APIResource<DBComment> {
               response.addInputError("body", "This field is required.");
               code = StatusCodes.BAD_REQUEST;
             } else {
-              var rendered = Renderer.render(body);
-              var comment = App.database().createComment(upload.resource, authed, body, rendered);
-              if (comment != null) {
-                var renderable = App.database().makeCommentRenderable(comment);
-                response.setComment(renderable);
-              } else {
-                response.addError("An internal server error occurred. Please try again later.");
-                code = StatusCodes.INTERNAL_SERVER_ERROR;
+              if (checkRatelimit(exchange, App.webServer().limiters().commentLimiter())) {
+                var rendered = Renderer.render(body);
+                var comment = App.database().createComment(upload.resource, authed, body, rendered);
+                if (comment != null) {
+                  var renderable = App.database().makeCommentRenderable(comment);
+                  response.setComment(renderable);
+                } else {
+                  response.addError("An internal server error occurred. Please try again later.");
+                  code = StatusCodes.INTERNAL_SERVER_ERROR;
+                }
               }
             }
 
-            res.status(code).json(Response.fromCode(code).addData(CommentResponse.class, response));
+            if (!exchange.isResponseStarted()) {
+              res.status(code).json(Response.fromCode(code).addData(CommentResponse.class, response));
+            }
           } else {
             res.status(StatusCodes.FORBIDDEN).json(Response.fromCode(StatusCodes.FORBIDDEN).addMessage("You have been restricted from creating new comments."));
           }

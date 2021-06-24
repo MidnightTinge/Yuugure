@@ -4,6 +4,7 @@ import com.mitchellbosecke.pebble.PebbleEngine;
 import com.mitchellbosecke.pebble.loader.ClasspathLoader;
 import com.mitchellbosecke.pebble.loader.FileLoader;
 import com.mitchellbosecke.pebble.loader.Loader;
+import com.mtinge.RateLimit.LimiterFactory;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.services.IService;
 import com.mtinge.yuugure.services.http.handlers.*;
@@ -30,15 +31,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+@Getter
 @Accessors(fluent = true)
 public class WebServer implements IService {
   private static final Logger logger = LoggerFactory.getLogger(WebServer.class);
 
-  @Getter
+  private PanicHandler panicHandler;
+  private LimiterFactory limiterFactory;
+  private Limiters limiters;
   private Undertow undertow;
-  @Getter
   private PebbleEngine pebble;
-  @Getter
   private ResourceHandler staticHandler;
 
   public WebServer() {
@@ -107,6 +109,10 @@ public class WebServer implements IService {
         .build()
     );
 
+    this.panicHandler = new PanicHandler();
+    this.limiterFactory = new LimiterFactory(panicHandler.getPanicHandler(), App.redis().jedis());
+    this.limiters = new Limiters(this.limiterFactory);
+
     this.pebble = engineBuilder
       .loader(loader)
       .build();
@@ -115,18 +121,20 @@ public class WebServer implements IService {
       .setHandler(
         new RootHandler(
           new AddressHandler(
-            new QueryHandler(
-              new AcceptsHandler(
-                formParser.setNext(
-                  new FormMethodHandler(
-                    new SessionHandler(
-                      new RouteUpload().wrap(
-                        new RouteAuth().wrap(
-                          new RouteAPI().wrap(
-                            // IMPORTANT: Keep index last, it adds a prefixPath for `/` to handle
-                            // static files
-                            new RouteIndex().wrap(
-                              Handlers.path()
+            panicHandler.wrap(
+              new QueryHandler(
+                new AcceptsHandler(
+                  formParser.setNext(
+                    new FormMethodHandler(
+                      new SessionHandler(
+                        new RouteUpload().wrap(
+                          new RouteAuth().wrap(
+                            new RouteAPI().wrap(
+                              // IMPORTANT: Keep index last, it adds a prefixPath for `/` to handle
+                              // static files
+                              new RouteIndex().wrap(
+                                Handlers.path()
+                              )
                             )
                           )
                         )
@@ -144,6 +152,7 @@ public class WebServer implements IService {
 
   @Override
   public void start() throws Exception {
+    panicHandler.reload();
     this.undertow.start();
 
     var _l = (InetSocketAddress) this.undertow.getListenerInfo().get(0).getAddress();

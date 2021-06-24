@@ -192,7 +192,6 @@ export default function PageView(props: PageViewProps) {
   }
 
   function handleCommentPosted(response: CommentResponse) {
-    console.debug('[handleCommentPosted]', response);
     if (response && response.comment) {
       commentsDispatch({type: 'comments/add', payload: response.comment});
     }

@@ -27,8 +27,16 @@ export default function ReportModal(props: ReportModalProps) {
     XHR.for(`/api/${props.targetType}/${props.targetId}/report`).post(XHR.BODY_TYPE.FORM, {
       reason: txtReason.current.value,
     }).getJson<RouterResponse<ReportResponse>>().then(data => {
-      if (data && data.code === 200 && Array.isArray(data.data.ReportResponse) && data.data.ReportResponse.length > 0) {
-        setReported(true);
+      if (data) {
+        if (data.code === 200 && Array.isArray(data.data.ReportResponse) && data.data.ReportResponse.length > 0) {
+          setReported(true);
+        } else if (data.code === 429) {
+          setError(`You are doing that too often. Try again ${data.data && data.data.RateLimitResponse ? (`in ${data.data.RateLimitResponse[0].minimum_wait / 1e3 >> 0} seconds`) : 'later'}.`);
+        } else {
+          setError('Received an invalid response while trying to report. Please try again later.');
+          console.error('Got invalid ReportResponse:', data);
+          setReported(false);
+        }
       } else {
         setError('An internal server error occurred. Please try again later.');
         console.error('Got invalid ReportResponse:', data);

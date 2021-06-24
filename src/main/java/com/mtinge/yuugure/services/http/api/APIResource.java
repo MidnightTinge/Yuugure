@@ -1,8 +1,10 @@
 package com.mtinge.yuugure.services.http.api;
 
+import com.mtinge.RateLimit.Limiter;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.postgres.DBAccount;
 import com.mtinge.yuugure.services.http.Responder;
+import com.mtinge.yuugure.services.http.handlers.AddressHandler;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
@@ -12,6 +14,22 @@ import io.undertow.util.PathTemplateMatch;
 import io.undertow.util.StatusCodes;
 
 public abstract class APIResource<T> {
+  protected boolean checkRatelimit(HttpServerExchange exchange, Limiter limiter) {
+    var res = limiter.check(exchange.getAttachment(AddressHandler.ATTACHMENT_KEY));
+    var responder = Responder.with(exchange);
+    responder.ratelimitHeaders(res);
+
+    if (res.overLimit) {
+      if (res.panicWorthy) {
+        // TODO alert someone, when panicWorthy=true we've already panicked. can be done when we add
+        //      prometheus bindings.
+      }
+      responder.ratelimited(res);
+      return false;
+    }
+
+    return true;
+  }
 
   protected void sendTerminalForState(HttpServerExchange exchange, FetchState state) {
     var res = Responder.with(exchange);
