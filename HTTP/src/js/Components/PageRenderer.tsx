@@ -1,5 +1,6 @@
 import * as React from 'react';
-import {authStateSelector, reloadAuthState} from '../Stores/AuthStore';
+import {useContext} from 'react';
+import {AuthStateContext} from '../Context/AuthStateProvider';
 import CenteredBlockPage from './CenteredBlockPage';
 import Nav, {NavActive} from './Nav';
 
@@ -10,10 +11,7 @@ export type PageRendererProps = {
 };
 
 export default function PageRenderer(props: PageRendererProps) {
-  const authState = authStateSelector();
-  if (!authState.fetched && !authState.fetching) {
-    reloadAuthState();
-  }
+  const {state: authState} = useContext(AuthStateContext);
 
   let toRender = props.children;
   if (props.authControlled && !authState.authed) {

@@ -1,8 +1,8 @@
 import * as React from 'react';
-import {useState} from 'react';
+import {useContext, useState} from 'react';
 import {Link, useHistory} from 'react-router-dom';
 import {XHR} from '../classes/XHR';
-import {authStateSelector, reloadAuthState} from '../Stores/AuthStore';
+import {AuthStateContext} from '../Context/AuthStateProvider';
 import Spinner from './Spinner';
 
 export type NavActive = 'index' | 'upload' | 'view' | 'profile' | 'search' | 'login' | 'register' | '404';
@@ -31,7 +31,7 @@ export default function Nav(props: NavProps) {
   const [loggingOut, setLoggingOut] = useState(false);
   const history = useHistory();
 
-  const authState = authStateSelector();
+  const {state: authState, reloadAuth} = useContext(AuthStateContext);
 
   function handleLogoutClick(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
     e.preventDefault();
@@ -42,8 +42,7 @@ export default function Nav(props: NavProps) {
       console.error('[logout]', err);
     }).then(() => {
       setLoggingOut(false);
-      reloadAuthState();
-      history.push('/');
+      reloadAuth();
     });
   }
 
@@ -65,7 +64,7 @@ export default function Nav(props: NavProps) {
               <NavItem href="/profile" active={props.active === 'profile'}>Profile</NavItem>
               {loggingOut ? (
                 <li className={`p-2 mr-1`}>
-                  <span className="text-gray-300 cursor-not-allowed select-none"><Spinner /> Logging out...</span>
+                  <span className="text-gray-300 cursor-not-allowed select-none"><Spinner/> Logging out...</span>
                 </li>
               ) : (
                 <NavItem href="/auth/logout" onClick={handleLogoutClick}>Logout</NavItem>

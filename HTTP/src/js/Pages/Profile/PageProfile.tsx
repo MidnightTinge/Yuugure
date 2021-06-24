@@ -1,6 +1,6 @@
 import * as React from 'react';
-import {useEffect, useMemo, useReducer, useState} from 'react';
-import {useHistory, useParams} from 'react-router';
+import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
+import {useParams} from 'react-router';
 
 import {AutoSizer, List, ListRowProps, Size} from 'react-virtualized';
 import {XHR} from '../../classes/XHR';
@@ -11,12 +11,12 @@ import InternalRouter from '../../Components/InternalNav/InternalRouter';
 import InternalSwitch from '../../Components/InternalNav/InternalSwitch';
 import useInternalNavigator from '../../Components/InternalNav/useInternalNavigator';
 import ListGroup from '../../Components/ListGroup/ListGroup';
-import ListGroupItem from '../../Components/ListGroup/ListGroupItem';
 import MediaPreviewBlock from '../../Components/MediaPreview/MediaPreviewBlock';
 import {CloseSource} from '../../Components/Modal/Modal';
 import ReportModal from '../../Components/modals/ReportModal';
 import Spinner from '../../Components/Spinner';
-import {authStateSelector} from '../../Stores/AuthStore';
+import {AuthStateContext} from '../../Context/AuthStateProvider';
+import {WebSocketContext} from '../../Context/WebSocketProvider';
 import NotFound from '../404/NotFound';
 import AccountSettings from './AccountSettings';
 
@@ -48,10 +48,12 @@ function UploadReducer(state: UploadState, action: { type: string, payload?: Arr
 }
 
 export default function PageProfile(props: PageProfileProps) {
-  const authState = authStateSelector();
+  const wsContext = useContext(WebSocketContext);
+  const ws = useMemo(() => wsContext ? wsContext.ws : null, [wsContext]);
+
+  const {state: authState} = useContext(AuthStateContext);
   const params = useParams<{ accountId: string }>();
   const navigator = useInternalNavigator(true);
-  const history = useHistory();
 
   const [fetching, setFetching] = useState(false);
   const [fetched, setFetched] = useState(false);
@@ -75,9 +77,33 @@ export default function PageProfile(props: PageProfileProps) {
   //       request.
   const isSelf = props.self || (authState.authed && params.accountId && Number(params.accountId) === authState.account.id);
 
+
+  useEffect(function sub() {
+    if (accountId === '@me' && !authState.authed) {
+      // can't do anything here, we need authState.account.id to subscribe to the correct room.
+      // we'll have to wait until authState reloads properly.
+      return;
+    }
+
+    function handleUpload(args: { upload: RenderableUpload }) {
+      uploadsDispatch({type: 'add', payload: args.upload});
+    }
+
+    let id = accountId === '@me' ? (authState.authed ? authState.account.id : null) : accountId;
+    if (id !== null && ws != null) {
+      ws.addEventHandler('upload', handleUpload);
+      ws.emit('sub', {room: `account:${id}`});
+    }
+
+    return function unsub() {
+      if (id !== null && ws != null) {
+        ws.removeEventHandler('upload', handleUpload);
+        ws.emit('unsub', {room: `account:${params.accountId}`});
+      }
+    };
+  }, [accountId, authState]);
+
   useEffect(function mounted() {
-    // TODO listen to profile-specific events on WS
-    // ws.subscribe(`profile:${params.accountId}`);
     setFetching(true);
     setFetched(false);
 
@@ -100,7 +126,6 @@ export default function PageProfile(props: PageProfileProps) {
     });
 
     return function unmounted() {
-      // TODO cleanup profile-specific WS events
 
       setFetching(false);
       setFetched(false);
@@ -157,7 +182,7 @@ export default function PageProfile(props: PageProfileProps) {
     setShowReport(true);
   }
 
-  function rowRenderer({key, index, isScrolling, isVisible, style}: ListRowProps): React.ReactNode {
+  function rowRenderer({key, index, style}: ListRowProps): React.ReactNode {
     return (
       <div key={key} style={style}>
         <MediaPreviewBlock upload={uploads.uploads[index]}/>
@@ -188,7 +213,7 @@ export default function PageProfile(props: PageProfileProps) {
                           <ListGroup.Item active={path === 'uploads'} onClick={makeNavigator('uploads')}>
                             <i className="fas fa-folder-open" aria-hidden={true}/> Uploads
                             <span className="inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg bg-blue-100 border border-blue-200 text-blue-400 opacity-95 shadow">
-                              {fetchingUploads ? (<Spinner />) : (uploads.uploads.length)}
+                              {fetchingUploads ? (<Spinner/>) : (uploads.uploads.length)}
                             </span>
                           </ListGroup.Item>
                           <ListGroup.Item active={path === 'likes'} onClick={makeNavigator('likes')}><i className="fas fa-heart" aria-hidden={true}/> Likes</ListGroup.Item>
@@ -205,11 +230,22 @@ export default function PageProfile(props: PageProfileProps) {
                   <InternalSwitch>
                     <InternalRoute path="uploads">
                       <div className="h-full">
-                        <AutoSizer>
-                          {({width, height}: Size) => (
-                            <List rowCount={uploads.uploads.length} rowHeight={250} width={width} height={height} rowRenderer={rowRenderer}/>
-                          )}
-                        </AutoSizer>
+                        {uploads.uploads && uploads.uploads.length ? (
+                          <>
+                            {uploadsError ? (
+                              <p className="text-red-500 whitespace-pre-wrap">{uploadsError}</p>
+                            ) : null}
+                            <AutoSizer>
+                              {({width, height}: Size) => (
+                                <List rowCount={uploads.uploads.length} rowHeight={250} width={width} height={height} rowRenderer={rowRenderer}/>
+                              )}
+                            </AutoSizer>
+                          </>
+                        ) : (
+                          uploadsError ? (
+                            <p className="text-red-500 whitespace-pre-wrap">{uploadsError}</p>
+                          ) : null
+                        )}
                       </div>
                     </InternalRoute>
                     <InternalRoute path="likes">
@@ -219,7 +255,7 @@ export default function PageProfile(props: PageProfileProps) {
                       <p>hello votes</p>
                     </InternalRoute>
                     <InternalRoute path="settings">
-                      <AccountSettings account={authState.account} />
+                      <AccountSettings account={authState.account}/>
                     </InternalRoute>
                     <InternalRoute path="*">
                       {profile && profile.account ? (

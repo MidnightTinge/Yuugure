@@ -11,6 +11,7 @@ import com.mtinge.yuugure.data.postgres.DBProcessingQueue;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
+import com.mtinge.yuugure.services.http.ws.packets.OutgoingPacket;
 import com.mtinge.yuugure.services.messaging.Messaging;
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
@@ -184,8 +185,7 @@ public class RouteUpload extends Route {
                                     .findFirst().orElse(null);
                                   if (pq != null) {
                                     uploadResult.setSuccess(true);
-                                    uploadResult.setMedia(media);
-                                    uploadResult.setUpload(toRet);
+                                    uploadResult.setUpload(App.database().makeUploadRenderable(toRet, handle));
                                     handle.commit();
 
                                     App.mediaProcessor().wakeWorkers();
@@ -219,9 +219,10 @@ public class RouteUpload extends Route {
                     // report back to the user
                     if (uploadResult.getUpload() != null) {
                       App.messaging().publish(Messaging.TOPIC_UPLOAD, Map.of(
-                        "upload_id", uploadResult.getUpload().id,
-                        "media_id", uploadResult.getMedia().id
+                        "upload_id", uploadResult.getUpload().upload.id,
+                        "media_id", uploadResult.getUpload().media.id
                       ));
+                      App.webServer().wsListener().getLobby().in("account:" + uploadResult.getUpload().owner.id).broadcast(OutgoingPacket.prepare("upload").addData("upload", uploadResult.getUpload()));
                     }
                   } catch (Exception e) {
                     logger.error("Failed to read file for hashing", e);

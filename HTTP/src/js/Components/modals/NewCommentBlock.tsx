@@ -26,7 +26,6 @@ export default function NewCommentBlock(props: NewCommentBlockProps) {
     XHR.for(`/api/comment/${props.targetType}/${props.targetId}`).post(XHR.BODY_TYPE.FORM, {
       body: txtComment.current.value,
     }).getJson<RouterResponse<CommentResponse>>().then(res => {
-      console.debug('res', res);
       if (res) {
         if (res.code === 200 && Array.isArray(res.data.CommentResponse) && res.data.CommentResponse[0]) {
           txtComment.current.value = '';

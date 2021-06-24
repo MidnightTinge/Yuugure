@@ -6,6 +6,7 @@
   <logger name="org.mongodb.driver" level="WARN"/>
   <logger name="com.mitchellbosecke.pebble" level="WARN"/>
   <logger name="io.undertow.request" level="INFO"/>
+  <logger name="io.undertow.websockets" level="INFO"/>
   <logger name="com.zaxxer.hikari.pool" level="WARN"/>
   <logger name="com.zaxxer.hikari.HikariConfig" level="ERROR"/>
   <logger name="org.xnio.nio" level="INFO"/>

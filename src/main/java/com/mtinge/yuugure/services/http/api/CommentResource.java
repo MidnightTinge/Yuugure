@@ -8,6 +8,7 @@ import com.mtinge.yuugure.data.postgres.DBComment;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.util.MethodValidator;
+import com.mtinge.yuugure.services.http.ws.packets.OutgoingPacket;
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
@@ -136,6 +137,7 @@ public class CommentResource extends APIResource<DBComment> {
                 if (comment != null) {
                   var renderable = App.database().makeCommentRenderable(comment);
                   response.setComment(renderable);
+                  App.webServer().wsListener().getLobby().in("upload:" + upload.resource.id).broadcast(OutgoingPacket.prepare("comment").addData("comment", renderable));
                 } else {
                   response.addError("An internal server error occurred. Please try again later.");
                   code = StatusCodes.INTERNAL_SERVER_ERROR;

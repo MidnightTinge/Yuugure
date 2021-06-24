@@ -70,7 +70,7 @@ export default function PageUpload(props: PageUploadProps) {
 
   function handleUploadNavigation(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
     e.preventDefault();
-    history.push(`/view/${uploadResult.upload.id}`);
+    history.push(`/view/${uploadResult.upload.upload.id}`);
   }
 
   function handleFormReset() {
@@ -99,7 +99,7 @@ export default function PageUpload(props: PageUploadProps) {
         ) : (
           <>
             <p className="text-lg text-center">File Uploaded</p>
-            <p className="my-3">Your file has been uploaded successfully. Click <a href={`/view/${uploadResult.upload.id}`} onClick={handleUploadNavigation} className="text-blue-500 hover:text-blue-600 focus:text-blue-500">here</a> to view it.</p>
+            <p className="my-3">Your file has been uploaded successfully. Click <a href={`/view/${uploadResult.upload.upload.id}`} onClick={handleUploadNavigation} className="text-blue-500 hover:text-blue-600 focus:text-blue-500">here</a> to view it.</p>
             <button type="button" className="block w-full py-1 border bg-blue-400 border-blue-500 text-white rounded-md cursor-pointer shadow-sm hover:bg-blue-500 hover:border-blue-600 hover:text-gray-100" onClick={handleFormReset}>Upload Another</button>
           </>
         )}

@@ -29,10 +29,25 @@ export class EventableBase {
     }
   }
 
+  on(eventName: string, handler: Handler) {
+    return this.addEventHandler(eventName, handler);
+  }
+
   addEventHandler(eventName: string, handler: Handler) {
     this._events[eventName].push(handler);
 
     return this;
+  }
+
+  removeEventHandler(eventName: string, handler: Handler) {
+    for (let i = 0; i < this._events[eventName].length; i++) {
+      if (this._events[eventName][i] === handler) {
+        this._events[eventName].splice(i, 1);
+        return true;
+      }
+    }
+
+    return false;
   }
 
 }

@@ -1,8 +1,7 @@
 import * as React from 'react';
-import {useEffect, useMemo, useReducer, useRef, useState} from 'react';
+import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
 import {useParams} from 'react-router';
 import {useHistory} from 'react-router-dom';
-import WS from '../../classes/WS';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import Comment from '../../Components/Comment';
@@ -18,7 +17,8 @@ import NewCommentBlock from '../../Components/modals/NewCommentBlock';
 import ReportModal from '../../Components/modals/ReportModal';
 import Spinner from '../../Components/Spinner';
 import UploadViewer from '../../Components/UploadViewer/UploadViewer';
-import {authStateSelector} from '../../Stores/AuthStore';
+import {WebSocketContext} from '../../Context/WebSocketProvider';
+import {AuthStateContext} from '../../Context/AuthStateProvider';
 import NotFound from '../404/NotFound';
 
 type CommentsState = {
@@ -85,7 +85,7 @@ export type PageViewProps = {
 export default function PageView(props: PageViewProps) {
   const params = useParams<{ uploadId: string }>();
   const history = useHistory();
-  const authState = authStateSelector();
+  const {state: authState} = useContext(AuthStateContext);
   const navigator = useInternalNavigator(true);
   const [fetched, setFetched] = useState(false);
   const [error, setError] = useState<string>(null);
@@ -97,17 +97,23 @@ export default function PageView(props: PageViewProps) {
 
   const [comments, commentsDispatch] = useReducer(CommentsReducer, {comments: [], fetching: false, error: null}, () => ({comments: [], fetching: false, error: null}));
 
-  const renderer = useRef<HTMLElement>(null);
-  const ws = useRef<WS>(null);
-
   const reportable = useMemo<{ type: string, id: number }>(() => (upload ? {type: 'upload', id: upload.upload.id} : {type: null, id: null}), [upload]);
 
+  const wsContext = useContext(WebSocketContext);
+  const ws = useMemo(() => wsContext ? wsContext.ws : null, [wsContext]);
+
   useEffect(function mounted() {
+    function handleComment({comment}: { comment: RenderableComment }) {
+      if (comment) {
+        commentsDispatch({type: 'comments/add', payload: comment});
+      }
+    }
+
     if (params && params.uploadId) {
-      // TODO listen to WS for upload-specific events (new comment, new rating, etc)
-      // ws.current = new WS();
-      // ws.current.connect();
-      // ws.current.emit('join', `upload-${params.uploadId}`);
+      if (ws != null) {
+        ws.on('comment', handleComment);
+        ws.emit('sub', {room: `upload:${params.uploadId}`});
+      }
 
       XHR.for(`/api/upload/${params.uploadId}`).get().getJson<RouterResponse<RenderableUpload>>().then(res => {
         if (res.code === 401) {
@@ -148,8 +154,9 @@ export default function PageView(props: PageViewProps) {
     }
 
     return function unmounted() {
-      if (ws.current != null) { // ws is null if our request param was invalid (no upload to fetch)
-        ws.current.disconnect();
+      if (ws != null) { // ws shouldn't ever be null but just in case.
+        ws.emit('unsub', {room: `upload:${params.uploadId}`});
+        ws.removeEventHandler('comment', handleComment);
       }
     };
   }, []);
@@ -191,10 +198,8 @@ export default function PageView(props: PageViewProps) {
     }
   }
 
-  function handleCommentPosted(response: CommentResponse) {
-    if (response && response.comment) {
-      commentsDispatch({type: 'comments/add', payload: response.comment});
-    }
+  function handleCommentPosted() {
+    // handled by the WebSocket
   }
 
   return (

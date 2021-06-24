@@ -27,8 +27,7 @@ type AuthConfirmResponse = InputAwareResponse<{
 
 type UploadResult = InputAwareResponse<{
   success: boolean;
-  media?: DBMedia;
-  upload?: DBUpload;
+  upload?: RenderableUpload;
 }>
 
 type UploadState = {

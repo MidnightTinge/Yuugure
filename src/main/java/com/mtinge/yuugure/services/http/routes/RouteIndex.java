@@ -60,6 +60,7 @@ public class RouteIndex extends Route {
 
     this.pathHandler = Handlers.path()
       .addExactPath("/", this::index)
+      .addExactPath("/ws", Handlers.websocket(App.webServer().wsListener()::newConnection))
       .addPrefixPath("/leaving", this::handleExternalLink)
       .addPrefixPath("/search", new ViewHandler("app"))
       .addPrefixPath("/dbg", new ViewHandler("app"))

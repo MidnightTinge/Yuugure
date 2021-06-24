@@ -12,6 +12,7 @@ import com.mtinge.yuugure.services.http.routes.RouteAPI;
 import com.mtinge.yuugure.services.http.routes.RouteAuth;
 import com.mtinge.yuugure.services.http.routes.RouteIndex;
 import com.mtinge.yuugure.services.http.routes.RouteUpload;
+import com.mtinge.yuugure.services.http.ws.Listener;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.handlers.form.EagerFormParsingHandler;
@@ -42,6 +43,7 @@ public class WebServer implements IService {
   private Undertow undertow;
   private PebbleEngine pebble;
   private ResourceHandler staticHandler;
+  private Listener wsListener;
 
   public WebServer() {
     //
@@ -112,6 +114,8 @@ public class WebServer implements IService {
     this.panicHandler = new PanicHandler();
     this.limiterFactory = new LimiterFactory(panicHandler.getPanicHandler(), App.redis().jedis());
     this.limiters = new Limiters(this.limiterFactory);
+
+    this.wsListener = new Listener();
 
     this.pebble = engineBuilder
       .loader(loader)

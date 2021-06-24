@@ -292,8 +292,9 @@ public class RouteAuth extends Route {
 
   private void check(HttpServerExchange exchange) {
     var account = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
+    var code = account == null ? StatusCodes.UNAUTHORIZED : StatusCodes.OK;
 
-    Responder.with(exchange).json(Response.good().addData(AuthStateResponse.class, new AuthStateResponse(account != null, SafeAccount.fromDb(account))));
+    Responder.with(exchange).status(code).json(Response.fromCode(code).addData(AuthStateResponse.class, new AuthStateResponse(account != null, SafeAccount.fromDb(account))));
   }
 
   private void confirm(HttpServerExchange exchange) {
