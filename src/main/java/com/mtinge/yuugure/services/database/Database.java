@@ -564,4 +564,28 @@ public class Database implements IService {
   public List<RenderableComment> getRenderableCommentsForUpload(int id, boolean includeBadFlagged, Handle handle) {
     return makeCommentsRenderable(getCommentsForUpload(id, includeBadFlagged, handle), handle);
   }
+
+  public List<RenderableUpload> getIndexUploads(DBAccount context) {
+    return jdbi.withHandle(handle -> getIndexUploads(context, handle));
+  }
+
+  public List<RenderableUpload> getIndexUploads(DBAccount context, Handle handle) {
+    Query uploadsQuery;
+    if (context != null) {
+      long badState = States.compute(States.Upload.DELETED, States.Upload.DMCA);
+      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE (state & :general_state) = 0 OR (owner = :id AND (state & :contextual_state) = 0) ORDER BY upload_date DESC LIMIT 50")
+        .bind("general_state", States.compute(badState, States.Upload.PRIVATE))
+        .bind("contextual_state", badState)
+        .bind("id", context.id);
+    } else {
+      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE (state & :state) = 0 ORDER BY upload_date DESC LIMIT 50")
+        .bind("state", States.compute(States.Upload.DELETED, States.Upload.DMCA, States.Upload.PRIVATE));
+    }
+
+    var uploads = uploadsQuery
+      .map(DBUpload.Mapper)
+      .collect(Collectors.toList());
+
+    return makeUploadsRenderable(uploads, handle);
+  }
 }

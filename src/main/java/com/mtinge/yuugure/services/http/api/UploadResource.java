@@ -21,8 +21,13 @@ public class UploadResource extends APIResource<DBUpload> {
   @Override
   public PathTemplateHandler getRoutes() {
     return Handlers.pathTemplate()
+      .add("/index", this::fetchForIndex)
       .add("/{upload}", this::handleFetch)
       .add("/{upload}/{action}", this::handleAction);
+  }
+
+  private void fetchForIndex(HttpServerExchange exchange) {
+    Responder.with(exchange).json(Response.good().addAll(RenderableUpload.class, App.database().getIndexUploads(getAuthed(exchange))));
   }
 
   private void handleFetch(HttpServerExchange exchange) {

@@ -11,3 +11,8 @@
 /*noinspection CssUnknownTarget*/
 @import "tailwindcss/utilities.css";
 @import "./_utilities.css";
+
+html, body, #app {
+  width: 100%;
+  height: 100%;
+}

@@ -9,7 +9,7 @@
     <title>Yuugure - Not Found</title>
   </head>
   <body>
-    <main class="w-screen h-screen flex flex-col items-center justify-center bg-yellow-50">
+    <main class="w-full h-full flex flex-col items-center justify-center bg-yellow-50">
       <div class="bg-yellow-100 border border-yellow-200 p-5 rounded shadow w-11/12 sm:w-auto sm:min-w-96">
         <p class="text-xl text-center">Not Found</p>
         <hr class="mb-1"/>

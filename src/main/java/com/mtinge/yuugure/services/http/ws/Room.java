@@ -54,7 +54,9 @@ public class Room {
     synchronized (_monitor) {
       socket.rooms().remove(this.name);
       if (sockets.remove(socket)) {
-        socket.sendBinary(BinaryPacket.ACK_UNSUB(this.name));
+        if (socket.channel().isOpen()) {
+          socket.sendBinary(BinaryPacket.ACK_UNSUB(this.name));
+        } // else: user probably closed the tab
         return true;
       }
     }
