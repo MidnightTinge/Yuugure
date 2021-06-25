@@ -1,7 +1,8 @@
 import anchorme from 'anchorme';
 import * as React from 'react';
-import {useMemo, useState} from 'react';
+import {useContext, useMemo, useState} from 'react';
 import RelativeTime from '../classes/RelativeTime';
+import {AuthStateContext} from '../Context/AuthStateProvider';
 import {CloseSource} from './Modal/Modal';
 import ReportModal from './modals/ReportModal';
 
@@ -11,6 +12,7 @@ export type CommentProps = {
 
 export default function Comment({comment}: CommentProps) {
   const [showReport, setShowReport] = useState(false);
+  const {state: authState} = useContext(AuthStateContext);
 
   const parsed = useMemo(() => {
     return anchorme({
@@ -48,14 +50,14 @@ export default function Comment({comment}: CommentProps) {
 
   return (
     <>
-      <ReportModal show={showReport} targetType="comment" targetId={comment.id} onReportSent={onReportSent} onCloseRequest={onCloseRequest}/>
+      {authState.authed ? <ReportModal show={showReport} targetType="comment" targetId={comment.id} onReportSent={onReportSent} onCloseRequest={onCloseRequest}/> : null}
       <div data-comment={comment.id} data-account={comment.account.id} id={`comment-${comment.id}`} className="bg-gray-100 border border-gray-200 rounded-sm shadow flex flex-col mb-2">
         <div className="flex-shrink flex-grow-0 flex flex-row bg-gray-200 px-1">
           <div className="flex-grow">
             <a href={`/user/${comment.account.id}`} target="_blank" className="text-gray-700 font-medium hover:underline hover:text-gray-800">{comment.account.username}</a>
           </div>
           <div className="flex-shrink">
-            <button className="text-gray-400 hover:text-gray-500 underline mr-2" onClick={onReportClicked}><i className="fas fa-exclamation-triangle" aria-hidden={true}/><span className="sr-only">Report</span></button>
+            {authState.authed ? (<button className="text-gray-400 hover:text-gray-500 underline mr-2" onClick={onReportClicked}><i className="fas fa-exclamation-triangle" aria-hidden={true}/><span className="sr-only">Report</span></button>) : null}
             <a href={`#comment-${comment.id}`} className="text-xs text-gray-400 hover:text-gray-500 underline" title={new Date(comment.timestamp).toString()}>{RelativeTime(comment.timestamp)}</a>
           </div>
         </div>

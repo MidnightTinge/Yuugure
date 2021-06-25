@@ -107,54 +107,61 @@ public class CommentResource extends APIResource<DBComment> {
 
   private void handleUploadComment(HttpServerExchange exchange) {
     var res = Responder.with(exchange);
-    var authed = getAuthed(exchange);
-    if (authed == null) {
-      res.status(StatusCodes.UNAUTHORIZED).json(Response.fromCode(StatusCodes.UNAUTHORIZED));
-      return;
-    }
 
     var upload = fetchUpload(exchange);
     if (upload.state == FetchState.OK) {
-      if (MethodValidator.handleMethodValidation(exchange, Methods.GET, Methods.POST)) {
+      if (MethodValidator.handleMethodValidation(exchange, Methods.GET, Methods.POST, Methods.DELETE, Methods.PATCH)) {
         var method = exchange.getRequestMethod();
         if (method.equals(Methods.GET)) {
-          var comments = App.database().getRenderableCommentsForUpload(upload.resource.id, false);
+          // Fetch comments
+          res.json(Response.good().addAll(RenderableComment.class, App.database().getRenderableCommentsForUpload(upload.resource.id, false)));
+        } else {
+          // Comment actions - delete, report, edit, etc.
+          var authed = getAuthed(exchange);
+          if (authed != null) {
+            if (method.equals(Methods.POST)) {
+              // Create new comment
+              if (!States.flagged(authed.state, States.Account.COMMENTS_RESTRICTED)) {
+                var response = new CommentResponse();
+                int code = StatusCodes.OK;
 
-          res.json(Response.good().addAll(RenderableComment.class, comments));
-        } else if (method.equals(Methods.POST)) {
-          if (!States.flagged(authed.state, States.Account.COMMENTS_RESTRICTED)) {
-            var response = new CommentResponse();
-            int code = StatusCodes.OK;
-
-            var body = extractForm(exchange, "body");
-            if (body.isBlank()) {
-              response.addInputError("body", "This field is required.");
-              code = StatusCodes.BAD_REQUEST;
-            } else {
-              if (checkRatelimit(exchange, App.webServer().limiters().commentLimiter())) {
-                var rendered = Renderer.render(body);
-                var comment = App.database().createComment(upload.resource, authed, body, rendered);
-                if (comment != null) {
-                  var renderable = App.database().makeCommentRenderable(comment);
-                  response.setComment(renderable);
-                  App.webServer().wsListener().getLobby().in("upload:" + upload.resource.id).broadcast(OutgoingPacket.prepare("comment").addData("comment", renderable));
+                var body = extractForm(exchange, "body");
+                if (body.isBlank()) {
+                  response.addInputError("body", "This field is required.");
+                  code = StatusCodes.BAD_REQUEST;
                 } else {
-                  response.addError("An internal server error occurred. Please try again later.");
-                  code = StatusCodes.INTERNAL_SERVER_ERROR;
+                  if (checkRatelimit(exchange, App.webServer().limiters().commentLimiter())) {
+                    var rendered = Renderer.render(body);
+                    var comment = App.database().createComment(upload.resource, authed, body, rendered);
+                    if (comment != null) {
+                      var renderable = App.database().makeCommentRenderable(comment);
+                      response.setComment(renderable);
+                      App.webServer().wsListener().getLobby().in("upload:" + upload.resource.id).broadcast(OutgoingPacket.prepare("comment").addData("comment", renderable));
+                    } else {
+                      response.addError("An internal server error occurred. Please try again later.");
+                      code = StatusCodes.INTERNAL_SERVER_ERROR;
+                    }
+                  }
                 }
-              }
-            }
 
-            if (!exchange.isResponseStarted()) {
-              res.status(code).json(Response.fromCode(code).addData(CommentResponse.class, response));
+                if (!exchange.isResponseStarted()) {
+                  res.status(code).json(Response.fromCode(code).addData(CommentResponse.class, response));
+                }
+              } else {
+                res.status(StatusCodes.FORBIDDEN).json(Response.fromCode(StatusCodes.FORBIDDEN).addMessage("You have been restricted from creating new comments."));
+              }
+            } else if (method.equals(Methods.DELETE)) {
+              // Delete comment
+              res.status(StatusCodes.NOT_IMPLEMENTED).json(Response.fromCode(StatusCodes.NOT_IMPLEMENTED));
+            } else if (method.equals(Methods.PATCH)) {
+              // Update comment
+              res.status(StatusCodes.NOT_IMPLEMENTED).json(Response.fromCode(StatusCodes.NOT_IMPLEMENTED));
             }
           } else {
-            res.status(StatusCodes.FORBIDDEN).json(Response.fromCode(StatusCodes.FORBIDDEN).addMessage("You have been restricted from creating new comments."));
+            res.status(StatusCodes.UNAUTHORIZED).json(Response.fromCode(StatusCodes.UNAUTHORIZED));
           }
         }
       }
-    } else {
-      sendTerminalForState(exchange, upload.state);
     }
   }
 

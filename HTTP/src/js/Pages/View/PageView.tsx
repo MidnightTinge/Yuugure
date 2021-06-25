@@ -17,8 +17,8 @@ import NewCommentBlock from '../../Components/modals/NewCommentBlock';
 import ReportModal from '../../Components/modals/ReportModal';
 import Spinner from '../../Components/Spinner';
 import UploadViewer from '../../Components/UploadViewer/UploadViewer';
-import {WebSocketContext} from '../../Context/WebSocketProvider';
 import {AuthStateContext} from '../../Context/AuthStateProvider';
+import {WebSocketContext} from '../../Context/WebSocketProvider';
 import NotFound from '../404/NotFound';
 
 type CommentsState = {
@@ -272,15 +272,15 @@ export default function PageView(props: PageViewProps) {
                 <InternalSwitch>
                   <InternalRoute path="comments">
                     {comments.comments.map((comment, idx) => (<Comment key={idx} comment={comment}/>))}
-                    <div className="bg-gray-100 border border-gray-200 rounded-sm shadow p-3">
-                      {authState.authed ? (
-                        authState.account.state.COMMENTS_RESTRICTED ? (
+                    {authState.authed ? (
+                      <div className="bg-gray-100 border border-gray-200 rounded-sm shadow p-3">
+                        {authState.account.state.COMMENTS_RESTRICTED ? (
                           <p className="text-center text-red-500 text-lg">You are restricted from creating new comments.</p>
                         ) : (
                           <NewCommentBlock targetType="upload" targetId={upload.upload.id} onCommentPosted={handleCommentPosted}/>
-                        )
-                      ) : null}
-                    </div>
+                        )}
+                      </div>
+                    ) : null}
                   </InternalRoute>
                   <InternalRoute path="edit">
                     <p>hello edit</p>
