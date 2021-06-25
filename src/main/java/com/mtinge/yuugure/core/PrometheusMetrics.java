@@ -41,4 +41,8 @@ public class PrometheusMetrics {
   public static final Counter MP_JOBS_STARTED = Counter.build().namespace("yuugure_mp").name("jobs_started").help("The total number of jobs started.").register();
   public static final Counter MP_JOBS_FINISHED = Counter.build().namespace("yuugure_mp").name("jobs_finished").help("The total number of jobs completed.").register();
 
+  // ETag Cache
+  public static final Counter ETAG_CACHE_HITS = Counter.build().namespace("yuugure_etag_cache").name("hits").help("The total number of cache hits on the ETag cache.").register();
+  public static final Counter ETAG_CACHE_MISSES = Counter.build().namespace("yuugure_etag_cache").name("misses").labelNames("reason").help("The total number of cache misses on the ETag cache.").register();
+
 }

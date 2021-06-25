@@ -137,6 +137,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-jcs3-core</artifactId>
+      <version>3.0</version>
+    </dependency>
+
+    <dependency>
       <groupId>com.github.kokorin.jaffree</groupId>
       <artifactId>jaffree</artifactId>
       <version>2021.05.31</version>

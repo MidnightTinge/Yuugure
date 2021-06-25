@@ -1,15 +1,17 @@
 package com.mtinge.yuugure.services.http;
 
+import com.mtinge.yuugure.core.PrometheusMetrics;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.util.ETag;
 import lombok.AllArgsConstructor;
+import org.apache.commons.jcs3.JCS;
+import org.apache.commons.jcs3.access.CacheAccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.CRC32;
 
 /**
@@ -18,8 +20,12 @@ import java.util.zip.CRC32;
 public class ETagHelper implements PathResourceManager.ETagFunction {
   private static final Logger logger = LoggerFactory.getLogger(ETagHelper.class);
 
-  private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
+  private final CacheAccess<String, CacheEntry> cache;
   private static final Object _monitor = new Object();
+
+  public ETagHelper() {
+    cache = JCS.getInstance("etag");
+  }
 
   public ETag generate(Path path) {
     try {
@@ -31,6 +37,7 @@ public class ETagHelper implements PathResourceManager.ETagFunction {
         var key = file.toString();
         var cached = cache.get(key);
         if (cached == null || modified.toMillis() > cached.mtime) {
+          PrometheusMetrics.ETAG_CACHE_MISSES.labels(cached == null ? "empty" : "outdated").inc();
           try (var fis = new FileInputStream(file)) {
             // Compute a CRC32 hash
             var crc32 = new CRC32();
@@ -55,6 +62,8 @@ public class ETagHelper implements PathResourceManager.ETagFunction {
             cached = new CacheEntry(modified.toMillis(), etag);
             cache.put(key, cached);
           }
+        } else {
+          PrometheusMetrics.ETAG_CACHE_HITS.inc();
         }
 
         return new ETag(false, cached.hash);

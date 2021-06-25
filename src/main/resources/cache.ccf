@@ -1,0 +1,23 @@
+# Default Region
+jcs.default=
+jcs.default.cacheattributes=org.apache.commons.jcs3.engine.CompositeCacheAttributes
+jcs.default.cacheattributes.MaxObjects=1000
+jcs.default.cacheattributes.MemoryCacheName=org.apache.commons.jcs3.engine.memory.lru.LRUMemoryCache
+jcs.default.cacheattributes.UseMemoryShrinker=true
+jcs.default.cacheattributes.MaxMemoryIdleTimeSeconds=1800
+jcs.default.cacheattributes.ShrinkerIntervalSeconds=60
+jcs.default.cacheattributes.MaxSpoolPerRun=500
+jcs.default.elementattributes=org.apache.commons.jcs3.engine.ElementAttributes
+jcs.default.elementattributes.IsEternal=false
+
+# ETag Cache Region
+jcs.region.etag=
+jcs.region.etag.cacheattributes=org.apache.commons.jcs3.engine.CompositeCacheAttributes
+jcs.region.etag.cacheattributes.MaxObjects=5000
+jcs.region.etag.cacheattributes.MemoryCacheName=org.apache.commons.jcs3.engine.memory.lru.LRUMemoryCache
+jcs.region.etag.cacheattributes.UseMemoryShrinker=true
+jcs.region.etag.cacheattributes.MaxMemoryIdleTimeSeconds=1800
+jcs.region.etag.cacheattributes.ShrinkerIntervalSeconds=60
+jcs.region.etag.cacheattributes.MaxSpoolPerRun=500
+jcs.region.etag.elementattributes=org.apache.commons.jcs3.engine.ElementAttributes
+jcs.region.etag.elementattributes.IsEternal=false
