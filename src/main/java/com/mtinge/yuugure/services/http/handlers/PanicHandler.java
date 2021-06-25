@@ -6,6 +6,7 @@ import com.googlecode.concurrenttrees.radix.node.concrete.DefaultByteArrayNodeFa
 import com.mtinge.RateLimit.OnPanicHandler;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.MoshiFactory;
+import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.core.ThreadFactories;
 import com.mtinge.yuugure.data.postgres.DBPanicConnection;
 import com.squareup.moshi.Moshi;
@@ -45,6 +46,7 @@ public class PanicHandler implements HttpHandler {
       var expires = now.plusMillis(BLOCK_UNIT.toMillis(BLOCK_AMOUNT));
 
       panicLogger.info("{}", moshi.adapter(Object.class).toJson(Map.of("address", addr.getHostAddress(), "rule", rule, "now", now.toEpochMilli())));
+      PrometheusMetrics.PANIC_TRIGGERS_TOTAL.inc();
 
       // put an initial block length so that subsequent connections get 403'd while we're in the db
       this.blocks.putIfAbsent(addr.getHostAddress(), expires.toEpochMilli());

@@ -17,6 +17,12 @@ public class PrometheusMetrics {
   public static final Counter HTTP_REQUESTS_UNAUTHED_TOTAL = Counter.build().namespace("yuugure_http").name("requests_unauthed_total").help("Total number of unauthed HTTP requests by method.").register();
   public static final Histogram HTTP_REQUEST_TIMING = Histogram.build().namespace("yuugure_http").name("request_timing").labelNames("method").help("The timing of requests in seconds.").register();
 
+  // PanicHandler (Ratelimit panics / automated timed IP blocks)
+  public static final Counter PANIC_TRIGGERS_TOTAL = Counter.build().namespace("yuugure_panics").name("triggers").help("Total number of Panic triggers.").register();
+
+  // RateLimits
+  public static final Counter RATELIMIT_TRIPS_TOTAL = Counter.build().namespace("yuugure_ratelimits").name("trips").labelNames("resource").help("Total number of RateLimit trips.").register();
+
   // WebSocket
   public static final Counter WS_CONNECTIONS_TOTAL = Counter.build().namespace("yuugure_ws").name("connections_total").help("The total number of WS connections.").register();
   public static final Counter WS_CONNECTIONS_AUTHED_TOTAL = Counter.build().namespace("yuugure_ws").name("authed_connections_total").help("The total number of authenticated WS connections.").register();

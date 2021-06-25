@@ -1,6 +1,7 @@
 package com.mtinge.yuugure.services.http.api;
 
 import com.mtinge.RateLimit.Limiter;
+import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.postgres.DBAccount;
 import com.mtinge.yuugure.services.http.Responder;
@@ -20,6 +21,7 @@ public abstract class APIResource<T> {
     responder.ratelimitHeaders(res);
 
     if (res.overLimit) {
+      PrometheusMetrics.RATELIMIT_TRIPS_TOTAL.labels(limiter.getPrefix()).inc();
       if (res.panicWorthy) {
         // TODO alert someone, when panicWorthy=true we've already panicked. can be done when we add
         //      prometheus bindings.
