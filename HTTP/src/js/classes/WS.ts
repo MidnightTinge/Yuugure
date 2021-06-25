@@ -96,12 +96,9 @@ export class WS extends EventableBase {
         return;
       }
 
-      if (this.#connectionAttempts++ == 0) {
-        this.connect();
-      } else {
-        // TODO: I don't like this, I need to do some proper curve shaping at some point.
-        setTimeout(this.connect.bind(this), Math.min(15000, ((this.#connectionAttempts - 1) * 1000) + ((Math.random() * 3) * 500)) + (Math.random() * 2000) + (Math.random() * -5000));
-      }
+      this.#connectionAttempts++;
+      // Slight exponential backoff with random jitter between [0ms, 500ms)
+      setTimeout(this.connect.bind(this), (((this.#connectionAttempts ** 1.5) / 2 >> 0) * 1000 + (Math.random() * 500)) >> 0);
     }
   }
 

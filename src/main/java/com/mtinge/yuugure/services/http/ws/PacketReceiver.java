@@ -2,18 +2,21 @@ package com.mtinge.yuugure.services.http.ws;
 
 import com.mtinge.yuugure.core.MoshiFactory;
 import com.mtinge.yuugure.core.PrometheusMetrics;
+import com.mtinge.yuugure.services.http.ws.packets.BinaryPacket;
 import com.mtinge.yuugure.services.http.ws.packets.PacketFactory;
 import com.squareup.moshi.JsonReader;
 import com.squareup.moshi.Moshi;
 import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.BufferedTextMessage;
 import io.undertow.websockets.core.WebSocketChannel;
+import io.undertow.websockets.core.WebSockets;
 import okio.Okio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -36,9 +39,14 @@ public class PacketReceiver extends AbstractReceiveListener {
     reader.setLenient(true);
 
     if (reader.peek() != JsonReader.Token.BEGIN_OBJECT) {
+      if (channel.isOpen()) {
+        WebSockets.sendBinary(ByteBuffer.wrap(BinaryPacket.REJECTED_INVALID_DATA().data), channel, null);
+      }
       logger.debug("Invalid packet received, reader's head token is not BEGIN_OBJECT, instead received '{}'.", reader.peek());
       return;
     }
+
+    boolean handled = false;
 
     try {
       var deserialized = (Map<String, Object>) moshi.adapter(Object.class).fromJson(reader);
@@ -49,6 +57,7 @@ public class PacketReceiver extends AbstractReceiveListener {
           PrometheusMetrics.WS_PACKETS_TYPED_TOTAL.labels(type.toLowerCase().trim()).inc();
           var packet = this.factory.getByType(type);
           if (packet != null) {
+            handled = true;
             try {
               packet.handleAction(socket, deserialized);
               PrometheusMetrics.WS_PACKETS_HANDLED_TOTAL.labels(type).inc();
@@ -57,6 +66,10 @@ public class PacketReceiver extends AbstractReceiveListener {
               logger.error("The handler for packet {} threw an error.", packet.type, e);
             }
           } else {
+            if (channel.isOpen()) {
+              WebSockets.sendBinary(ByteBuffer.wrap(BinaryPacket.REJECTED_UNKNOWN_TYPE(type).data), channel, null);
+              handled = true;
+            }
             PrometheusMetrics.WS_PACKETS_UNHANDLED_TOTAL.labels(type.toLowerCase().trim()).inc();
             logger.warn("Unhandled WebSocket packet: {}.", type);
           }
@@ -71,6 +84,12 @@ public class PacketReceiver extends AbstractReceiveListener {
     } catch (Exception e) {
       PrometheusMetrics.WS_PACKETS_INVALID_TOTAL.inc();
       logger.error("Failed to handle packet (outer).", e);
+    } finally {
+      if (!handled) {
+        if (channel.isOpen()) {
+          WebSockets.sendBinary(ByteBuffer.wrap(BinaryPacket.REJECTED_INVALID_DATA().data), channel, null);
+        }
+      }
     }
   }
 }

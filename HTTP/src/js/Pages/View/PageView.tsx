@@ -100,8 +100,7 @@ export default function PageView(props: PageViewProps) {
 
   const reportable = useMemo<{ type: string, id: number }>(() => (upload ? {type: 'upload', id: upload.upload.id} : {type: null, id: null}), [upload]);
 
-  const wsContext = useContext(WebSocketContext);
-  const ws = useMemo(() => wsContext ? wsContext.ws : null, [wsContext]);
+  const {ws, rooms} = useContext(WebSocketContext);
 
   useEffect(function mounted() {
     function handleComment({comment}: { comment: RenderableComment }) {
@@ -113,7 +112,7 @@ export default function PageView(props: PageViewProps) {
     if (params && params.uploadId) {
       if (ws != null) {
         ws.on('comment', handleComment);
-        ws.emit('sub', {room: `upload:${params.uploadId}`});
+        rooms.join(`upload:${params.uploadId}`);
       }
 
       XHR.for(`/api/upload/${params.uploadId}`).get().getJson<RouterResponse<RenderableUpload>>().then(res => {
@@ -156,7 +155,7 @@ export default function PageView(props: PageViewProps) {
 
     return function unmounted() {
       if (ws != null) { // ws shouldn't ever be null but just in case.
-        ws.emit('unsub', {room: `upload:${params.uploadId}`});
+        rooms.leave(`upload:${params.uploadId}`);
         ws.removeEventHandler('comment', handleComment);
       }
     };

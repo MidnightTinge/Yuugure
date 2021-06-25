@@ -1,6 +1,7 @@
 package com.mtinge.yuugure.services.http.ws;
 
 import com.mtinge.yuugure.core.MoshiFactory;
+import com.mtinge.yuugure.services.http.ws.packets.BinaryPacket;
 import com.squareup.moshi.Moshi;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -36,8 +37,13 @@ public class Room {
 
     synchronized (_monitor) {
       socket.rooms().add(this.name);
-      return sockets.add(socket);
+      if (sockets.add(socket)) {
+        socket.sendBinary(BinaryPacket.ACK_SUB(this.name));
+        return true;
+      }
     }
+
+    return false;
   }
 
   public boolean leave(WrappedSocket socket) {
@@ -47,8 +53,13 @@ public class Room {
 
     synchronized (_monitor) {
       socket.rooms().remove(this.name);
-      return sockets.remove(socket);
+      if (sockets.remove(socket)) {
+        socket.sendBinary(BinaryPacket.ACK_UNSUB(this.name));
+        return true;
+      }
     }
+
+    return false;
   }
 
   public void broadcast(Object packet) {

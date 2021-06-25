@@ -39,20 +39,24 @@ public class Listener {
     packetFactory.register(
       Packet.builder("sub")
         .handleAction((socket, map) -> {
-          String room = ((String) map.getOrDefault("room", "")).toLowerCase().trim();
-          if (!room.isBlank()) {
-            if (validSubscribePattern.matcher(room).find()) {
-              lobby.in(room).join(socket);
+          var room = map.getOrDefault("room", "");
+          if (room instanceof String) {
+            var toSub = ((String) room).toLowerCase().trim();
+            if (!toSub.isBlank()) {
+              if (validSubscribePattern.matcher(toSub).find()) {
+                lobby.in(toSub).join(socket);
+              }
             }
           }
         })
         .build(),
       Packet.builder("unsub")
         .handleAction((socket, map) -> {
-          String room = ((String) map.getOrDefault("room", "")).toLowerCase().trim();
-          if (!room.isBlank()) {
-            if (validSubscribePattern.matcher(room).find()) {
-              lobby.in(room).leave(socket);
+          var room = map.getOrDefault("room", "");
+          if (room instanceof String) {
+            var toSub = ((String) room).toLowerCase().trim();
+            if (!toSub.isBlank()) {
+              lobby.in(toSub).leave(socket);
             }
           }
         })

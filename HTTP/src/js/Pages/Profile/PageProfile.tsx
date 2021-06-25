@@ -48,8 +48,7 @@ function UploadReducer(state: UploadState, action: { type: string, payload?: Arr
 }
 
 export default function PageProfile(props: PageProfileProps) {
-  const wsContext = useContext(WebSocketContext);
-  const ws = useMemo(() => wsContext ? wsContext.ws : null, [wsContext]);
+  const {ws, rooms} = useContext(WebSocketContext);
 
   const {state: authState} = useContext(AuthStateContext);
   const params = useParams<{ accountId: string }>();
@@ -92,13 +91,13 @@ export default function PageProfile(props: PageProfileProps) {
     let id = accountId === '@me' ? (authState.authed ? authState.account.id : null) : accountId;
     if (id !== null && ws != null) {
       ws.addEventHandler('upload', handleUpload);
-      ws.emit('sub', {room: `account:${id}`});
+      rooms.join(`account:${id}`);
     }
 
     return function unsub() {
       if (id !== null && ws != null) {
         ws.removeEventHandler('upload', handleUpload);
-        ws.emit('unsub', {room: `account:${id}`});
+        rooms.leave(`account:${id}`);
       }
     };
   }, [accountId, authState]);
