@@ -2,6 +2,7 @@ package com.mtinge.yuugure.services.http.routes;
 
 import com.mtinge.EBMLReader.EBMLReader;
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.core.States;
 import com.mtinge.yuugure.core.Utils;
 import com.mtinge.yuugure.data.http.Response;
@@ -218,6 +219,7 @@ public class RouteUpload extends Route {
 
                     // report back to the user
                     if (uploadResult.getUpload() != null) {
+                      PrometheusMetrics.UPL_TOTAL.inc();
                       App.messaging().publish(Messaging.TOPIC_UPLOAD, Map.of(
                         "upload_id", uploadResult.getUpload().upload.id,
                         "media_id", uploadResult.getUpload().media.id

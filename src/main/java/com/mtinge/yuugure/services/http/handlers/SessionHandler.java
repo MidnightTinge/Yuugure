@@ -1,6 +1,7 @@
 package com.mtinge.yuugure.services.http.handlers;
 
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.data.postgres.DBAccount;
 import com.mtinge.yuugure.data.postgres.DBSession;
 import io.undertow.server.HttpHandler;
@@ -41,6 +42,8 @@ public class SessionHandler implements HttpHandler {
 
   @Override
   public void handleRequest(HttpServerExchange exchange) throws Exception {
+    boolean authed = false;
+
     try {
       if (!isIgnored(exchange.getRequestURI())) {
         var sessCookie = exchange.getRequestCookie(App.config().http.auth.cookieName);
@@ -70,9 +73,17 @@ public class SessionHandler implements HttpHandler {
             // attach the account ID to our session
             exchange.putAttachment(ATTACHMENT_KEY, aId);
           }
+
+          // set authenticated state for prometheus counter
+          authed = aId != null;
         }
       }
     } finally {
+      if (authed) {
+        PrometheusMetrics.HTTP_REQUESTS_AUTHED_TOTAL.inc();
+      } else {
+        PrometheusMetrics.HTTP_REQUESTS_UNAUTHED_TOTAL.inc();
+      }
       next.handleRequest(exchange);
     }
   }

@@ -13,6 +13,7 @@ import com.mtinge.yuugure.services.http.routes.RouteAuth;
 import com.mtinge.yuugure.services.http.routes.RouteIndex;
 import com.mtinge.yuugure.services.http.routes.RouteUpload;
 import com.mtinge.yuugure.services.http.ws.Listener;
+import io.prometheus.client.exporter.MetricsServlet;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.handlers.form.EagerFormParsingHandler;
@@ -22,6 +23,7 @@ import io.undertow.server.handlers.form.MultiPartParserDefinition;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.servlet.Servlets;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.slf4j.Logger;
@@ -31,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 @Accessors(fluent = true)
@@ -99,7 +102,6 @@ public class WebServer implements IService {
     var multiPartDef = new MultiPartParserDefinition(_tempPath);
     multiPartDef.setMaxIndividualFileSize(App.config().upload.maxFileSize);
     multiPartDef.setFileSizeThreshold(App.config().upload.maxFileSize);
-//    multiPartDef.setExecutor()
 
     var formParser = new EagerFormParsingHandler(
       FormParserFactory.builder(false)
@@ -120,7 +122,7 @@ public class WebServer implements IService {
     this.pebble = engineBuilder
       .loader(loader)
       .build();
-    this.undertow = Undertow.builder()
+    var builder = Undertow.builder()
       .addHttpListener(App.config().http.port, App.config().http.host)
       .setHandler(
         new RootHandler(
@@ -150,8 +152,26 @@ public class WebServer implements IService {
             )
           )
         )
-      )
-      .build();
+      );
+
+    if (App.config().prometheus.enabled) {
+      // Register the Prometheus metrics endpoint via servlet deployment
+      var manager = Servlets.defaultContainer().addDeployment(
+        Servlets.deployment()
+          .setClassLoader(WebServer.class.getClassLoader())
+          .setContextPath("")
+          .setDeploymentName("")
+          .addServlets(
+            Servlets.servlet("MyServlet", MetricsServlet.class)
+              .addMapping("/")
+          )
+      );
+      manager.deploy();
+      var handler = Handlers.path().addPrefixPath("/", manager.start());
+      builder.addHttpListener(App.config().prometheus.port, Objects.requireNonNullElse(App.config().prometheus.host, App.config().http.host), handler);
+    }
+
+    this.undertow = builder.build();
   }
 
   @Override

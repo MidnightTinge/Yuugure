@@ -10,6 +10,11 @@
       "secure": true
     }
   },
+  "prometheus": {
+    "enabled": false,
+    "host": null,
+    "port": 9090
+  },
   "upload": {
     "tempDir": "./data/uploads/temp/",
     "finalDir": "./data/uploads/final/",

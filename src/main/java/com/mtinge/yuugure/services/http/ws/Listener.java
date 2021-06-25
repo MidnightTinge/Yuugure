@@ -1,5 +1,6 @@
 package com.mtinge.yuugure.services.http.ws;
 
+import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.services.http.handlers.QueryHandler;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
 import com.mtinge.yuugure.services.http.ws.packets.Packet;
@@ -30,7 +31,6 @@ public class Listener {
   private final Lobby lobby = new Lobby();
   private final PacketFactory packetFactory;
   private final Pattern validSubscribePattern = Pattern.compile("^(?:upload|account):[0-9]+$", Pattern.CASE_INSENSITIVE);
-  // TODO expose the following for prometheus
   private final AtomicInteger connections = new AtomicInteger(0);
   private final AtomicInteger authedConnections = new AtomicInteger(0);
 
@@ -61,12 +61,15 @@ public class Listener {
   }
 
   public void newConnection(WebSocketHttpExchange exchange, WebSocketChannel channel) {
+    PrometheusMetrics.WS_CONNECTIONS_TOTAL.inc();
+
     var query = exchange.getAttachment(QueryHandler.ATTACHMENT_KEY);
     var authed = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
 
     // Attach our account ID and create a WrappedSocket
     WrappedSocket socket;
     if (authed != null) {
+      PrometheusMetrics.WS_CONNECTIONS_AUTHED_TOTAL.inc();
       socket = new WrappedSocket(channel, authed.id);
       synchronized (_conMonitor) {
         var cons = accountConnections.compute(authed.id, (k, v) -> {
@@ -78,10 +81,11 @@ public class Listener {
           return v;
         });
         if (cons.size() == 1) {
-          authedConnections.incrementAndGet();
+          PrometheusMetrics.WS_CONNECTIONS_AUTHED_CURRENT.set(authedConnections.incrementAndGet());
         }
       }
     } else {
+      PrometheusMetrics.WS_CONNECTIONS_UNAUTHED_TOTAL.inc();
       socket = new WrappedSocket(channel);
     }
 
@@ -90,7 +94,7 @@ public class Listener {
   }
 
   private void handleSocket(WrappedSocket socket, String intents) {
-    connections.incrementAndGet();
+    PrometheusMetrics.WS_CONNECTIONS_TOTAL_CURRENT.set(connections.incrementAndGet());
     synchronized (_conMonitor) {
       sockets.add(socket);
     }
@@ -98,6 +102,8 @@ public class Listener {
     socket.channel().getReceiveSetter().set(new PacketReceiver(socket, packetFactory));
     socket.channel().getCloseSetter().set(c -> {
       synchronized (_conMonitor) {
+        PrometheusMetrics.WS_CONNECTIONS_TOTAL_CURRENT.set(connections.decrementAndGet());
+
         var iter = sockets.iterator();
         while (iter.hasNext()) {
           var iterSock = iter.next();
@@ -122,7 +128,7 @@ public class Listener {
         if (socket.accountId() != null) {
           var cons = this.accountConnections.get(socket.accountId());
           if (cons != null && cons.isEmpty()) {
-            authedConnections.decrementAndGet();
+            PrometheusMetrics.WS_CONNECTIONS_AUTHED_CURRENT.set(authedConnections.decrementAndGet());
           }
         }
       }

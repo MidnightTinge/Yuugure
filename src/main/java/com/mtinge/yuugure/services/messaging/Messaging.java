@@ -2,6 +2,7 @@ package com.mtinge.yuugure.services.messaging;
 
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.MoshiFactory;
+import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.data.processor.ProcessorResult;
 import com.mtinge.yuugure.services.IService;
 import lombok.Getter;
@@ -18,6 +19,7 @@ import org.zeromq.ZMQ;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Accessors(fluent = true)
 public class Messaging implements IService {
@@ -42,8 +44,12 @@ public class Messaging implements IService {
   private Thread consolidatorThread;
   private Thread externalThread;
 
+  /* PROMETHEUS STATS */
+  private final AtomicInteger jobsAlive;
+
   public Messaging() {
     shutdownRequested = new AtomicBoolean(false);
+    jobsAlive = new AtomicInteger(0);
   }
 
   @Override
@@ -78,6 +84,8 @@ public class Messaging implements IService {
                       bob.pipe(bos);
                       internalSocket.send(bos.toByteArray());
                     }
+                    PrometheusMetrics.MP_JOBS_ALIVE.set(jobsAlive.incrementAndGet());
+                    PrometheusMetrics.MP_JOBS_STARTED.inc();
                   } catch (Exception e) {
                     logger.error("Failed to send ProcessableUpload.", e);
                     internalSocket.send(new byte[]{ERRORED});
@@ -110,6 +118,8 @@ public class Messaging implements IService {
             }
 
             if (result != null) {
+              PrometheusMetrics.MP_JOBS_ALIVE.set(jobsAlive.decrementAndGet());
+              PrometheusMetrics.MP_JOBS_FINISHED.inc();
               App.database().handleProcessorResult(result);
               logger.debug("Marked dequeued item {} complete.", result.dequeued().queueItem.id);
             }

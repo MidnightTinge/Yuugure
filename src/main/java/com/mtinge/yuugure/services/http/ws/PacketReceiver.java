@@ -1,6 +1,7 @@
 package com.mtinge.yuugure.services.http.ws;
 
 import com.mtinge.yuugure.core.MoshiFactory;
+import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.services.http.ws.packets.PacketFactory;
 import com.squareup.moshi.JsonReader;
 import com.squareup.moshi.Moshi;
@@ -30,6 +31,7 @@ public class PacketReceiver extends AbstractReceiveListener {
   @SuppressWarnings("unchecked")
   @Override
   protected void onFullTextMessage(WebSocketChannel channel, BufferedTextMessage message) throws IOException {
+    PrometheusMetrics.WS_PACKETS_TOTAL.inc();
     var reader = JsonReader.of(Okio.buffer(Okio.source(new ByteArrayInputStream(message.getData().getBytes(StandardCharsets.UTF_8)))));
     reader.setLenient(true);
 
@@ -43,25 +45,31 @@ public class PacketReceiver extends AbstractReceiveListener {
       if (deserialized != null) {
         var type = (String) deserialized.getOrDefault("type", "");
 
-        // TODO expose ws_packet counters in prometheus
         if (type != null && !type.isBlank()) {
+          PrometheusMetrics.WS_PACKETS_TYPED_TOTAL.labels(type.toLowerCase().trim()).inc();
           var packet = this.factory.getByType(type);
           if (packet != null) {
             try {
               packet.handleAction(socket, deserialized);
+              PrometheusMetrics.WS_PACKETS_HANDLED_TOTAL.labels(type).inc();
             } catch (Exception e) {
+              PrometheusMetrics.WS_PACKETS_ERRORED_TOTAL.labels(type).inc();
               logger.error("The handler for packet {} threw an error.", packet.type, e);
             }
           } else {
+            PrometheusMetrics.WS_PACKETS_UNHANDLED_TOTAL.labels(type.toLowerCase().trim()).inc();
             logger.warn("Unhandled WebSocket packet: {}.", type);
           }
         } else {
+          PrometheusMetrics.WS_PACKETS_INVALID_TOTAL.inc();
           logger.debug("Discarded invalid packet, type was not present.");
         }
       } else {
+        PrometheusMetrics.WS_PACKETS_INVALID_TOTAL.inc();
         logger.debug("Discarded invalid packet, deserialized was null.");
       }
     } catch (Exception e) {
+      PrometheusMetrics.WS_PACKETS_INVALID_TOTAL.inc();
       logger.error("Failed to handle packet (outer).", e);
     }
   }

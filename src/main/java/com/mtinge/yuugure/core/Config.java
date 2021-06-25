@@ -34,6 +34,7 @@ public final class Config {
 
 
   public final HTTP http;
+  public final Prometheus prometheus;
   public final Upload upload;
   public final Postgres postgres;
   public final Redis redis;
@@ -42,6 +43,7 @@ public final class Config {
 
   private Config() {
     this.http = new HTTP();
+    this.prometheus = new Prometheus();
     this.upload = new Upload();
     this.postgres = new Postgres();
     this.redis = new Redis();
@@ -79,6 +81,20 @@ public final class Config {
         this.secure = true;
       }
     }
+  }
+
+  @AllArgsConstructor
+  public static final class Prometheus {
+    public final boolean enabled;
+    public final String host;
+    public final int port;
+
+    public Prometheus() {
+      this.enabled = false;
+      this.host = null;
+      this.port = 9090;
+    }
+
   }
 
   @AllArgsConstructor
