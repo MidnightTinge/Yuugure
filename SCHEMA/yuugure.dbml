@@ -151,3 +151,14 @@ table comment {
     parent
   }
 }
+
+table panic_connection {
+  addr      bytea       [not null]
+  hits      int         [not null, default: 0]
+  timestamp timestamptz [not null, default: `now()`]
+  expires   timestamptz [not null, default: `now()`]
+
+  indexes {
+    addr [unique]
+  }
+}
