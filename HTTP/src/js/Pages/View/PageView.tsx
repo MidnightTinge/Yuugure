@@ -2,6 +2,7 @@ import * as React from 'react';
 import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
 import {useParams} from 'react-router';
 import {useHistory} from 'react-router-dom';
+import {AutoSizer, CellMeasurer, CellMeasurerCache, List, ListRowProps} from 'react-virtualized';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import Comment from '../../Components/Comment';
@@ -188,23 +189,42 @@ export default function PageView(props: PageViewProps) {
     setShowReport(false);
   }
 
-  function handleReportSent() {
-    //
-  }
-
   function handleCloseRequest(cs: CloseSource, posting: boolean) {
     if (!posting) {
       closeModal();
     }
   }
 
-  function handleCommentPosted() {
-    // handled by the WebSocket
+  const cellMeasurerCache = useMemo(() => {
+    return new CellMeasurerCache({
+      defaultHeight: 50,
+      fixedWidth: true,
+      keyMapper: (row) => {
+        return comments.comments[row].id;
+      },
+    });
+  }, [comments]);
+
+  function commentRowRenderer({key, index, style, parent}: ListRowProps): React.ReactNode {
+    return (
+      <CellMeasurer
+        cache={cellMeasurerCache}
+        columnIndex={0}
+        key={key}
+        rowIndex={index}
+        parent={parent}>
+        {({registerChild}) => (
+          <div ref={registerChild} style={style} className="px-2 py-0.5">
+            <Comment comment={comments.comments[index]}/>
+          </div>
+        )}
+      </CellMeasurer>
+    );
   }
 
   return (
     <>
-      <ReportModal targetType={reportable.type} targetId={reportable.id} onReportSent={handleReportSent} onCloseRequest={handleCloseRequest} show={showReport}/>
+      <ReportModal targetType={reportable.type} targetId={reportable.id} onCloseRequest={handleCloseRequest} show={showReport}/>
       {!fetched ? (
         <div className="flex flex-col w-full h-full items-center justify-center">
           <div className="flex-shrink">
@@ -226,7 +246,7 @@ export default function PageView(props: PageViewProps) {
           )
         ) : (
           <InternalRouter defaultPath="view">
-            <div className="grid grid-cols-12 gap-2 p-2">
+            <div className="grid grid-cols-12 gap-2 p-2 pb-0 h-full">
               <div className="col-span-4 md:col-span-2">
                 <section className="text-right">
                   {authState && authState.authed ? (
@@ -271,16 +291,35 @@ export default function PageView(props: PageViewProps) {
               <div className="col-span-8 md:col-span-10">
                 <InternalSwitch>
                   <InternalRoute path="comments">
-                    {comments.comments.map((comment, idx) => (<Comment key={idx} comment={comment}/>))}
-                    {authState.authed ? (
-                      <div className="bg-gray-100 border border-gray-200 rounded-sm shadow p-3">
-                        {authState.account.state.COMMENTS_RESTRICTED ? (
-                          <p className="text-center text-red-500 text-lg">You are restricted from creating new comments.</p>
-                        ) : (
-                          <NewCommentBlock targetType="upload" targetId={upload.upload.id} onCommentPosted={handleCommentPosted}/>
-                        )}
+                    <div className="flex flex-col h-full">
+                      {authState.authed || comments.error ? (
+                        <div className="bg-gray-100 border border-gray-200 rounded-sm shadow px-3 py-1 mb-2 flex-grow-0 flex-shrink">
+                          {comments.error ? (<p className="text-red-500 text-lg whitespace-pre-wrap">{error}</p>) : null}
+                          {authState.authed ? (
+                            authState.account.state.COMMENTS_RESTRICTED ? (
+                              <p className="text-center text-red-500 text-lg">You are restricted from creating new comments.</p>
+                            ) : (
+                              <NewCommentBlock targetType="upload" targetId={upload.upload.id}/>
+                            )
+                          ) : null}
+                        </div>
+                      ) : null}
+                      <div className="flex-grow flex-shrink-0">
+                        <AutoSizer>
+                          {({width, height}) => (
+                            <List
+                              width={width}
+                              height={height}
+                              deferredMeasurementCache={cellMeasurerCache}
+                              overscanRowCount={0}
+                              rowCount={comments.comments.length}
+                              rowHeight={({index}) => cellMeasurerCache.getHeight(index, 0)}
+                              rowRenderer={commentRowRenderer}
+                            />
+                          )}
+                        </AutoSizer>
                       </div>
-                    ) : null}
+                    </div>
                   </InternalRoute>
                   <InternalRoute path="edit">
                     <p>hello edit</p>

@@ -62,7 +62,7 @@ export default function Comment({comment}: CommentProps) {
           </div>
         </div>
         <div className="py-1 px-1">
-          <p dangerouslySetInnerHTML={{__html: parsed || comment.content_rendered || comment.content_raw}}/>
+          <p className="whitespace-pre-wrap" dangerouslySetInnerHTML={{__html: parsed || comment.content_rendered || comment.content_raw}}/>
         </div>
       </div>
     </>

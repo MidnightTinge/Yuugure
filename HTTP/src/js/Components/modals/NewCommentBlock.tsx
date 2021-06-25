@@ -8,7 +8,7 @@ export type NewCommentBlockProps = {
   targetType: string;
   targetId: number;
 
-  onCommentPosted: (comment: CommentResponse) => void;
+  onCommentPosted?: (comment: CommentResponse) => void;
 };
 
 export default function NewCommentBlock(props: NewCommentBlockProps) {

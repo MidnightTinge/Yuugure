@@ -62,6 +62,6 @@ public class Renderer {
     result = Renderer.markdown(result);
     result = Renderer.sanitize(result);
 
-    return result;
+    return result.trim();
   }
 }

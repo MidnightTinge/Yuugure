@@ -1,7 +1,6 @@
 package com.mtinge.yuugure;
 
 import com.mtinge.yuugure.core.Config;
-import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.services.database.Database;
 import com.mtinge.yuugure.services.http.WebServer;
 import com.mtinge.yuugure.services.messaging.Messaging;

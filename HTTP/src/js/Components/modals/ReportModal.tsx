@@ -9,7 +9,7 @@ export type ReportModalProps = & {
   show?: boolean;
   targetType: string;
   targetId: number;
-  onReportSent: (report: ReportResponse) => void;
+  onReportSent?: (report: ReportResponse) => void;
   onCloseRequest: (cs: CloseSource, posting: boolean) => void;
 };
 
@@ -30,6 +30,9 @@ export default function ReportModal(props: ReportModalProps) {
       if (data) {
         if (data.code === 200 && Array.isArray(data.data.ReportResponse) && data.data.ReportResponse.length > 0) {
           setReported(true);
+          if (typeof props.onReportSent === 'function') {
+            props.onReportSent(data.data.ReportResponse[0]);
+          }
         } else if (data.code === 429) {
           setError(`You are doing that too often. Try again ${data.data && data.data.RateLimitResponse ? (`in ${data.data.RateLimitResponse[0].minimum_wait / 1e3 >> 0} seconds`) : 'later'}.`);
         } else {
