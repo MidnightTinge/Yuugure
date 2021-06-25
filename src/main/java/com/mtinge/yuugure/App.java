@@ -1,6 +1,7 @@
 package com.mtinge.yuugure;
 
 import com.mtinge.yuugure.core.Config;
+import com.mtinge.yuugure.services.cli.CLI;
 import com.mtinge.yuugure.services.database.Database;
 import com.mtinge.yuugure.services.http.WebServer;
 import com.mtinge.yuugure.services.messaging.Messaging;
@@ -25,6 +26,7 @@ public class App {
   private static Redis redis;
   private static Messaging messaging;
   private static MediaProcessor mediaProcessor;
+  private static CLI cli;
 
   public App() {
     try {
@@ -34,6 +36,7 @@ public class App {
       redis = new Redis();
       messaging = new Messaging();
       mediaProcessor = new MediaProcessor();
+      cli = new CLI();
       webServer = new WebServer();
     } catch (Exception e) {
       throw new Error("Failed to instantiate services.", e);
@@ -46,6 +49,7 @@ public class App {
       database.init();
       messaging.init();
       mediaProcessor.init();
+      cli.init();
       webServer.init();
     } catch (Exception e) {
       throw new Error("Failed to initialize services.", e);
@@ -56,6 +60,7 @@ public class App {
       database.start();
       messaging.start();
       mediaProcessor.start();
+      cli.start();
       webServer.start();
     } catch (Exception e) {
       throw new Error("Failed to start services.", e);

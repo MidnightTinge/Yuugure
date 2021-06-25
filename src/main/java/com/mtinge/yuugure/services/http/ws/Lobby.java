@@ -1,6 +1,8 @@
 package com.mtinge.yuugure.services.http.ws;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * A WebSocket room manager.
@@ -23,6 +25,10 @@ public class Lobby {
 
   public Room in(String roomName) {
     return get(roomName);
+  }
+
+  public List<Room> createdRooms() {
+    return new LinkedList<>(rooms.values());
   }
 
   public void closeRoom(String roomName) {

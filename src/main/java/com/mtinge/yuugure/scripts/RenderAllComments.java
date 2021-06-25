@@ -8,6 +8,7 @@ import org.jdbi.v3.core.Handle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,9 +20,18 @@ import java.util.stream.Collectors;
  * to process jobs. Comments are locked via FOR UPDATE until rendering is complete and the entire
  * process is wrapped in a transactional block until the executor terminates.
  */
-public class RenderAllComments {
+public class RenderAllComments extends RunnableScript {
   private static final Logger logger = LoggerFactory.getLogger(RenderAllComments.class);
   private static final AtomicBoolean canProcess = new AtomicBoolean(false);
+
+  public RenderAllComments() {
+    super("renderAllComments");
+  }
+
+  @Override
+  public void run(LinkedList<String> args) {
+    RenderAllComments.run();
+  }
 
   public static void run() {
     App.database().jdbi().useHandle(handle -> {

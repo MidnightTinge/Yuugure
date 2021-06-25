@@ -2,6 +2,7 @@ package com.mtinge.yuugure.services.http.ws;
 
 import com.mtinge.yuugure.core.MoshiFactory;
 import com.squareup.moshi.Moshi;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +18,7 @@ public class Room {
   private final Moshi moshi;
   private final Logger logger;
   private final AtomicBoolean closed = new AtomicBoolean(false);
+  @Getter
   private final HashSet<WrappedSocket> sockets;
   public final String name;
 
@@ -87,14 +89,6 @@ public class Room {
         sockets.clear();
       }
     }
-  }
-
-  private String preparePacket(Object packet) {
-    if (!(packet instanceof String)) {
-      packet = moshi.adapter(Object.class).toJson(packet);
-    }
-
-    return (String) packet;
   }
 
   public String toString() {

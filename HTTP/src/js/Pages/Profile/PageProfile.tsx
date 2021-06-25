@@ -98,7 +98,7 @@ export default function PageProfile(props: PageProfileProps) {
     return function unsub() {
       if (id !== null && ws != null) {
         ws.removeEventHandler('upload', handleUpload);
-        ws.emit('unsub', {room: `account:${params.accountId}`});
+        ws.emit('unsub', {room: `account:${id}`});
       }
     };
   }, [accountId, authState]);

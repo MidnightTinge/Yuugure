@@ -3,7 +3,6 @@ package com.mtinge.yuugure.services.http.routes;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.data.postgres.DBMedia;
 import com.mtinge.yuugure.data.postgres.DBUpload;
-import com.mtinge.yuugure.services.http.ETagHelper;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.ViewHandler;
 import io.undertow.Handlers;
@@ -31,7 +30,7 @@ public class RouteIndex extends Route {
   public RouteIndex() {
     this.resourceHandler = new ResourceHandler(PathResourceManager.builder()
       .setBase(Path.of(App.config().upload.finalDir))
-      .setETagFunction(new ETagHelper())
+      .setETagFunction(App.webServer().eTagHelper())
       .setFollowLinks(false)
       .setCaseSensitive(true)
       .build());

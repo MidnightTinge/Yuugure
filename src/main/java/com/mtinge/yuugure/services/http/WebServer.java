@@ -47,6 +47,7 @@ public class WebServer implements IService {
   private PebbleEngine pebble;
   private ResourceHandler staticHandler;
   private Listener wsListener;
+  private ETagHelper eTagHelper;
 
   public WebServer() {
     //
@@ -118,6 +119,7 @@ public class WebServer implements IService {
     this.limiters = new Limiters(this.limiterFactory);
 
     this.wsListener = new Listener();
+    this.eTagHelper = new ETagHelper();
 
     this.pebble = engineBuilder
       .loader(loader)

@@ -4,6 +4,7 @@ import com.mtinge.yuugure.core.PrometheusMetrics;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.util.ETag;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.apache.commons.jcs3.JCS;
 import org.apache.commons.jcs3.access.CacheAccess;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import java.util.zip.CRC32;
 public class ETagHelper implements PathResourceManager.ETagFunction {
   private static final Logger logger = LoggerFactory.getLogger(ETagHelper.class);
 
+  @Getter
   private final CacheAccess<String, CacheEntry> cache;
   private static final Object _monitor = new Object();
 
@@ -34,7 +36,7 @@ public class ETagHelper implements PathResourceManager.ETagFunction {
 
       // Check the cache, if we don't get a hit or our hit is old then recompute and store.
       synchronized (_monitor) {
-        var key = file.toString();
+        var key = file.getName();
         var cached = cache.get(key);
         if (cached == null || modified.toMillis() > cached.mtime) {
           PrometheusMetrics.ETAG_CACHE_MISSES.labels(cached == null ? "empty" : "outdated").inc();
