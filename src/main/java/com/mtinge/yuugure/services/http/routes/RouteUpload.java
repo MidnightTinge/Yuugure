@@ -244,7 +244,7 @@ public class RouteUpload extends Route {
 
           var code = uploadResult.hasErrors() ? StatusCodes.BAD_REQUEST : StatusCodes.OK;
           var status = uploadResult.hasErrors() ? StatusCodes.BAD_REQUEST_STRING : StatusCodes.OK_STRING;
-          resp.json(new Response(status, code, uploadResult));
+          resp.status(code).json(new Response(status, code, uploadResult));
         }
       }
     }

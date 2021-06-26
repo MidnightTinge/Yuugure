@@ -57,22 +57,24 @@ public class UploadResource extends APIResource<DBUpload> {
     if (resource.state == FetchState.OK) {
       if (action.trim().equalsIgnoreCase("report")) {
         if (exchange.getRequestMethod().equals(Methods.POST)) {
-          var body = exchange.getAttachment(FormDataParser.FORM_DATA);
-          if (body != null) {
-            var frmReason = body.getFirst("reason");
-            if (frmReason != null && !frmReason.isFileItem()) {
-              var report = App.database().createReport(resource.resource, authed, frmReason.getValue());
-              if (report != null) {
-                res.json(Response.good(ReportResponse.fromDb(report)));
+          if (checkRatelimit(exchange, App.webServer().limiters().reportLimiter())) {
+            var body = exchange.getAttachment(FormDataParser.FORM_DATA);
+            if (body != null) {
+              var frmReason = body.getFirst("reason");
+              if (frmReason != null && !frmReason.isFileItem()) {
+                var report = App.database().createReport(resource.resource, authed, frmReason.getValue());
+                if (report != null) {
+                  res.json(Response.good(ReportResponse.fromDb(report)));
+                } else {
+                  res.internalServerError();
+                  logger.error("Report returned from database on upload {} from user {} was null.", resource.resource.id, resource.resource.id);
+                }
               } else {
-                res.internalServerError();
-                logger.error("Report returned from database on upload {} from user {} was null.", resource.resource.id, resource.resource.id);
+                res.badRequest();
               }
             } else {
               res.badRequest();
             }
-          } else {
-            res.badRequest();
           }
         } else {
           res.methodNotAllowed(Methods.POST);
