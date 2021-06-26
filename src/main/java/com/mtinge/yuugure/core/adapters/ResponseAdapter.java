@@ -6,12 +6,13 @@ import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.JsonDataException;
 import com.squareup.moshi.JsonReader;
 import com.squareup.moshi.JsonWriter;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
 public class ResponseAdapter extends JsonAdapter<Response> {
   @Override
-  public void toJson(JsonWriter writer, Response value) throws IOException {
+  public void toJson(@NotNull JsonWriter writer, Response value) throws IOException {
     if (value == null)
       throw new JsonDataException("Response cannot be null");
 
@@ -32,22 +33,14 @@ public class ResponseAdapter extends JsonAdapter<Response> {
       // </messages>
 
       // <data>
-      writer.name("data").beginObject();
+      writer.name("data").beginArray();
       if (value.getData() != null) {
-        var moshi = MoshiFactory.create();
-        for (var classListEntry : value.getData().entrySet()) {
-          if (classListEntry.getValue() != null) {
-            var val = classListEntry.getValue();
-            writer.name(classListEntry.getKey());
-            writer.beginArray();
-            for (Object o : val) {
-              writer.jsonValue(moshi.adapter(Object.class).toJsonValue(o));
-            }
-            writer.endArray();
-          }
+        var adapter = MoshiFactory.create().adapter(Object.class);
+        for (var datum : value.getData()) {
+          writer.jsonValue(adapter.toJsonValue(datum));
         }
       }
-      writer.endObject();
+      writer.endArray();
       // </data>
     }
     writer.endObject();
@@ -55,7 +48,7 @@ public class ResponseAdapter extends JsonAdapter<Response> {
   }
 
   @Override
-  public Response fromJson(JsonReader reader) throws IOException {
+  public Response fromJson(@NotNull JsonReader reader) throws IOException {
     return null;
   }
 }

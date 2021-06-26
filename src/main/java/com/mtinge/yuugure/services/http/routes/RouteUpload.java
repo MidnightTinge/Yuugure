@@ -58,7 +58,7 @@ public class RouteUpload extends Route {
     var isAuthed = account != null;
     if (!isAuthed) {
       if (resp.wantsJson()) {
-        resp.status(StatusCodes.UNAUTHORIZED).json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING));
+        resp.status(StatusCodes.UNAUTHORIZED).json(Response.fromCode(StatusCodes.UNAUTHORIZED));
       } else {
         resp.status(StatusCodes.UNAUTHORIZED).view("app");
       }
@@ -244,7 +244,7 @@ public class RouteUpload extends Route {
 
           var code = uploadResult.hasErrors() ? StatusCodes.BAD_REQUEST : StatusCodes.OK;
           var status = uploadResult.hasErrors() ? StatusCodes.BAD_REQUEST_STRING : StatusCodes.OK_STRING;
-          resp.json(new Response(status, code).addData(UploadResult.class, uploadResult));
+          resp.json(new Response(status, code, uploadResult));
         }
       }
     }

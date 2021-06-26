@@ -1,7 +1,6 @@
 import * as React from 'react';
 import {useRef, useState} from 'react';
 import {useHistory} from 'react-router-dom';
-import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FileInput from '../../Components/FileInput';
@@ -30,9 +29,7 @@ export default function PageUpload(props: PageUploadProps) {
     const fd = new FormData();
     fd.append('private', String(cbPrivate.current.checked));
     fd.append('file', files[0]);
-    XHR.for('/upload').post(XHR.BODY_TYPE.FORM_DATA, fd).getJson<RouterResponse<UploadResult>>().then(res => {
-        let consumed = RouterResponseConsumer(res, 'UploadResult');
-
+    XHR.for('/upload').post(XHR.BODY_TYPE.FORM_DATA, fd).getRouterResponse<UploadResult>().then(consumed => {
         if (consumed.success) {
           setError(null);
           setFileErrors(null);

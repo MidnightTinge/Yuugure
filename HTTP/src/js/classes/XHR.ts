@@ -1,3 +1,5 @@
+import RouterResponseConsumer, {ConsumedRouterResponse} from './RouterResponseConsumer';
+
 enum BODY_TYPE {
   JSON = 'JSON',
   RAW = 'RAW',
@@ -115,6 +117,14 @@ export class XHRFetcher {
       } catch (e) {
         reject(e);
       }
+    });
+  }
+
+  async getRouterResponse<T = any>(): Promise<ConsumedRouterResponse<T>> {
+    return new Promise((resolve, reject) => {
+      this.getJson<RouterResponse<T>>().then(data => {
+        resolve(RouterResponseConsumer<T>(data));
+      }).catch(err => reject(err));
     });
   }
 

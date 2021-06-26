@@ -45,9 +45,9 @@ public class AccountResource extends APIResource<DBAccount> {
         } else if (exchange.getRequestMethod().equals(Methods.DELETE)) {
           var authed = getAuthed(exchange);
           if (authed == null) {
-            res.status(StatusCodes.UNAUTHORIZED).json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING));
+            res.status(StatusCodes.UNAUTHORIZED).json(Response.fromCode(StatusCodes.UNAUTHORIZED));
           } else if (authed.id != resource.resource.id) {
-            res.status(StatusCodes.FORBIDDEN).json(Response.bad(StatusCodes.FORBIDDEN, StatusCodes.FORBIDDEN_STRING));
+            res.status(StatusCodes.FORBIDDEN).json(Response.fromCode(StatusCodes.FORBIDDEN));
           } else {
             var token = extractConfirmationToken(exchange);
             if (token != null) {
@@ -57,13 +57,13 @@ public class AccountResource extends APIResource<DBAccount> {
                   res.json(Response.good());
                 } catch (Exception e) {
                   logger.error("Failed to handle account deletion for ID {}.", authed.id, e);
-                  res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(Response.bad(StatusCodes.INTERNAL_SERVER_ERROR, StatusCodes.INTERNAL_SERVER_ERROR_STRING));
+                  res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR));
                 }
               } else {
-                res.json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING).addMessage("Invalid confirmation token."));
+                res.json(Response.fromCode(StatusCodes.UNAUTHORIZED).addMessage("Invalid confirmation token."));
               }
             } else {
-              res.json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING).addMessage("Missing confirmation token"));
+              res.json(Response.fromCode(StatusCodes.UNAUTHORIZED).addMessage("Missing confirmation token"));
             }
           }
         }
@@ -97,7 +97,7 @@ public class AccountResource extends APIResource<DBAccount> {
               if (frmReason != null && !frmReason.isFileItem()) {
                 var report = App.database().createReport(resource.resource, authed, frmReason.getValue());
                 if (report != null) {
-                  res.json(Response.good().addData(ReportResponse.class, ReportResponse.fromDb(report)));
+                  res.json(Response.good().addData(ReportResponse.fromDb(report)));
                 } else {
                   res.internalServerError();
                   logger.error("Report returned from database on account {} from user {} was null.", resource.resource.id, resource.resource.id);
@@ -113,7 +113,7 @@ public class AccountResource extends APIResource<DBAccount> {
         case "email" -> {
           if (MethodValidator.handleMethodValidation(exchange, Methods.PATCH)) {
             if (authed.id != resource.resource.id) {
-              res.json(Response.bad(StatusCodes.FORBIDDEN, StatusCodes.FORBIDDEN_STRING));
+              res.json(Response.fromCode(StatusCodes.FORBIDDEN));
             } else {
               var resp = new AccountUpdateResponse();
               var email = extractForm(exchange, "email");
@@ -144,14 +144,14 @@ public class AccountResource extends APIResource<DBAccount> {
 
               var code = resp.hasErrors() ? StatusCodes.BAD_REQUEST : StatusCodes.OK;
               var message = resp.hasErrors() ? StatusCodes.BAD_REQUEST_STRING : StatusCodes.OK_STRING;
-              res.status(code).json(new Response(message, code).addData(AccountUpdateResponse.class, resp));
+              res.status(code).json(new Response(message, code, resp));
             }
           }
         }
         case "password" -> {
           if (MethodValidator.handleMethodValidation(exchange, Methods.PATCH)) {
             if (authed.id != resource.resource.id) {
-              res.json(Response.bad(StatusCodes.FORBIDDEN, StatusCodes.FORBIDDEN_STRING));
+              res.json(Response.fromCode(StatusCodes.FORBIDDEN));
             } else {
               var resp = new AccountUpdateResponse();
               var newPassword = extractForm(exchange, "newPassword");
@@ -191,7 +191,7 @@ public class AccountResource extends APIResource<DBAccount> {
 
               var code = resp.hasErrors() ? StatusCodes.BAD_REQUEST : StatusCodes.OK;
               var message = resp.hasErrors() ? StatusCodes.BAD_REQUEST_STRING : StatusCodes.OK_STRING;
-              res.status(code).json(new Response(message, code).addData(AccountUpdateResponse.class, resp));
+              res.status(code).json(new Response(message, code, resp));
             }
           }
         }

@@ -3,7 +3,6 @@ import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
 import {useParams} from 'react-router';
 import {useHistory} from 'react-router-dom';
 import {AutoSizer, CellMeasurer, CellMeasurerCache, List, ListRowProps} from 'react-virtualized';
-import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import Comment from '../../Components/Comment';
@@ -116,8 +115,7 @@ export default function PageView(props: PageViewProps) {
         rooms.join(`upload:${params.uploadId}`);
       }
 
-      XHR.for(`/api/upload/${params.uploadId}`).get().getJson<RouterResponse<RenderableUpload>>().then(res => {
-        let consumed = RouterResponseConsumer(res, 'RenderableUpload');
+      XHR.for(`/api/upload/${params.uploadId}`).get().getRouterResponse<RenderableUpload>().then(consumed => {
         if (consumed.success) {
           setUpload(consumed.data[0]);
         } else {
@@ -131,8 +129,7 @@ export default function PageView(props: PageViewProps) {
       });
 
       commentsDispatch({type: 'fetch/fetching', payload: true});
-      XHR.for(`/api/comment/upload/${params.uploadId}`).get().getJson<RouterResponse<RenderableComment>>().then(res => {
-        let consumed = RouterResponseConsumer(res, 'RenderableComment');
+      XHR.for(`/api/comment/upload/${params.uploadId}`).get().getRouterResponse<RenderableComment>().then(consumed => {
         if (consumed.success) {
           commentsDispatch({type: 'comments/set', payload: [...consumed.data]});
         } else {

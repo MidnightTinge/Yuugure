@@ -101,7 +101,7 @@ public class RouteAuth extends Route {
 
           // report errors if necessary, or start the registration process
           if (authRes.hasErrors()) {
-            res.json(Response.bad(StatusCodes.BAD_REQUEST, StatusCodes.BAD_REQUEST_STRING).addData(AuthResponse.class, authRes));
+            res.json(Response.fromCode(StatusCodes.BAD_REQUEST).addData(authRes));
           } else {
             var mtxEmail = App.redis().getMutex("reg:em:" + email);
             var mtxUsername = App.redis().getMutex("reg:un:" + username);
@@ -196,7 +196,7 @@ public class RouteAuth extends Route {
               // all db work is done, send the data back to the user.
               var code = authRes.hasErrors() ? StatusCodes.BAD_REQUEST : StatusCodes.OK;
               var status = authRes.hasErrors() ? StatusCodes.BAD_REQUEST_STRING : StatusCodes.OK_STRING;
-              res.status(code).json(new Response(status, code).addData(AuthResponse.class, authRes));
+              res.status(code).json(new Response(status, code, authRes));
             } finally {
               mtxEmail.release();
               mtxUsername.release();
@@ -275,7 +275,7 @@ public class RouteAuth extends Route {
         // all db work is done, send the data back to the user.
         var code = authRes.hasErrors() ? StatusCodes.BAD_REQUEST : StatusCodes.OK;
         var status = authRes.hasErrors() ? StatusCodes.BAD_REQUEST_STRING : StatusCodes.OK_STRING;
-        res.status(code).json(new Response(status, code).addData(AuthResponse.class, authRes));
+        res.status(code).json(new Response(status, code, authRes));
       }
     }
   }
@@ -294,14 +294,14 @@ public class RouteAuth extends Route {
     var account = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
     var code = account == null ? StatusCodes.UNAUTHORIZED : StatusCodes.OK;
 
-    Responder.with(exchange).status(code).json(Response.fromCode(code).addData(AuthStateResponse.class, new AuthStateResponse(account != null, SafeAccount.fromDb(account))));
+    Responder.with(exchange).status(code).json(Response.fromCode(code).addData(new AuthStateResponse(account != null, SafeAccount.fromDb(account))));
   }
 
   private void confirm(HttpServerExchange exchange) {
     var res = Responder.with(exchange);
     var authed = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
     if (authed == null) {
-      res.json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING));
+      res.json(Response.fromCode(StatusCodes.UNAUTHORIZED));
       return;
     }
 
@@ -323,12 +323,12 @@ public class RouteAuth extends Route {
           }
         }
 
-        res.json(Response.good().addData(AuthConfirmResponse.class, authRes));
+        res.json(Response.good(authRes));
       } else {
-        res.json(Response.bad(StatusCodes.BAD_REQUEST, StatusCodes.BAD_REQUEST_STRING).addMessage("Missing password."));
+        res.json(Response.fromCode(StatusCodes.BAD_REQUEST).addMessage("Missing password."));
       }
     } else {
-      res.json(Response.bad(StatusCodes.BAD_REQUEST, StatusCodes.BAD_REQUEST_STRING).addMessage("No actionable form data"));
+      res.json(Response.fromCode(StatusCodes.BAD_REQUEST).addMessage("No actionable form data"));
     }
 
     res.end();

@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {useRef, useState} from 'react';
-import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import {XHR} from '../../classes/XHR';
 import FormBlock from '../FormBlock';
 import Modal from '../Modal/Modal';
@@ -24,8 +23,7 @@ export default function ConfirmPasswordModal(props: ConfirmPasswordModalProps) {
     setPosting(true);
     XHR.for('/auth/confirm').post(XHR.BODY_TYPE.FORM, {
       password: txtPassword.current.value,
-    }).getJson<RouterResponse<AuthConfirmResponse>>().then(resp => {
-      const consumed = RouterResponseConsumer(resp, 'AuthConfirmResponse');
+    }).getRouterResponse<AuthConfirmResponse>().then(consumed => {
       if (consumed.success) {
         let [authRes] = consumed.data;
         if (!authRes.authenticated) {

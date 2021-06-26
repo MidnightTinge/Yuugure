@@ -1,7 +1,6 @@
 import * as React from 'react';
 import {useCallback, useEffect, useReducer} from 'react';
 import namedContext from '../classes/NamedContext';
-import RouterResponseConsumer from '../classes/RouterResponseConsumer';
 import {XHR} from '../classes/XHR';
 
 export type AuthState = {
@@ -57,8 +56,7 @@ export default function AuthStateProvider({children}: any) {
 
   const reloadAuth = useCallback(async () => {
     try {
-      let res = await XHR.for(`/auth/check`).get().getJson<RouterResponse<AuthStateResponse>>();
-      let consumed = RouterResponseConsumer(res, 'AuthStateResponse');
+      let consumed = await XHR.for(`/auth/check`).get().getRouterResponse<AuthStateResponse>();
       if (consumed.success) {
         let [resp] = consumed.data;
         dispatch({type: 'fetched', payload: {authed: resp.authenticated, account: resp.account, error: null}});

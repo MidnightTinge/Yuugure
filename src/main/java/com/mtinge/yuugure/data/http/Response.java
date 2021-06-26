@@ -1,98 +1,77 @@
 package com.mtinge.yuugure.data.http;
 
 import io.undertow.util.StatusCodes;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
 
 public class Response {
-  public final String status;
   public final int code;
-  private transient List<String> _messages = new ArrayList<String>();
-  private transient Map<String, List<Object>> _data = new LinkedHashMap<>();
+  public final String status;
+  private transient final LinkedList<String> messages = new LinkedList<>();
+  private transient final LinkedList<Object> data = new LinkedList<>();
 
-  public static Response fromCode(int code) {
+  public Response(String status, int code) {
+    this.code = code;
+    this.status = status;
+  }
+
+  @SuppressWarnings("unchecked")
+  public Response(String status, int code, @NotNull Object datum) {
+    this.code = code;
+    this.status = status;
+    if (datum instanceof List) {
+      addAll(((List) datum));
+    } else {
+      addData(datum);
+    }
+  }
+
+  public static  Response good() {
+    return new Response("OK", 200);
+  }
+
+  public static  Response good(Object datum) {
+    return new Response("OK", 200, datum);
+  }
+
+  public static  Response good(List<Object> data) {
+    return new Response("OK", 200).addAll(data);
+  }
+
+  public static  Response fromCode(int code) {
     return new Response(StatusCodes.getReason(code), code);
   }
 
-  public static Response bad(int code, String reason) {
-    return new Response(reason, code);
+  public static  Response fromCode(int code, Object datum) {
+    return new Response(StatusCodes.getReason(code), code, datum);
   }
 
-  public static Response good() {
-    return Response.fromCode(StatusCodes.OK);
+  public static  Response fromCode(int code, List<Object> datum) {
+    return new Response(StatusCodes.getReason(code), code, datum);
   }
 
-  public static Response good(String message) {
-    return Response.good().addMessage(message);
-  }
-
-  public static Response exception() {
-    return Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR).addMessage("An internal server error occurred. Please try again later.");
-  }
-
-  public Response(String status, int code) {
-    this.status = status;
-    this.code = code;
-  }
-
-  public <Z> Response addAll(Class<Z> mainType, List<Z> datas) {
-    return addAll(mainType.getSimpleName(), datas);
-  }
-
-  public <Z> Response addAll(String key, List<Z> datas) {
-    if (datas == null || datas.isEmpty()) return this;
-    var existing = _data.get(key);
-    if (existing != null) {
-      existing.addAll(datas);
-    } else {
-      _data.put(key, new ArrayList<>(datas));
-    }
-
+  public Response addData(Object datum) {
+    this.data.add(datum);
     return this;
   }
 
-  public <Z> Response addData(Class<Z> dataType, Z data) {
-    return addData(dataType.getSimpleName(), data);
-  }
-
-  public <Z> Response addData(String key, Z data) {
-    if (data == null) return this;
-
-    var existing = _data.get(key);
-    if (existing == null) {
-      _data.put(key, new ArrayList<>(Collections.singleton(data)));
-    } else {
-      existing.add(data);
-    }
+  public Response addAll(List<Object> data) {
+    this.data.addAll(data);
     return this;
   }
 
   public Response addMessage(String message) {
-    if (message == null || message.isBlank()) return this;
-
-    _messages.add(message);
+    this.messages.addLast(message);
     return this;
   }
 
-  public Response addAllMessages(Collection<String> messages) {
-    _messages.addAll(messages);
-
-    return this;
+  public LinkedList<Object> getData() {
+    return data;
   }
 
-  public Response addAllMessages(String[] messages) {
-    for (String message : messages) {
-      _messages.add(message);
-    }
-
-    return this;
-  }
-
-  public List<String> getMessages() {
-    return _messages;
-  }
-
-  public Map<String, List<Object>> getData() {
-    return _data;
+  public LinkedList<String> getMessages() {
+    return messages;
   }
 }

@@ -36,9 +36,9 @@ public abstract class APIResource<T> {
   protected void sendTerminalForState(HttpServerExchange exchange, FetchState state) {
     var res = Responder.with(exchange);
     switch (state) {
-      case NOT_FOUND -> res.status(StatusCodes.NOT_FOUND).json(Response.bad(StatusCodes.NOT_FOUND, StatusCodes.NOT_FOUND_STRING));
-      case UNAUTHORIZED -> res.status(StatusCodes.UNAUTHORIZED).json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING));
-      default -> res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(Response.bad(StatusCodes.INTERNAL_SERVER_ERROR, StatusCodes.INTERNAL_SERVER_ERROR_STRING));
+      case NOT_FOUND -> res.status(StatusCodes.NOT_FOUND).json(Response.fromCode(StatusCodes.NOT_FOUND));
+      case UNAUTHORIZED -> res.status(StatusCodes.UNAUTHORIZED).json(Response.fromCode(StatusCodes.UNAUTHORIZED));
+      default -> res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR));
     }
   }
 

@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {useRef, useState} from 'react';
-import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
 import {XHR} from '../../../classes/XHR';
 import FormBlock from '../../../Components/FormBlock';
 import Modal from '../../../Components/Modal/Modal';
@@ -29,8 +28,7 @@ export default function UpdateEmail(props: UpdateEmailProps) {
     XHR.for('/api/account/@me/email').patch(XHR.BODY_TYPE.FORM, {
       email: txtEmail.current.value,
       password: txtPassword.current.value,
-    }).getJson<RouterResponse<InputAwareResponse<any>>>().then(resp => {
-      let consumed = RouterResponseConsumer(resp, 'AccountUpdateResponse');
+    }).getRouterResponse<InputAwareResponse<any>>().then(consumed => {
       if (consumed.success) {
         setPosted(true);
       } else {
@@ -39,7 +37,6 @@ export default function UpdateEmail(props: UpdateEmailProps) {
         // Set any input errors as necessary
         let [authRes] = consumed.data;
         if (authRes) {
-          let authRes: InputAwareResponse<any> = resp.data.AccountUpdateResponse[0];
           if ('email' in authRes.inputErrors) {
             setEmailValidity({valid: false, error: authRes.inputErrors.email.join('\n')});
           } else {

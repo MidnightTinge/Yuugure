@@ -3,7 +3,6 @@ import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
 import {useParams} from 'react-router';
 
 import {AutoSizer, List, ListRowProps, Size} from 'react-virtualized';
-import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
@@ -107,8 +106,7 @@ export default function PageProfile(props: PageProfileProps) {
     setFetching(true);
     setFetched(false);
 
-    XHR.for(`/api/profile/${accountId}`).get().getJson<RouterResponse<ProfileResponse>>().then(res => {
-      let consumed = RouterResponseConsumer(res, 'ProfileResponse');
+    XHR.for(`/api/profile/${accountId}`).get().getRouterResponse<ProfileResponse>().then(consumed => {
       if (consumed.success) {
         setProfile(consumed.data[0]);
       } else {
@@ -140,8 +138,7 @@ export default function PageProfile(props: PageProfileProps) {
 
     uploadsDispatch({type: 'set', payload: []});
     setFetchingUploads(true);
-    XHR.for(`/api/profile/${accountId}/uploads`).get().getJson<RouterResponse<RenderableUpload>>().then(res => {
-      let consumed = RouterResponseConsumer(res, 'RenderableUpload');
+    XHR.for(`/api/profile/${accountId}/uploads`).get().getRouterResponse<RenderableUpload>().then(consumed => {
       if (consumed.success) {
         uploadsDispatch({type: 'set', payload: [...consumed.data]});
       } else {

@@ -2,7 +2,6 @@ package com.mtinge.yuugure.services.http.api;
 
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.States;
-import com.mtinge.yuugure.data.http.RenderableUpload;
 import com.mtinge.yuugure.data.http.ReportResponse;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.postgres.DBUpload;
@@ -27,7 +26,7 @@ public class UploadResource extends APIResource<DBUpload> {
   }
 
   private void fetchForIndex(HttpServerExchange exchange) {
-    Responder.with(exchange).json(Response.good().addAll(RenderableUpload.class, App.database().getIndexUploads(getAuthed(exchange))));
+    Responder.with(exchange).json(Response.good(App.database().getIndexUploads(getAuthed(exchange))));
   }
 
   private void handleFetch(HttpServerExchange exchange) {
@@ -35,7 +34,7 @@ public class UploadResource extends APIResource<DBUpload> {
     var resource = fetchResource(exchange);
     if (resource.state == FetchState.OK) {
       var renderable = App.database().makeUploadRenderable(resource.resource);
-      res.json(Response.good().addData(RenderableUpload.class, renderable));
+      res.json(Response.good(renderable));
     } else {
       sendTerminalForState(exchange, resource.state);
     }
@@ -64,7 +63,7 @@ public class UploadResource extends APIResource<DBUpload> {
             if (frmReason != null && !frmReason.isFileItem()) {
               var report = App.database().createReport(resource.resource, authed, frmReason.getValue());
               if (report != null) {
-                res.json(Response.good().addData(ReportResponse.class, ReportResponse.fromDb(report)));
+                res.json(Response.good(ReportResponse.fromDb(report)));
               } else {
                 res.internalServerError();
                 logger.error("Report returned from database on upload {} from user {} was null.", resource.resource.id, resource.resource.id);

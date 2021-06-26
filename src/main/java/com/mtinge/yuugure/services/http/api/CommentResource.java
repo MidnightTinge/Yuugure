@@ -3,7 +3,10 @@ package com.mtinge.yuugure.services.http.api;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.States;
 import com.mtinge.yuugure.core.comments.Renderer;
-import com.mtinge.yuugure.data.http.*;
+import com.mtinge.yuugure.data.http.CommentResponse;
+import com.mtinge.yuugure.data.http.ReportResponse;
+import com.mtinge.yuugure.data.http.Response;
+import com.mtinge.yuugure.data.http.SafeComment;
 import com.mtinge.yuugure.data.postgres.DBComment;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.http.Responder;
@@ -54,7 +57,7 @@ public class CommentResource extends APIResource<DBComment> {
               if (checkRatelimit(exchange, App.webServer().limiters().reportLimiter())) {
                 var report = App.database().createReport(resource.resource, authed, frmReason.getValue());
                 if (report != null) {
-                  res.json(Response.good().addData(ReportResponse.class, ReportResponse.fromDb(report)));
+                  res.json(Response.good(ReportResponse.fromDb(report)));
                 } else {
                   res.internalServerError();
                   logger.error("Report returned from database on comment {} from user {} was null.", resource.resource.id, resource.resource.id);
@@ -83,11 +86,11 @@ public class CommentResource extends APIResource<DBComment> {
       if (MethodValidator.handleMethodValidation(exchange, Methods.GET, Methods.DELETE)) {
         var method = exchange.getRequestMethod();
         if (method.equals(Methods.GET)) {
-          res.json(Response.good().addData(SafeComment.class, SafeComment.fromDb(comment.resource)));
+          res.json(Response.good(SafeComment.fromDb(comment.resource)));
         } else if (method.equals(Methods.DELETE)) {
           // TODO people with elevated roles/permissions (moderators/etc) should be able to delete.
           if (authed == null || authed.id != comment.resource.account) {
-            res.status(StatusCodes.UNAUTHORIZED).json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING));
+            res.status(StatusCodes.UNAUTHORIZED).json(Response.fromCode(StatusCodes.UNAUTHORIZED));
           } else {
             var updated = App.database().jdbi().withHandle(handle ->
               handle.createUpdate("UPDATE comment SET active = false WHERE id = :id")
@@ -114,7 +117,7 @@ public class CommentResource extends APIResource<DBComment> {
         var method = exchange.getRequestMethod();
         if (method.equals(Methods.GET)) {
           // Fetch comments
-          res.json(Response.good().addAll(RenderableComment.class, App.database().getRenderableCommentsForUpload(upload.resource.id, false)));
+          res.json(Response.good(App.database().getRenderableCommentsForUpload(upload.resource.id, false)));
         } else {
           // Comment actions - delete, report, edit, etc.
           var authed = getAuthed(exchange);
@@ -145,7 +148,7 @@ public class CommentResource extends APIResource<DBComment> {
                 }
 
                 if (!exchange.isResponseStarted()) {
-                  res.status(code).json(Response.fromCode(code).addData(CommentResponse.class, response));
+                  res.status(code).json(Response.fromCode(code, response));
                 }
               } else {
                 res.status(StatusCodes.FORBIDDEN).json(Response.fromCode(StatusCodes.FORBIDDEN).addMessage("You have been restricted from creating new comments."));

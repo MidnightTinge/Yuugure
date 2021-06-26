@@ -39,23 +39,15 @@ export default function PageIndex(props: PageIndexProps) {
 
   useEffect(() => {
     indexStateD({type: 'setPartial', payload: {fetching: true, error: null}});
-    XHR.for(`/api/upload/index`).get().getJson().then(res => {
-      if (res) {
-        if (res.code === 200) {
-          indexStateD({
-            type: 'set',
-            payload: {
-              fetching: false,
-              error: null,
-              uploads: [...res.data.RenderableUpload],
-            },
-          });
-        } else {
-          indexStateD({type: 'setPartial', payload: {fetching: false, error: 'An internal server error occurred. Please try again later.'}});
-        }
-      } else {
-        indexStateD({type: 'setPartial', payload: {fetching: false, error: 'Received an invalid response. Please try again later.'}});
-      }
+    XHR.for(`/api/upload/index`).get().getRouterResponse<RenderableUpload>().then(consumed => {
+      indexStateD({
+        type: 'set',
+        payload: {
+          fetching: false,
+          error: consumed.message,
+          uploads: consumed.success ? [...consumed.data] : [],
+        },
+      });
     }).catch(err => {
       indexStateD({type: 'setPartial', payload: {fetching: false, error: err.toString()}});
     });

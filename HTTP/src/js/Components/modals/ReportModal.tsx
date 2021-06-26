@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {useMemo, useState} from 'react';
-import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
 import Modal, {CloseSource} from '../Modal/Modal';
@@ -27,8 +26,7 @@ export default function ReportModal(props: ReportModalProps) {
     setPosting(true);
     XHR.for(`/api/${props.targetType}/${props.targetId}/report`).post(XHR.BODY_TYPE.FORM, {
       reason: txtReason.current.value,
-    }).getJson<RouterResponse<ReportResponse>>().then(data => {
-      let consumed = RouterResponseConsumer(data, 'ReportResponse');
+    }).getRouterResponse<ReportResponse>().then(consumed => {
       if (consumed.success) {
         let [report] = consumed.data;
         setReported(true);

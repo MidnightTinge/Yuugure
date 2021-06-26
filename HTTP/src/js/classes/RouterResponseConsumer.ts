@@ -28,14 +28,9 @@ export const MESSAGES: Readonly<Record<number, string>> = Object.freeze({
   0: 'The server returned an invalid response. Please try again later. If the problem persists, please contact the webmaster.',
 });
 
-export default function RouterResponseConsumer<T = any>(response: RouterResponse<T>, dataKey?: string): ConsumedRouterResponse<T> {
+export default function RouterResponseConsumer<T = any>(response: RouterResponse<T>): ConsumedRouterResponse<T> {
   if (response) {
-    let data: T[];
-    if (dataKey) {
-      data = (response.data && Array.isArray(response.data[dataKey])) ? response.data[dataKey] : [];
-    } else {
-      data = [];
-    }
+    let data: T[] = (Array.isArray(response.data)) ? response.data : [];
 
     let message;
     if (Array.isArray(response.messages) && response.messages.length > 0) {

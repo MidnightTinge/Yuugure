@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {useRef, useState} from 'react';
-import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
 import {XHR} from '../../../classes/XHR';
 import FormBlock from '../../../Components/FormBlock';
 import Modal from '../../../Components/Modal/Modal';
@@ -32,8 +31,7 @@ export default function UpdatePassword(props: UpdatePasswordProps) {
       newPassword: txtNewPassword.current.value,
       repeat: txtRepeat.current.value,
       currentPassword: txtCurrentPassword.current.value,
-    }).getJson<RouterResponse<InputAwareResponse<any>>>().then(resp => {
-      let consumed = RouterResponseConsumer(resp, 'AccountUpdateResponse');
+    }).getRouterResponse<InputAwareResponse<any>>().then(consumed => {
       if (consumed.success) {
         setPosted(true);
       } else {

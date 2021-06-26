@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {FormEvent, useRef, useState} from 'react';
-import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FormBlock from '../../Components/FormBlock';
@@ -29,8 +28,7 @@ export default function PageLogin(props: LoginProps) {
     XHR.for('/auth/login').post(XHR.BODY_TYPE.FORM, {
       email: txtEmail.current.value,
       password: txtPassword.current.value,
-    }).getJson<RouterResponse<AuthResponse>>().then(data => {
-      let consumed = RouterResponseConsumer(data, 'AuthResponse');
+    }).getRouterResponse<AuthResponse>().then(consumed => {
       if (consumed.success) {
         let [authRes] = consumed.data;
         if (authRes.authed) {

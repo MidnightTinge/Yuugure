@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {useMemo, useState} from 'react';
-import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
 import Spinner from '../Spinner';
@@ -26,8 +25,7 @@ export default function NewCommentBlock(props: NewCommentBlockProps) {
     setPosting(true);
     XHR.for(`/api/comment/${props.targetType}/${props.targetId}`).post(XHR.BODY_TYPE.FORM, {
       body: txtComment.current.value,
-    }).getJson<RouterResponse<CommentResponse>>().then(res => {
-      let consumed = RouterResponseConsumer(res, 'CommentResponse');
+    }).getRouterResponse<CommentResponse>().then(consumed => {
       if (consumed.success) {
         let [commentResponse] = consumed.data;
         txtComment.current.value = '';

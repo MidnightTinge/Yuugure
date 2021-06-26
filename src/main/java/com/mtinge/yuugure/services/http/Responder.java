@@ -65,7 +65,7 @@ public class Responder {
     if (!exchange.getResponseHeaders().contains(Headers.ALLOW)) {
       exchange.getResponseHeaders().put(Headers.ALLOW, Arrays.stream(allowedHeaders).map(s -> s.toString().toUpperCase()).collect(Collectors.joining(", ")));
     }
-    json(Response.bad(StatusCodes.METHOD_NOT_ALLOWED, StatusCodes.METHOD_NOT_ALLOWED_STRING));
+    json(Response.fromCode(StatusCodes.METHOD_NOT_ALLOWED));
   }
 
   public void notFound() {
@@ -74,7 +74,7 @@ public class Responder {
     }
 
     if (wantsJson()) {
-      json(Response.bad(StatusCodes.NOT_FOUND, StatusCodes.NOT_FOUND_STRING).addMessage("The requested resource could not be found."));
+      json(Response.fromCode(StatusCodes.NOT_FOUND).addMessage("The requested resource could not be found."));
     } else {
       view("404");
     }
@@ -86,7 +86,7 @@ public class Responder {
     }
 
     if (wantsJson()) {
-      json(Response.bad(StatusCodes.UNAUTHORIZED, StatusCodes.UNAUTHORIZED_STRING).addMessage("You must be logged in to perform this action."));
+      json(Response.fromCode(StatusCodes.UNAUTHORIZED).addMessage("You must be logged in to perform this action."));
     } else {
       view("401");
     }
@@ -98,7 +98,7 @@ public class Responder {
     }
 
     if (wantsJson()) {
-      json(Response.bad(StatusCodes.FORBIDDEN, StatusCodes.FORBIDDEN_STRING).addMessage("You are forbidden from performing this action with your current permissions."));
+      json(Response.fromCode(StatusCodes.FORBIDDEN).addMessage("You are forbidden from performing this action with your current permissions."));
     } else {
       view("403");
     }
@@ -122,7 +122,7 @@ public class Responder {
       exchange.setStatusCode(StatusCodes.TOO_MANY_REQUESTS);
     }
 
-    json(Response.bad(StatusCodes.TOO_MANY_REQUESTS, StatusCodes.TOO_MANY_REQUESTS_STRING));
+    json(Response.fromCode(StatusCodes.TOO_MANY_REQUESTS));
   }
 
   public void ratelimited(CheckResult result) {
@@ -130,7 +130,7 @@ public class Responder {
       exchange.setStatusCode(StatusCodes.TOO_MANY_REQUESTS);
     }
 
-    json(Response.fromCode(StatusCodes.TOO_MANY_REQUESTS).addData(RateLimitResponse.class, RateLimitResponse.fromCheck(result)));
+    json(Response.fromCode(StatusCodes.TOO_MANY_REQUESTS).addData(RateLimitResponse.fromCheck(result)));
   }
 
   public void badRequest() {
@@ -140,7 +140,7 @@ public class Responder {
   public void badRequest(@Nullable String message) {
     if (exchange.isComplete()) return;
 
-    var response = Response.bad(StatusCodes.BAD_REQUEST, StatusCodes.BAD_REQUEST_STRING);
+    var response = Response.fromCode(StatusCodes.BAD_REQUEST);
     if (message != null) {
       response.addMessage(message);
     }
@@ -157,7 +157,7 @@ public class Responder {
 
   public void internalServerError(Throwable e) {
     if (wantsJson()) {
-      json(Response.bad(StatusCodes.INTERNAL_SERVER_ERROR, StatusCodes.INTERNAL_SERVER_ERROR_STRING));
+      json(Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR));
     } else {
       view("500", App.isDebug() ? Map.of("error", e) : Map.of());
     }
