@@ -3,6 +3,7 @@ import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
 import {useParams} from 'react-router';
 import {useHistory} from 'react-router-dom';
 import {AutoSizer, CellMeasurer, CellMeasurerCache, List, ListRowProps} from 'react-virtualized';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import Comment from '../../Components/Comment';
@@ -116,16 +117,11 @@ export default function PageView(props: PageViewProps) {
       }
 
       XHR.for(`/api/upload/${params.uploadId}`).get().getJson<RouterResponse<RenderableUpload>>().then(res => {
-        if (res.code === 401) {
-          setError('You must be logged in to view this resource.');
-        } else if (res.code === 403) {
-          setError('You do not have permission to view this resource.');
-        } else if (res.code === 404) {
-          setGot404(true);
-        } else if (res.code === 200 && res.data && Array.isArray(res.data.RenderableUpload) && res.data.RenderableUpload.length > 0) {
-          setUpload(res.data.RenderableUpload[0]);
+        let consumed = RouterResponseConsumer(res, 'RenderableUpload');
+        if (consumed.success) {
+          setUpload(consumed.data[0]);
         } else {
-          setError('An internal server error occurred.');
+          setError(consumed.message);
         }
       }).catch(err => {
         console.error('failed to get upload:', err);
@@ -136,14 +132,11 @@ export default function PageView(props: PageViewProps) {
 
       commentsDispatch({type: 'fetch/fetching', payload: true});
       XHR.for(`/api/comment/upload/${params.uploadId}`).get().getJson<RouterResponse<RenderableComment>>().then(res => {
-        if (res) {
-          if (res.code === 200 && Array.isArray(res.data.RenderableComment)) {
-            commentsDispatch({type: 'comments/set', payload: [...res.data.RenderableComment]});
-          } else {
-            commentsDispatch({type: 'fetch/error', payload: 'Received an invalid response. Please try again later.'});
-          }
+        let consumed = RouterResponseConsumer(res, 'RenderableComment');
+        if (consumed.success) {
+          commentsDispatch({type: 'comments/set', payload: [...consumed.data]});
         } else {
-          commentsDispatch({type: 'fetch/error', payload: 'An internal server error occurred. Please try again later.'});
+          commentsDispatch({type: 'fetch/error', payload: consumed.message});
         }
       }).catch(err => {
         console.error('Failed to fetch comments.', err);

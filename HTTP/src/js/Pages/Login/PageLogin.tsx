@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {FormEvent, useRef, useState} from 'react';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FormBlock from '../../Components/FormBlock';
@@ -29,41 +30,38 @@ export default function PageLogin(props: LoginProps) {
       email: txtEmail.current.value,
       password: txtPassword.current.value,
     }).getJson<RouterResponse<AuthResponse>>().then(data => {
-      if (data && data.data) {
-        const authRes = data.data.AuthResponse[0] as AuthResponse;
-        if (authRes) {
-          if (authRes.authed) {
-            setPwInvalid(false);
-            setEmailInvalid(false);
-            setError(null);
+      let consumed = RouterResponseConsumer(data, 'AuthResponse');
+      if (consumed.success) {
+        let [authRes] = consumed.data;
+        if (authRes.authed) {
+          setPwInvalid(false);
+          setEmailInvalid(false);
+          setError(null);
 
-            (document.location as any) = '/';
-          } else {
-            if (authRes.inputErrors.email) {
-              setEmailInvalid(true);
-              setEmailError(authRes.inputErrors.email.join('\n'));
-            } else {
-              setEmailInvalid(false);
-              setEmailError(null);
-            }
-
-            if (authRes.inputErrors.password) {
-              setPwInvalid(true);
-              setPwError(authRes.inputErrors.password.join('\n'));
-            } else {
-              setPwInvalid(false);
-              setPwError(null);
-            }
-
-            if (authRes.errors.length > 0) {
-              setError(authRes.errors.join('\n'));
-            }
-          }
+          (document.location as any) = '/';
         } else {
-          setError('The server returned an invalid response. Please try again.');
+          if ('email' in authRes.inputErrors) {
+            setEmailInvalid(true);
+            setEmailError(authRes.inputErrors.email.join('\n'));
+          } else {
+            setEmailInvalid(false);
+            setEmailError(null);
+          }
+
+          if ('password' in authRes.inputErrors) {
+            setPwInvalid(true);
+            setPwError(authRes.inputErrors.password.join('\n'));
+          } else {
+            setPwInvalid(false);
+            setPwError(null);
+          }
+
+          if (authRes.errors.length > 0) {
+            setError(authRes.errors.join('\n'));
+          }
         }
       } else {
-        setError('An unknown error occurred. Please try again later.');
+        setError(consumed.message);
       }
     }).catch(err => {
       setError(err.toString());

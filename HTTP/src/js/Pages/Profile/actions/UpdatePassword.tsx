@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useRef, useState} from 'react';
+import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
 import {XHR} from '../../../classes/XHR';
 import FormBlock from '../../../Components/FormBlock';
 import Modal from '../../../Components/Modal/Modal';
@@ -32,36 +33,30 @@ export default function UpdatePassword(props: UpdatePasswordProps) {
       repeat: txtRepeat.current.value,
       currentPassword: txtCurrentPassword.current.value,
     }).getJson<RouterResponse<InputAwareResponse<any>>>().then(resp => {
-      if (resp) {
-        if (resp.code !== 200) {
-          if (resp.data && Array.isArray(resp.data.AccountUpdateResponse) && resp.data.AccountUpdateResponse[0]) {
-            let authRes: InputAwareResponse<any> = resp.data.AccountUpdateResponse[0];
-            if ('current' in authRes.inputErrors) {
-              setCurrentValidity({valid: false, error: authRes.inputErrors.email.join('\n')});
-            } else {
-              setCurrentValidity({valid: true});
-            }
-            if ('password' in authRes.inputErrors) {
-              setPasswordValidity({valid: false, error: authRes.inputErrors.password.join('\n')});
-            } else {
-              setPasswordValidity({valid: true});
-            }
-            if ('repeat' in authRes.inputErrors) {
-              setRepeatValidity({valid: false, error: authRes.inputErrors.password.join('\n')});
-            } else {
-              setRepeatValidity({valid: true});
-            }
-          }
-          if (resp.messages.length > 0) {
-            setError(resp.messages.join('\n') || 'An internal server error occurred. Please try again later.');
-          } else {
-            setError(null);
-          }
-        } else {
-          setPosted(true);
-        }
+      let consumed = RouterResponseConsumer(resp, 'AccountUpdateResponse');
+      if (consumed.success) {
+        setPosted(true);
       } else {
-        setError((resp.messages || []).join('\n') || 'An internal server error occurred. Please try again later.');
+        setError(consumed.message);
+
+        let [authRes] = consumed.data;
+        if (authRes) {
+          if ('current' in authRes.inputErrors) {
+            setCurrentValidity({valid: false, error: authRes.inputErrors.current.join('\n')});
+          } else {
+            setCurrentValidity({valid: true});
+          }
+          if ('password' in authRes.inputErrors) {
+            setPasswordValidity({valid: false, error: authRes.inputErrors.password.join('\n')});
+          } else {
+            setPasswordValidity({valid: true});
+          }
+          if ('repeat' in authRes.inputErrors) {
+            setRepeatValidity({valid: false, error: authRes.inputErrors.repeat.join('\n')});
+          } else {
+            setRepeatValidity({valid: true});
+          }
+        }
       }
     }).catch(err => {
       setError(err.toString());

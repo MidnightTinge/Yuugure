@@ -3,6 +3,7 @@ import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
 import {useParams} from 'react-router';
 
 import {AutoSizer, List, ListRowProps, Size} from 'react-virtualized';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
@@ -107,14 +108,11 @@ export default function PageProfile(props: PageProfileProps) {
     setFetched(false);
 
     XHR.for(`/api/profile/${accountId}`).get().getJson<RouterResponse<ProfileResponse>>().then(res => {
-      if (res.code === 200 && Array.isArray(res.data.ProfileResponse) && res.data.ProfileResponse[0]) {
-        setProfile(res.data.ProfileResponse[0]);
-      } else if (res.code === 404) {
-        setGot404(true);
-      } else if (res.code === 401) {
-        setError('You do not have permission to view this resource.');
+      let consumed = RouterResponseConsumer(res, 'ProfileResponse');
+      if (consumed.success) {
+        setProfile(consumed.data[0]);
       } else {
-        setError('An internal server error occurred. Please try again later.');
+        setError(consumed.message);
       }
     }).catch(err => {
       console.error('Failed to fetch profile.', err);
@@ -143,14 +141,11 @@ export default function PageProfile(props: PageProfileProps) {
     uploadsDispatch({type: 'set', payload: []});
     setFetchingUploads(true);
     XHR.for(`/api/profile/${accountId}/uploads`).get().getJson<RouterResponse<RenderableUpload>>().then(res => {
-      if (res.code === 200 && Array.isArray(res.data.RenderableUpload)) {
-        uploadsDispatch({type: 'set', payload: [...res.data.RenderableUpload]});
-      } else if (res.code === 404) {
-        setUploadsError('Could not find any uploads.');
-      } else if (res.code === 401) {
-        setUploadsError('You do not have permission to fetch these uploads.');
+      let consumed = RouterResponseConsumer(res, 'RenderableUpload');
+      if (consumed.success) {
+        uploadsDispatch({type: 'set', payload: [...consumed.data]});
       } else {
-        setUploadsError('An internal server error occurred. Please try again later.');
+        setUploadsError(consumed.message);
       }
     }).catch(err => {
       console.error('Failed to fetch uploads.', err);

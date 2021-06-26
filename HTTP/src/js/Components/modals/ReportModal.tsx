@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useMemo, useState} from 'react';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
 import Modal, {CloseSource} from '../Modal/Modal';
@@ -27,22 +28,15 @@ export default function ReportModal(props: ReportModalProps) {
     XHR.for(`/api/${props.targetType}/${props.targetId}/report`).post(XHR.BODY_TYPE.FORM, {
       reason: txtReason.current.value,
     }).getJson<RouterResponse<ReportResponse>>().then(data => {
-      if (data) {
-        if (data.code === 200 && Array.isArray(data.data.ReportResponse) && data.data.ReportResponse.length > 0) {
-          setReported(true);
-          if (typeof props.onReportSent === 'function') {
-            props.onReportSent(data.data.ReportResponse[0]);
-          }
-        } else if (data.code === 429) {
-          setError(`You are doing that too often. Try again ${data.data && data.data.RateLimitResponse ? (`in ${data.data.RateLimitResponse[0].minimum_wait / 1e3 >> 0} seconds`) : 'later'}.`);
-        } else {
-          setError('Received an invalid response while trying to report. Please try again later.');
-          console.error('Got invalid ReportResponse:', data);
-          setReported(false);
+      let consumed = RouterResponseConsumer(data, 'ReportResponse');
+      if (consumed.success) {
+        let [report] = consumed.data;
+        setReported(true);
+        if (typeof props.onReportSent === 'function') {
+          props.onReportSent(report);
         }
       } else {
-        setError('An internal server error occurred. Please try again later.');
-        console.error('Got invalid ReportResponse:', data);
+        setError(consumed.message);
         setReported(false);
       }
     }).catch(err => {

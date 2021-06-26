@@ -2,6 +2,7 @@ import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {create} from 'react-modal-promise';
 import {InstanceProps} from 'react-modal-promise/lib/types';
+import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
 import {XHR} from '../../../classes/XHR';
 import Modal from '../../../Components/Modal/Modal';
 import ConfirmPasswordModal from '../../../Components/modals/ConfirmPasswordModal';
@@ -61,13 +62,12 @@ export function ResourceDeletion(props: DeleteStatusProps) {
   useEffect(function mounted() {
     setPosting(true);
     XHR.for(props.endpoint).delete(XHR.BODY_TYPE.FORM, {confirmation_token: props.confirmationToken}).getJson<RouterResponse>().then(resp => {
-      if (resp) {
-        if (resp.code === 200) {
-          setError(null);
-          setRes(resp.messages.join('\n'));
-        } else {
-          setError((resp.messages || []).join('\n') || 'An internal server error occurred. Please reload and try again.');
-        }
+      let consumed = RouterResponseConsumer(resp);
+      if (consumed.success) {
+        setError(null);
+        setRes(consumed.message);
+      } else {
+        setError(consumed.message);
       }
     }).catch(err => {
       setError(err.toString());

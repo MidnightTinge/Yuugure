@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useCallback, useEffect, useReducer} from 'react';
 import namedContext from '../classes/NamedContext';
+import RouterResponseConsumer from '../classes/RouterResponseConsumer';
 import {XHR} from '../classes/XHR';
 
 export type AuthState = {
@@ -55,22 +56,14 @@ export default function AuthStateProvider({children}: any) {
   const [state, dispatch] = useReducer(AuthStateReducer, {...defaultAuthState}, () => ({...defaultAuthState}));
 
   const reloadAuth = useCallback(async () => {
-    let authState;
     try {
-      authState = await XHR.for(`/auth/check`).get().getJson<RouterResponse<AuthStateResponse>>();
-      if (authState) {
-        if (authState.code === 200) {
-          let resp: AuthStateResponse = authState.data.AuthStateResponse[0];
-          dispatch({type: 'fetched', payload: {authed: resp.authenticated, account: resp.account, error: null}});
-        } else if (authState.code === 401) {
-          dispatch({type: 'fetched', payload: {authed: false, account: null, error: null}});
-        } else {
-          dispatch({type: 'error', payload: 'An unknown error occurred. Please try again later.'});
-          console.error('Bad authState from /auth/check endpoint.', authState);
-        }
+      let res = await XHR.for(`/auth/check`).get().getJson<RouterResponse<AuthStateResponse>>();
+      let consumed = RouterResponseConsumer(res, 'AuthStateResponse');
+      if (consumed.success) {
+        let [resp] = consumed.data;
+        dispatch({type: 'fetched', payload: {authed: resp.authenticated, account: resp.account, error: null}});
       } else {
-        dispatch({type: 'error', payload: 'An internal server error occurred. Please try again later.'});
-        console.error('Invalid response from /auth/check endpoint.');
+        dispatch({type: 'fetched', payload: {error: consumed.message, account: null, authed: false}});
       }
     } catch (e) {
       dispatch({type: 'error', payload: e.toString()});

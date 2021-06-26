@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useRef, useState} from 'react';
 import {useHistory} from 'react-router-dom';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FileInput from '../../Components/FileInput';
@@ -30,28 +31,23 @@ export default function PageUpload(props: PageUploadProps) {
     fd.append('private', String(cbPrivate.current.checked));
     fd.append('file', files[0]);
     XHR.for('/upload').post(XHR.BODY_TYPE.FORM_DATA, fd).getJson<RouterResponse<UploadResult>>().then(res => {
-        if (res && res.data) {
-          if (res.data.UploadResult && res.data.UploadResult[0]) {
-            let ur = res.data.UploadResult[0];
-            if (res.code === 200 && ur.success === true) {
-              setError(null);
-              setFileErrors(null);
-              setUploadResult({...ur});
-            } else {
-              if (ur.inputErrors.file && ur.inputErrors.file.length > 0) {
-                setFileErrors(ur.inputErrors.file.join('\n'));
-              }
+        let consumed = RouterResponseConsumer(res, 'UploadResult');
 
-              if (ur.errors.length > 0) {
-                setError(ur.errors.join('\n'));
-              } else {
-                setError('An internal server error occurred. Please reload and try again.');
-              }
-            }
-          }
+        if (consumed.success) {
+          setError(null);
+          setFileErrors(null);
+          setUploadResult({...consumed.data[0]});
         } else {
-          console.error('Invalid upload response:', res);
-          setError('An internal server error occurred. Please try again later.');
+          let [ur] = consumed.data;
+          setError(consumed.message);
+
+          if ('file' in ur.inputErrors) {
+            setFileErrors(ur.inputErrors.file.join('\n'));
+          }
+
+          if (ur.errors.length > 0) {
+            setError(ur.errors.join('\n'));
+          }
         }
       })
       .catch(err => {

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useRef, useState} from 'react';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import {XHR} from '../../classes/XHR';
 import FormBlock from '../FormBlock';
 import Modal from '../Modal/Modal';
@@ -24,29 +25,20 @@ export default function ConfirmPasswordModal(props: ConfirmPasswordModalProps) {
     XHR.for('/auth/confirm').post(XHR.BODY_TYPE.FORM, {
       password: txtPassword.current.value,
     }).getJson<RouterResponse<AuthConfirmResponse>>().then(resp => {
-      if (resp) {
-        if (resp.code === 200) {
-          if (Array.isArray(resp.data.AuthConfirmResponse) && resp.data.AuthConfirmResponse[0]) {
-            let authRes: AuthConfirmResponse = resp.data.AuthConfirmResponse[0];
-            if (!authRes.authenticated) {
-              if ('password' in authRes.inputErrors) {
-                setPwValidity({valid: false, error: authRes.inputErrors.password.join('\n')});
-              } else {
-                setPwValidity({valid: true, error: null});
-              }
-            } else {
-              props.onComplete(true, authRes.confirmation_token);
-            }
+      const consumed = RouterResponseConsumer(resp, 'AuthConfirmResponse');
+      if (consumed.success) {
+        let [authRes] = consumed.data;
+        if (!authRes.authenticated) {
+          if ('password' in authRes.inputErrors) {
+            setPwValidity({valid: false, error: authRes.inputErrors.password.join('\n')});
           } else {
-            console.error('invalid /auth/confirm response:', resp);
-            setError('An internal server error occurred. Please try again later.');
+            setPwValidity({valid: true, error: null});
           }
         } else {
-          console.error('bad data from `/auth/confirm`:', resp);
-          setError('Failed to submit password. Please reload and try again.');
+          props.onComplete(true, authRes.confirmation_token);
         }
       } else {
-        setError('An internal server error occurred. Please try again later.');
+        setError(consumed.message);
       }
     }).catch(err => {
       setError(err.toString());

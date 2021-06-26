@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useMemo, useState} from 'react';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
 import Spinner from '../Spinner';
@@ -26,20 +27,17 @@ export default function NewCommentBlock(props: NewCommentBlockProps) {
     XHR.for(`/api/comment/${props.targetType}/${props.targetId}`).post(XHR.BODY_TYPE.FORM, {
       body: txtComment.current.value,
     }).getJson<RouterResponse<CommentResponse>>().then(res => {
-      if (res) {
-        if (res.code === 200 && Array.isArray(res.data.CommentResponse) && res.data.CommentResponse[0]) {
-          txtComment.current.value = '';
-          setError(null);
+      let consumed = RouterResponseConsumer(res, 'CommentResponse');
+      if (consumed.success) {
+        let [commentResponse] = consumed.data;
+        txtComment.current.value = '';
+        setError(null);
 
-          if (typeof props.onCommentPosted === 'function') {
-            props.onCommentPosted(res.data.CommentResponse[0]);
-          }
-        } else if (res.code === 429) {
-          setError(`You are doing that too often. Try again ${res.data && res.data.RateLimitResponse ? (`in ${res.data.RateLimitResponse[0].minimum_wait / 1e3 >> 0} seconds`) : 'later'}.`);
+        if (typeof props.onCommentPosted === 'function') {
+          props.onCommentPosted(commentResponse);
         }
       } else {
-        setError('An internal server error occurred. Please try again later.');
-        console.error('Received invalid CommentResponse:', res);
+        setError(consumed.message);
       }
     }).catch(err => {
       setError(err.toString());
