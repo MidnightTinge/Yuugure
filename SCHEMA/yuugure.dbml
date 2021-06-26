@@ -162,3 +162,25 @@ table panic_connection {
     addr [unique]
   }
 }
+
+table tag {
+  id     int [not null, pk]
+  type   text [not null, default: 'userland']
+  name   text [not null]
+  parent int [ref:> tag.id]
+
+  indexes {
+    `lower(name), lower(type)` [unique]
+    `lower(name)`
+    type
+  }
+}
+
+table upload_tags {
+  upload int [not null, ref:> tag.id]
+  tag int [not null, ref:> tag.id]
+
+  indexes {
+    (upload, tag) [unique]
+  }
+}

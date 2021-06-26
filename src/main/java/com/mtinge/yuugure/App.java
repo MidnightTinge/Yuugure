@@ -1,6 +1,9 @@
 package com.mtinge.yuugure;
 
 import com.mtinge.yuugure.core.Config;
+import com.mtinge.yuugure.core.TagManager.TagDescriptor;
+import com.mtinge.yuugure.core.TagManager.TagManager;
+import com.mtinge.yuugure.core.TagManager.TagType;
 import com.mtinge.yuugure.services.cli.CLI;
 import com.mtinge.yuugure.services.database.Database;
 import com.mtinge.yuugure.services.http.WebServer;
@@ -12,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileOutputStream;
 import java.nio.file.Path;
+import java.util.List;
 
 public class App {
   private static final Logger logger = LoggerFactory.getLogger(App.class);
@@ -19,6 +23,7 @@ public class App {
 
   // utils
   private static Config config;
+  private static TagManager tagManager;
 
   // services
   private static WebServer webServer;
@@ -31,6 +36,7 @@ public class App {
   public App() {
     try {
       config = Config.read(Path.of("./config.json").toFile());
+      tagManager = new TagManager();
 
       database = new Database();
       redis = new Redis();
@@ -58,6 +64,7 @@ public class App {
     try {
       redis.start();
       database.start();
+      tagManager.reload();
       messaging.start();
       mediaProcessor.start();
       cli.start();
@@ -65,6 +72,32 @@ public class App {
     } catch (Exception e) {
       throw new Error("Failed to start services.", e);
     }
+  }
+
+  private void ensureDefaultTags() {
+    var tags = List.of(
+      // MediaProcessor tags
+      new TagDescriptor("video", TagType.META),
+      new TagDescriptor("has_audio", TagType.META),
+
+      new TagDescriptor("filesize_tiny", TagType.META),
+      new TagDescriptor("filesize_small", TagType.META),
+      new TagDescriptor("filesize_medium", TagType.META),
+      new TagDescriptor("filesize_large", TagType.META),
+      new TagDescriptor("filesize_massive", TagType.META),
+
+      new TagDescriptor("dimensions_tiny", TagType.META),
+      new TagDescriptor("dimensions_small", TagType.META),
+      new TagDescriptor("dimensions_medium", TagType.META),
+      new TagDescriptor("dimensions_large", TagType.META),
+      new TagDescriptor("dimensions_massive", TagType.META),
+
+      new TagDescriptor("length_very_short", TagType.META),
+      new TagDescriptor("length_short", TagType.META),
+      new TagDescriptor("length_medium", TagType.META),
+      new TagDescriptor("length_long", TagType.META),
+      new TagDescriptor("length_very_log", TagType.META)
+    );
   }
 
   public static Config config() {
@@ -89,6 +122,10 @@ public class App {
 
   public static MediaProcessor mediaProcessor() {
     return mediaProcessor;
+  }
+
+  public static TagManager tagManager() {
+    return tagManager;
   }
 
   public static boolean isDebug() {

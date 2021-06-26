@@ -1,7 +1,9 @@
 package com.mtinge.yuugure.services.cli;
 
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.core.TagManager.TagDescriptor;
 import com.mtinge.yuugure.core.adapters.DurationAdapter;
+import com.mtinge.yuugure.data.postgres.DBTag;
 import com.mtinge.yuugure.scripts.*;
 import com.mtinge.yuugure.services.IService;
 import org.slf4j.Logger;
@@ -175,6 +177,215 @@ public class CLI implements IService {
                   }
                   case "sweep" -> {
                     System.err.println("not yet implemented"); // TODO
+                  }
+                }
+              }
+            }
+            case "tag", "tags", "tagmanager", "tag_manager", "tm" -> {
+              if (args.isEmpty() || args.getFirst().equalsIgnoreCase("list")) {
+                var tags = App.tagManager().getTags();
+                var sb = new StringBuilder();
+
+                sb.append("Tags:\n");
+                for (var tag : tags) {
+                  sb.append("\t").append("(ID: ").append(tag.id).append(") ").append(tag.name).append(" {").append(tag.type).append("}\n");
+                }
+                sb.append("--- Total: ").append(tags.size()).append(" ---");
+
+                System.out.println(sb);
+              } else {
+                var subcommand = args.removeFirst();
+                switch (subcommand.toLowerCase()) {
+                  case "reload" -> {
+                    App.tagManager().reload();
+                  }
+                  case "create", "new", "put", "add" -> {
+                    // tags create <name:type...>
+                    // we need at least 1 args at this point.
+                    if (args.size() < 1) {
+                      System.out.println("Usage: " + command + " " + subcommand + " <name:type...>");
+                    } else {
+                      for (var tagName : args) {
+                        var descriptor = TagDescriptor.parse(tagName);
+                        if (descriptor != null) {
+                          try {
+                            var tag = App.tagManager().createTag(descriptor);
+                            if (tag != null) {
+                              System.out.println("Created tag " + tag.id + " (" + tag.name + ")");
+                            } else {
+                              System.out.println("Failed to create tag, tagManager returned null.");
+                            }
+                          } catch (IllegalArgumentException iae) {
+                            System.out.println("Failed to create tag: " + iae.getMessage());
+                          }
+                        } else {
+                          System.out.println("Invalid tag format \"" + tagName + "\", expected \"name:type\".");
+                        }
+                      }
+                    }
+                  }
+                  case "delete", "del", "remove" -> {
+                    // tags delete <tag:type...>
+                    // we need at least 1 arg at this point.
+                    if (args.size() < 1) {
+                      System.out.println("Usage: " + command + " " + subcommand + " <tag:type...>");
+                    } else {
+                      for (var tagName : args) {
+                        var parsed = TagDescriptor.parse(tagName);
+                        if (parsed != null) {
+                          System.out.println("Deleting " + tagName + "...");
+                          if (!App.tagManager().deleteTag(parsed)) {
+                            System.out.println("Failed to delete tag " + tagName);
+                          }
+                        } else {
+                          System.out.println("Bad tag input: " + tagName + ", failed to parse as a TagDescriptor (format: \"name:type\")");
+                        }
+                      }
+                      System.out.println("All tag deletions complete.");
+                    }
+                  }
+                  case "associate" -> {
+                    // tags associate <parent> <child>
+                    // we need at least 2 args at this point.
+                    if (args.size() < 2) {
+                      System.out.println("Usage: " + command + " " + subcommand + " <parent:type> <child:type>");
+                    } else {
+                      var parent = args.removeFirst();
+                      var child = args.removeFirst();
+
+                      var parentDescriptor = TagDescriptor.parse(parent);
+                      var childDescriptor = TagDescriptor.parse(child);
+
+                      if (parentDescriptor == null) {
+                        System.out.println("The privded parent tag \"" + parent + "\" is in an invalid format. Expected \"name:type\"");
+                      } else if (childDescriptor == null) {
+                        System.out.println("The privded child tag \"" + child + "\" is in an invalid format. Expected \"name:type\"");
+                      } else {
+                        if (App.tagManager().setParent(childDescriptor, parentDescriptor)) {
+                          System.out.println("Updated " + child + "'s parent to " + parent + ".");
+                        } else {
+                          System.out.println("Failed to update associations, TagManager returned false.");
+                        }
+                      }
+                    }
+                  }
+                  case "disassociate" -> {
+                    // tags disassociate <child:type>
+                    // we need at least 2 args at this point.
+                    if (args.size() < 2) {
+                      System.out.println("Usage: " + command + " " + subcommand + " <child:type>");
+                    } else {
+                      var child = args.removeFirst();
+
+                      var childDescriptor = TagDescriptor.parse(child);
+
+                      if (childDescriptor == null) {
+                        System.out.println("The privded child tag \"" + child + "\" is in an invalid format. Expected \"name:type\"");
+                      } else {
+                        if (App.tagManager().removeParent(childDescriptor)) {
+                          System.out.println("Removed " + child + "'s parent.");
+                        } else {
+                          System.out.println("Failed to update associations, TagManager returned false.");
+                        }
+                      }
+                    }
+                  }
+                  case "search" -> {
+                    // tags search <wildcard>
+                    // we need at least 1 arg at this point.
+                    if (args.size() < 1) {
+                      System.out.println("Usage: " + command + " " + subcommand + " <wildcard>");
+                    } else {
+                      var sb = new StringBuilder();
+                      var wildcard = args.removeFirst();
+                      try {
+                        var tags = App.tagManager().getWildcard(wildcard);
+
+                        sb.append("Results:\n");
+                        for (var tag : tags) {
+                          sb.append("\t[").append(tag.id).append("] ").append(tag.name).append(" {").append(tag.type).append("}\n");
+                        }
+                        sb.append("--- Total: ").append(tags.size()).append(" ---");
+
+                        System.out.println(sb);
+                      } catch (IllegalArgumentException iae) {
+                        System.out.println("Invalid wildcard: " + iae.getMessage());
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            case "upload" -> {
+              String usage = "Usage: upload <id> tag <tag:name...>\n       upload <id> untag <tag:name...>";
+              if (args.isEmpty()) {
+                System.out.println(usage);
+              } else {
+                var uid = args.removeFirst();
+                if (args.isEmpty() || !uid.matches("^[0-9]+$")) {
+                  System.out.println(usage);
+                } else {
+                  var upload = App.database().getUploadById(Integer.parseInt(uid), true);
+                  if (upload == null) {
+                    System.out.println("Upload doesn't exist.");
+                  } else {
+                    var subcommand = args.removeFirst();
+                    switch (subcommand.toLowerCase()) {
+                      case "tag" -> {
+                        // upload <id> tag <tag:name...>
+                        // we need at least 1 arg at this point.
+                        if (args.size() < 1) {
+                          System.out.println("Usage: upload <id> tag <id:name...>");
+                        } else {
+                          var tags = new LinkedList<DBTag>();
+                          for (var tagName : args) {
+                            var descriptor = TagDescriptor.parse(tagName);
+                            if (descriptor == null) {
+                              System.out.println("Skipping tag " + tagName + " due to invalid format. Expected \"name:type\".");
+                            } else {
+                              tags.add(App.tagManager().ensureTag(descriptor));
+                            }
+                          }
+
+                          if (tags.isEmpty()) {
+                            System.out.println("Skipping upload " + uid + " due to empty tag list.");
+                          } else {
+                            if (App.database().addTagsToUpload(upload.id, tags)) {
+                              System.out.println("Tags updated.");
+                            } else {
+                              System.out.println("Failed to add tags, Database returned false.");
+                            }
+                          }
+                        }
+                      }
+                      case "untag" -> {
+                        // upload <id> untag <tag:name...>
+                        // we need at least 1 arg at this point.
+                        if (args.size() < 1) {
+                          System.out.println("Usage: upload <id> tag <id:name...>");
+                        } else {
+                          var tags = new LinkedList<DBTag>();
+                          for (var tagName : args) {
+                            var descriptor = TagDescriptor.parse(tagName);
+                            if (descriptor == null) {
+                              System.out.println("Skipping tag " + tagName + " due to invalid format. Expected \"name:type\".");
+                            } else {
+                              tags.add(App.tagManager().ensureTag(descriptor));
+                            }
+                          }
+
+                          if (tags.isEmpty()) {
+                            System.out.println("Skipping upload " + uid + " due to empty tag list.");
+                          } else {
+                            if (App.database().removeTagsFromUpload(upload.id, tags)) {
+                              System.out.println("Tags updated.");
+                            } else {
+                              System.out.println("Failed to add tags, Database returned false.");
+                            }
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }

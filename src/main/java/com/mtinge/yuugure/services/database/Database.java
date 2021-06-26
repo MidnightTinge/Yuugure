@@ -588,4 +588,45 @@ public class Database implements IService {
 
     return makeUploadsRenderable(uploads, handle);
   }
+
+  public boolean addTagsToUpload(int id, List<DBTag> tags) {
+    return jdbi.withHandle(handle -> addTagsToUpload(id, tags, handle));
+  }
+
+  public boolean addTagsToUpload(int id, List<DBTag> tags, Handle handle) {
+    var batch = handle.prepareBatch("INSERT INTO upload_tags (upload, tag) VALUES (:upload, :tag) ON CONFLICT DO NOTHING");
+    for (var tag : tags) {
+      batch.bind("upload", id).bind("tag", tag.id).add();
+    }
+
+    var counts = batch.execute();
+    for (var count : counts) {
+      if (count > 0) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public boolean removeTagsFromUpload(int id, List<DBTag> tags) {
+    return jdbi.withHandle(handle -> removeTagsFromUpload(id, tags, handle));
+  }
+
+  public boolean removeTagsFromUpload(int id, List<DBTag> tags, Handle handle) {
+    var batch = handle.prepareBatch("DELETE FROM upload_tags WHERE upload = :upload AND tag = :tag");
+    for (var tag : tags) {
+      batch.bind("upload", id).bind("tag", tag.id);
+    }
+
+    var counts = batch.execute();
+    for (var count : counts) {
+      if (count > 0) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
 }
