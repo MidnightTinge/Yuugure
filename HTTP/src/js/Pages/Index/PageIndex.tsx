@@ -76,7 +76,7 @@ export default function PageIndex(props: PageIndexProps) {
         <h1 className="text-2xl font-medium">Recent Uploads</h1>
         <hr className="mb-4 mt-1"/>
         {indexState.uploads && indexState.uploads.length ? (
-          <div className="grid gap-4 justify-between" style={{gridTemplateColumns: 'repeat(auto-fit, 210px)'}}>
+          <div className="grid gap-4" style={{gridTemplateColumns: 'repeat(auto-fit, 210px)'}}>
             {indexState.uploads.map((upload, idx) => (<MediaPreview upload={upload} key={idx}/>))}
           </div>
         ) : (
