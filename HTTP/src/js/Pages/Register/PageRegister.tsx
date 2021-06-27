@@ -38,76 +38,72 @@ export default function PageRegister(props: PageRegisterProps) {
       username: txtUsername.current.value,
       password: txtPassword.current.value,
       repeat: txtRepeat.current.value,
-    }).getJson<RouterResponse<AuthResponse>>().then(data => {
-      if (data && data.data) {
-        const authRes = data.data.AuthResponse[0] as AuthResponse;
-        if (authRes) {
-          if (authRes.authed) {
-            setEmailInvalid({invalid: false, error: null});
-            setUsernameInvalid({invalid: false, error: null});
-            setPasswordInvalid({invalid: false, error: null});
-            setRepeatInvalid({invalid: false, error: null});
-            setError(null);
+    }).getRouterResponse<AuthResponse>().then(consumed => {
+      if (consumed.message) {
+        setError(consumed.message);
+      }
 
-            (document.location as any) = '/';
-          } else {
-            if (authRes.inputErrors.email) {
-              setEmailInvalid({
-                invalid: true,
-                error: authRes.inputErrors.email.join('\n'),
-              });
-            } else {
-              setEmailInvalid({
-                invalid: false,
-                error: null,
-              });
-            }
+      let [authRes] = consumed.data;
+      if (authRes.authed) {
+        setEmailInvalid({invalid: false, error: null});
+        setUsernameInvalid({invalid: false, error: null});
+        setPasswordInvalid({invalid: false, error: null});
+        setRepeatInvalid({invalid: false, error: null});
+        setError(null);
 
-            if (authRes.inputErrors.username) {
-              setUsernameInvalid({
-                invalid: true,
-                error: authRes.inputErrors.username.join('\n'),
-              });
-            } else {
-              setUsernameInvalid({
-                invalid: false,
-                error: null,
-              });
-            }
-
-            if (authRes.inputErrors.password) {
-              setPasswordInvalid({
-                invalid: true,
-                error: authRes.inputErrors.password.join('\n'),
-              });
-            } else {
-              setPasswordInvalid({
-                invalid: false,
-                error: null,
-              });
-            }
-
-            if (authRes.inputErrors.repeat) {
-              setRepeatInvalid({
-                invalid: true,
-                error: authRes.inputErrors.repeat.join('\n'),
-              });
-            } else {
-              setRepeatInvalid({
-                invalid: false,
-                error: null,
-              });
-            }
-
-            if (authRes.errors.length > 0) {
-              setError(authRes.errors.join('\n'));
-            }
-          }
-        } else {
-          setError('The server returned an invalid response. Please try again.');
-        }
+        (document.location as any) = '/';
       } else {
-        setError('An unknown error occurred. Please try again later.');
+        if (authRes.inputErrors.email) {
+          setEmailInvalid({
+            invalid: true,
+            error: authRes.inputErrors.email.join('\n'),
+          });
+        } else {
+          setEmailInvalid({
+            invalid: false,
+            error: null,
+          });
+        }
+
+        if (authRes.inputErrors.username) {
+          setUsernameInvalid({
+            invalid: true,
+            error: authRes.inputErrors.username.join('\n'),
+          });
+        } else {
+          setUsernameInvalid({
+            invalid: false,
+            error: null,
+          });
+        }
+
+        if (authRes.inputErrors.password) {
+          setPasswordInvalid({
+            invalid: true,
+            error: authRes.inputErrors.password.join('\n'),
+          });
+        } else {
+          setPasswordInvalid({
+            invalid: false,
+            error: null,
+          });
+        }
+
+        if (authRes.inputErrors.repeat) {
+          setRepeatInvalid({
+            invalid: true,
+            error: authRes.inputErrors.repeat.join('\n'),
+          });
+        } else {
+          setRepeatInvalid({
+            invalid: false,
+            error: null,
+          });
+        }
+
+        if (authRes.errors.length > 0) {
+          setError(authRes.errors.join('\n'));
+        }
       }
     }).catch(err => {
       setError(err.toString());

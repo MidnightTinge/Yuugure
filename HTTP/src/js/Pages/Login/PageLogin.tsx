@@ -37,29 +37,32 @@ export default function PageLogin(props: LoginProps) {
           setError(null);
 
           (document.location as any) = '/';
-        } else {
-          if ('email' in authRes.inputErrors) {
-            setEmailInvalid(true);
-            setEmailError(authRes.inputErrors.email.join('\n'));
-          } else {
-            setEmailInvalid(false);
-            setEmailError(null);
-          }
-
-          if ('password' in authRes.inputErrors) {
-            setPwInvalid(true);
-            setPwError(authRes.inputErrors.password.join('\n'));
-          } else {
-            setPwInvalid(false);
-            setPwError(null);
-          }
-
-          if (authRes.errors.length > 0) {
-            setError(authRes.errors.join('\n'));
-          }
         }
-      } else {
+      }
+
+      if (consumed.message) {
         setError(consumed.message);
+      }
+
+      let [authRes] = consumed.data;
+      if ('email' in authRes.inputErrors) {
+        setEmailInvalid(true);
+        setEmailError(authRes.inputErrors.email.join('\n'));
+      } else {
+        setEmailInvalid(false);
+        setEmailError(null);
+      }
+
+      if ('password' in authRes.inputErrors) {
+        setPwInvalid(true);
+        setPwError(authRes.inputErrors.password.join('\n'));
+      } else {
+        setPwInvalid(false);
+        setPwError(null);
+      }
+
+      if (authRes.errors.length > 0) {
+        setError(authRes.errors.join('\n'));
       }
     }).catch(err => {
       setError(err.toString());
