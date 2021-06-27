@@ -1,6 +1,7 @@
 import * as React from 'react';
-import {useRef, useState} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import {useHistory} from 'react-router-dom';
+import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FileInput from '../../Components/FileInput';
@@ -17,18 +18,22 @@ export default function PageUpload(props: PageUploadProps) {
   const [error, setError] = useState<string>(null);
   const [uploadResult, setUploadResult] = useState<UploadResult>(null);
 
+  const [files, setFiles] = useState<FileList>(null);
   const [fileErrors, setFileErrors] = useState<string>(null);
 
-  const [canUpload, setCanUpload] = useState(false);
-  const [files, setFiles] = useState<FileList>(null);
-
   const cbPrivate = useRef<HTMLInputElement>(null);
+
+  const [tags, setTags] = useState<string>('');
+  const txtTagsId = useMemo(() => Util.mkid(), []);
+
+  const canUpload = useMemo(() => files != null && files.length > 0 && tags.trim().length > 0, [files, tags]);
 
   function handleClick() {
     setUploading(true);
     const fd = new FormData();
     fd.append('private', String(cbPrivate.current.checked));
     fd.append('file', files[0]);
+    fd.append('tags', tags);
     XHR.for('/upload').post(XHR.BODY_TYPE.FORM_DATA, fd).getRouterResponse<UploadResult>().then(consumed => {
         if (consumed.success) {
           setError(null);
@@ -58,7 +63,6 @@ export default function PageUpload(props: PageUploadProps) {
 
   function handleFiles(newFiles: FileList) {
     setFiles(newFiles);
-    setCanUpload(newFiles.length > 0 && newFiles[0] != null);
   }
 
   function handleUploadNavigation(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
@@ -71,8 +75,11 @@ export default function PageUpload(props: PageUploadProps) {
     setError(null);
     setUploadResult(null);
     setFileErrors(null);
-    setCanUpload(false);
     setFiles(null);
+  }
+
+  function handleTagsChange(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    setTags(e.currentTarget.value);
   }
 
   return (
@@ -82,11 +89,21 @@ export default function PageUpload(props: PageUploadProps) {
           <>
             <p className="text-lg text-center">Upload File</p>
             <form method="post" action="/upload" encType="multipart/form-data">
-              <FileInput label="Image/Video" onFiles={handleFiles} invalid={fileErrors && fileErrors.length > 0} errorText={fileErrors}/>
-              <label><input ref={cbPrivate} type="checkbox" name="private"/> Private</label>
-              <button type="button" className="block w-full bg-green-500 py-1 mt-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" onClick={handleClick} disabled={!canUpload}>
-                {uploading ? (<><Spinner/> Uploading...</>) : `Upload`}
-              </button>
+              <div className="mb-1">
+                <FileInput label="Image/Video" onFiles={handleFiles} invalid={fileErrors && fileErrors.length > 0} errorText={fileErrors}/>
+              </div>
+              <div className="my-1">
+                <label><input ref={cbPrivate} type="checkbox" name="private"/> Private</label>
+              </div>
+              <div className="my-1">
+                <label htmlFor={txtTagsId} id={`lbl-${txtTagsId}`} className="mb-1 text-sm font-medium text-gray-800">Tags</label>
+                <textarea id={txtTagsId} name="tags" onKeyUp={handleTagsChange} className="block w-full rounded-md border border-gray-300 hover:bg-gray-50 shadow focus:border-gray-500 focus:ring focus:ring-gray-400 focus:ring-opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200" disabled={uploading} required/>
+              </div>
+              <div className="mt-1">
+                <button type="button" className="block w-full bg-green-500 py-1 mt-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" onClick={handleClick} disabled={!canUpload}>
+                  {uploading ? (<><Spinner/> Uploading...</>) : `Upload`}
+                </button>
+              </div>
             </form>
           </>
         ) : (
