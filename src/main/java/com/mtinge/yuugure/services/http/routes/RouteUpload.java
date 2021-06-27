@@ -4,11 +4,14 @@ import com.mtinge.EBMLReader.EBMLReader;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.core.States;
+import com.mtinge.yuugure.core.TagManager.TagCategory;
+import com.mtinge.yuugure.core.TagManager.TagDescriptor;
 import com.mtinge.yuugure.core.Utils;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.http.UploadResult;
 import com.mtinge.yuugure.data.postgres.DBMedia;
 import com.mtinge.yuugure.data.postgres.DBProcessingQueue;
+import com.mtinge.yuugure.data.postgres.DBTag;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
@@ -29,8 +32,11 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class RouteUpload extends Route {
   private static final Logger logger = LoggerFactory.getLogger(RouteUpload.class);
@@ -74,167 +80,188 @@ public class RouteUpload extends Route {
             var frmPrivate = form.getFirst("private") == null ? "false" : form.getFirst("private").getValue();
             boolean isPrivate = frmPrivate.equalsIgnoreCase("true") || frmPrivate.equalsIgnoreCase("on");
 
-            // ensure we have a file
-            var frmFile = form.getFirst("file");
-            if (frmFile == null || !frmFile.isFileItem()) {
-              uploadResult.addError("File is missing from the request.");
+            // Ensure we have tags
+            var frmTags = form.getFirst("tags");
+            if (frmTags == null || frmTags.getValue().isBlank()) {
+              uploadResult.addInputError("tags", "This field is required.");
             } else {
-              // ensure file is of a valid mime, reading the magic bytes to increase detection
-              // accuracy
-              MediaType fType = null;
-              var file = frmFile.getFileItem();
-              try {
-                fType = tikaParser.getDetector().detect(file.getInputStream(), new Metadata());
-              } catch (Exception e) {
-                logger.error("Failed to detect filetype.", e);
-              }
+              var tags = Arrays.stream(frmTags.getValue().split(" "))
+                .filter(str -> !str.isBlank())
+                .map(str -> new TagDescriptor(TagCategory.USERLAND, str))
+                .collect(Collectors.toList());
 
-              if (fType != null) {
-                String _mime = fType.toString();
-                if (_mime.equals("application/x-matroska")) {
-                  try {
-                    logger.debug("got a matroska upload, extracting webm/mkv...");
-
-                    var is = file.getInputStream();
-                    is.mark(9216);
-                    byte[] chunk = new byte[8192];
-                    is.read(chunk);
-                    is.reset();
-
-                    var type = EBMLReader.identify(chunk);
-                    logger.debug("extracted: {}", type);
-                    if (type != null) {
-                      _mime = type;
-                    }
-                  } catch (Exception e) {
-                    logger.error("Failed to extract type from EBML.", e);
-                  }
+              // Ensure we have a file
+              var frmFile = form.getFirst("file");
+              if (frmFile == null || !frmFile.isFileItem()) {
+                uploadResult.addError("File is missing from the request.");
+              } else {
+                // ensure file is of a valid mime, reading the magic bytes to increase detection
+                // accuracy
+                MediaType fType = null;
+                var file = frmFile.getFileItem();
+                try {
+                  fType = tikaParser.getDetector().detect(file.getInputStream(), new Metadata());
+                } catch (Exception e) {
+                  logger.error("Failed to detect filetype.", e);
                 }
 
-                if (validMimesPattern.matcher(_mime).find()) {
-                  final String mime = _mime;
-
-                  // move file and calculate hashes
-                  try {
-                    var dgMD5 = MessageDigest.getInstance("MD5");
-                    var dgSHA256 = MessageDigest.getInstance("SHA256");
-
-                    // read in the file for hashing
-                    var is = file.getInputStream();
-                    byte[] chunk = new byte[8192];
-                    int numRead;
-                    while ((numRead = is.read(chunk)) != -1) {
-                      dgMD5.update(chunk, 0, numRead);
-                      dgSHA256.update(chunk, 0, numRead);
-                    }
-
-                    var md5 = Utils.toHex(dgMD5.digest());
-                    var sha256 = Utils.toHex(dgSHA256.digest());
-
-                    // move upload to the final dir
-                    final Path outPath = Path.of(finalPath.toString(), sha256 + ".full");
-                    if (!outPath.toFile().exists()) {
-                      file.getFile().toFile().renameTo(outPath.toFile());
-                    } // else: this is a duplicate upload
-
-                    // insert the upload into the database
-                    var mtx = App.redis().getMutex("ul:" + sha256);
+                if (fType != null) {
+                  String _mime = fType.toString();
+                  if (_mime.equals("application/x-matroska")) {
                     try {
-                      if (mtx.acquire()) {
-                        App.database().jdbi().useHandle(h -> {
-                          var handle = h.begin();
-                          boolean handled = false;
+                      logger.debug("got a matroska upload, extracting webm/mkv...");
 
-                          try {
-                            var media = handle.createQuery("SELECT * FROM media WHERE sha256 = :sha256")
-                              .bind("sha256", sha256)
-                              .map(DBMedia.Mapper)
-                              .findFirst().orElse(null);
-                            if (media == null) {
-                              media = handle.createQuery("INSERT INTO media (sha256, md5, phash, mime) VALUES (:sha256, :md5, :phash, :mime) RETURNING *")
+                      var is = file.getInputStream();
+                      is.mark(9216);
+                      byte[] chunk = new byte[8192];
+                      is.read(chunk);
+                      is.reset();
+
+                      var type = EBMLReader.identify(chunk);
+                      logger.debug("extracted: {}", type);
+                      if (type != null) {
+                        _mime = type;
+                      }
+                    } catch (Exception e) {
+                      logger.error("Failed to extract type from EBML.", e);
+                    }
+                  }
+
+                  if (validMimesPattern.matcher(_mime).find()) {
+                    final String mime = _mime;
+
+                    // move file and calculate hashes
+                    try {
+                      var dgMD5 = MessageDigest.getInstance("MD5");
+                      var dgSHA256 = MessageDigest.getInstance("SHA256");
+
+                      // read in the file for hashing
+                      var is = file.getInputStream();
+                      byte[] chunk = new byte[8192];
+                      int numRead;
+                      while ((numRead = is.read(chunk)) != -1) {
+                        dgMD5.update(chunk, 0, numRead);
+                        dgSHA256.update(chunk, 0, numRead);
+                      }
+
+                      var md5 = Utils.toHex(dgMD5.digest());
+                      var sha256 = Utils.toHex(dgSHA256.digest());
+
+                      // move upload to the final dir
+                      final Path outPath = Path.of(finalPath.toString(), sha256 + ".full");
+                      if (!outPath.toFile().exists()) {
+                        file.getFile().toFile().renameTo(outPath.toFile());
+                      } // else: this is a duplicate upload
+
+                      // insert the upload into the database
+                      var mtx = App.redis().getMutex("ul:" + sha256);
+                      try {
+                        if (mtx.acquire()) {
+                          App.database().jdbi().useHandle(h -> {
+                            var handle = h.begin();
+                            boolean handled = false;
+
+                            try {
+                              var media = handle.createQuery("SELECT * FROM media WHERE sha256 = :sha256")
                                 .bind("sha256", sha256)
-                                .bind("md5", md5)
-                                .bind("phash", "")
-                                .bind("mime", mime)
                                 .map(DBMedia.Mapper)
                                 .findFirst().orElse(null);
-                            }
-                            if (media != null) {
-                              var dupedForOwner = handle.createQuery("SELECT EXISTS (SELECT id FROM upload WHERE owner = :owner AND media = :media) AS \"exists\"")
-                                .bind("owner", account.id)
-                                .bind("media", media.id)
-                                .map((r, c) -> r.getBoolean("exists"))
-                                .findFirst().orElse(false);
-                              if (dupedForOwner) {
-                                uploadResult.addInputError("file", "You have already uploaded this file.");
-                              } else {
-                                long uploadState = States.flagged(account.state, States.Account.TRUSTED_UPLOADS) ? 0L : States.Upload.MODERATION_QUEUED;
-                                if (isPrivate) {
-                                  uploadState = States.addFlag(uploadState, States.Upload.PRIVATE);
-                                }
-
-                                var toRet = handle.createQuery("INSERT INTO upload (media, owner, state, upload_date) VALUES (:media, :owner, :state, now()) RETURNING *")
-                                  .bind("media", media.id)
-                                  .bind("owner", account.id)
-                                  .bind("state", uploadState)
-                                  .map(DBUpload.Mapper)
+                              if (media == null) {
+                                media = handle.createQuery("INSERT INTO media (sha256, md5, phash, mime) VALUES (:sha256, :md5, :phash, :mime) RETURNING *")
+                                  .bind("sha256", sha256)
+                                  .bind("md5", md5)
+                                  .bind("phash", "")
+                                  .bind("mime", mime)
+                                  .map(DBMedia.Mapper)
                                   .findFirst().orElse(null);
-                                if (toRet != null) {
-                                  var pq = handle.createQuery("INSERT INTO processing_queue (upload) VALUES (:upload) RETURNING *")
-                                    .bind("upload", toRet.id)
-                                    .map(DBProcessingQueue.Mapper)
-                                    .findFirst().orElse(null);
-                                  if (pq != null) {
-                                    uploadResult.setSuccess(true);
-                                    uploadResult.setUpload(App.database().makeUploadRenderable(toRet, handle));
-                                    handle.commit();
-
-                                    App.mediaProcessor().wakeWorkers();
-                                  } else {
-                                    uploadResult.addError("Failed to insert into the processing queue, the upload has been aborted. Please try again later.");
-                                    handle.rollback();
-                                  }
-                                  handled = true;
-                                } else {
-                                  uploadResult.addError("An internal server error occurred.");
-                                }
                               }
-                            } else {
-                              logger.error("Failed to create media for upload {}.", sha256);
-                            }
-                          } catch (Exception e) {
-                            handle.rollback();
-                            logger.error("Caught an SQL error during upload.", e);
-                            uploadResult.addError("Failed to finalize upload. Please wait a minute and try again.");
-                          } finally {
-                            if (!handled) {
-                              handle.rollback();
-                            }
-                          }
-                        });
-                      }
-                    } finally {
-                      mtx.release();
-                    }
+                              if (media != null) {
+                                var dupedForOwner = handle.createQuery("SELECT EXISTS (SELECT id FROM upload WHERE owner = :owner AND media = :media) AS \"exists\"")
+                                  .bind("owner", account.id)
+                                  .bind("media", media.id)
+                                  .map((r, c) -> r.getBoolean("exists"))
+                                  .findFirst().orElse(false);
+                                if (dupedForOwner) {
+                                  uploadResult.addInputError("file", "You have already uploaded this file.");
+                                } else {
+                                  long uploadState = States.flagged(account.state, States.Account.TRUSTED_UPLOADS) ? 0L : States.Upload.MODERATION_QUEUED;
+                                  if (isPrivate) {
+                                    uploadState = States.addFlag(uploadState, States.Upload.PRIVATE);
+                                  }
 
-                    // report back to the user
-                    if (uploadResult.getUpload() != null) {
-                      PrometheusMetrics.UPL_TOTAL.inc();
-                      App.messaging().publish(Messaging.TOPIC_UPLOAD, Map.of(
-                        "upload_id", uploadResult.getUpload().upload.id,
-                        "media_id", uploadResult.getUpload().media.id
-                      ));
-                      App.webServer().wsListener().getLobby().in("account:" + uploadResult.getUpload().owner.id).broadcast(OutgoingPacket.prepare("upload").addData("upload", uploadResult.getUpload()));
+                                  var toRet = handle.createQuery("INSERT INTO upload (media, owner, state, upload_date) VALUES (:media, :owner, :state, now()) RETURNING *")
+                                    .bind("media", media.id)
+                                    .bind("owner", account.id)
+                                    .bind("state", uploadState)
+                                    .map(DBUpload.Mapper)
+                                    .findFirst().orElse(null);
+                                  if (toRet != null) {
+                                    var pq = handle.createQuery("INSERT INTO processing_queue (upload) VALUES (:upload) RETURNING *")
+                                      .bind("upload", toRet.id)
+                                      .map(DBProcessingQueue.Mapper)
+                                      .findFirst().orElse(null);
+                                    if (pq != null) {
+
+                                      var toTag = new LinkedList<DBTag>();
+                                      for (var tag : tags) {
+                                        var dbt = App.tagManager().ensureTag(tag);
+                                        if (dbt != null) {
+                                          toTag.add(dbt);
+                                        }
+                                      }
+                                      App.database().addTagsToUpload(toRet.id, toTag, handle);
+
+                                      uploadResult.setSuccess(true);
+                                      uploadResult.setUpload(App.database().makeUploadRenderable(toRet, handle));
+                                      handle.commit();
+
+                                      App.mediaProcessor().wakeWorkers();
+                                    } else {
+                                      uploadResult.addError("Failed to insert into the processing queue, the upload has been aborted. Please try again later.");
+                                      handle.rollback();
+                                    }
+                                    handled = true;
+                                  } else {
+                                    uploadResult.addError("An internal server error occurred.");
+                                  }
+                                }
+                              } else {
+                                logger.error("Failed to create media for upload {}.", sha256);
+                              }
+                            } catch (Exception e) {
+                              handle.rollback();
+                              logger.error("Caught an SQL error during upload.", e);
+                              uploadResult.addError("Failed to finalize upload. Please wait a minute and try again.");
+                            } finally {
+                              if (!handled) {
+                                handle.rollback();
+                              }
+                            }
+                          });
+                        }
+                      } finally {
+                        mtx.release();
+                      }
+
+                      // report back to the user
+                      if (uploadResult.getUpload() != null) {
+                        PrometheusMetrics.UPL_TOTAL.inc();
+                        App.messaging().publish(Messaging.TOPIC_UPLOAD, Map.of(
+                          "upload_id", uploadResult.getUpload().upload.id,
+                          "media_id", uploadResult.getUpload().media.id
+                        ));
+                        App.webServer().wsListener().getLobby().in("account:" + uploadResult.getUpload().owner.id).broadcast(OutgoingPacket.prepare("upload").addData("upload", uploadResult.getUpload()));
+                      }
+                    } catch (Exception e) {
+                      logger.error("Failed to read file for hashing", e);
                     }
-                  } catch (Exception e) {
-                    logger.error("Failed to read file for hashing", e);
+                  } else {
+                    uploadResult.addInputError("file", "Invalid file type uploaded, expected an image or a video.");
+                    logger.debug("User tried to upload an invalid mime: {}", _mime);
                   }
                 } else {
-                  uploadResult.addInputError("file", "Invalid file type uploaded, expected an image or a video.");
-                  logger.debug("User tried to upload an invalid mime: {}", _mime);
+                  uploadResult.addInputError("file", "Invalid file received, unable to detect if it is an image or video.");
                 }
-              } else {
-                uploadResult.addInputError("file", "Invalid file received, unable to detect if it is an image or video.");
               }
             }
           } else {
