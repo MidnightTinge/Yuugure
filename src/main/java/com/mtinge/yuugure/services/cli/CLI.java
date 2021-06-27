@@ -297,9 +297,9 @@ public class CLI implements IService {
                       System.out.println("Usage: " + command + " " + subcommand + " <wildcard>");
                     } else {
                       var sb = new StringBuilder();
-                      var wildcard = args.removeFirst();
+                      var search = args.removeFirst();
                       try {
-                        var tags = App.tagManager().getWildcard(wildcard);
+                        var tags = App.tagManager().search(search);
 
                         sb.append("Results:\n");
                         for (var tag : tags) {

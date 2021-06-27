@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A tag management class that interfaces with the <code>tag</code> table and attemtps to be the
@@ -67,6 +68,12 @@ public class TagManager {
     synchronized (_monitor) {
       var exists = getTag(descriptor) != null;
       if (exists) throw new IllegalArgumentException("The requested tag name already exists");
+
+      Objects.requireNonNull(descriptor.category);
+      Objects.requireNonNull(descriptor.name);
+      if (descriptor.name.isBlank()) {
+        throw new IllegalArgumentException("Tag names cannot be blank.");
+      }
 
       var tag = App.database().jdbi().withHandle(handle ->
         handle.createQuery("INSERT INTO tag (category, name) VALUES (:category, :name) RETURNING *")
@@ -202,40 +209,93 @@ public class TagManager {
   }
 
   /**
-   * <p>Gets a list of tags that start with the provided wildcard suffix. Wildcard must include the
-   * asterisk (*) to denote the search term. Search terms (the substring before the asterisk) must
-   * be at least 1 char or they will be discarded silently and an empty list will be returned.</p>
-   * <p>Valid:
-   * <pre>TagManager.getWildcard("search*");</pre>
-   * <pre>TagManager.getWildcard("to*");</pre></p>
+   * Search the tree recursively for a prefixed/suffixed value. The location of the wildcard denotes
+   * which way we search the tree, e.g. for a suffix search we'll go depth-first post-order and
+   * compare nodes with the end of our suffix.
    *
-   * <p>Invalid:
-   * <pre>TagManager.getWildcard("search"); // No asterisk</pre>
-   * <pre>TagManager.getWildcard("*");* // Too short</pre></p>
-   *
-   * @param wildcard The search string. Must include an asterisk and the length before the
-   *   asterisk must be >= 1.
-   *
-   * @return The list of tags.
-   *
-   * @throws IllegalArgumentException if the search does not include an asterisk.
+   * @param node The current node.
+   * @param results The current results.
+   * @param search The tag search.
+   * @param path The current path.
    */
-  public LinkedList<MutableTag> getWildcard(String wildcard) {
-    var toRet = new LinkedList<MutableTag>();
+  @SuppressWarnings({"unchecked", "ConstantConditions"})
+  private void _search(Node node, LinkedList<MutableTag> results, TagSearch search, String path) {
+    if (node == null) return;
 
-    int idx = wildcard.lastIndexOf('*');
-    if (idx == -1) {
-      throw new IllegalArgumentException("The provided wildcard does not include an asterisk.");
-    } else if (idx >= 1) {
-      synchronized (_monitor) {
-        var prefixedValues = tagCache.getValuesForKeysStartingWith(formatTag(wildcard.substring(0, idx)));
-        for (var values : prefixedValues) {
-          toRet.addAll(values);
+    if (!path.isBlank() && !node.getIncomingEdge().isEmpty()) {
+      // this isn't the root node, check if we can short circuit this tree at all
+      if (search.prefix != null && search.mode != SearchMode.WRAPPED) {
+        var _p = formatTag(path.isBlank() ? node.getIncomingEdge().toString() : path);
+        if (!(_p.startsWith(search.prefix) || search.prefix.startsWith(_p))) {
+          // short circuit, this branch can't contain our values.
+          return;
         }
       }
-    } // else: wildcard too short to care about. discard.
+    }
 
-    return toRet;
+    for (var outgoing : node.getOutgoingEdges()) {
+      _search(outgoing, results, search, path + node.getIncomingEdge());
+    }
+
+    if (node.getValue() == null) return;
+
+    var nSuffix = formatTag(node.getIncomingEdge().toString());
+    var nPrefix = formatTag(path.isBlank() ? nSuffix : path);
+    var nFull = path + nSuffix;
+
+    if (search.mode.equals(SearchMode.SUFFIX)) {
+      if (nSuffix.endsWith(search.suffix)) {
+        results.addAll((LinkedList<MutableTag>) node.getValue());
+      }
+    } else if (search.mode.equals(SearchMode.PREFIX)) {
+      if (nSuffix.startsWith(search.prefix) || formatTag(path + nSuffix).startsWith(search.prefix)) {
+        results.addAll((LinkedList<MutableTag>) node.getValue());
+      }
+    } else if (search.mode.equals(SearchMode.MIDDLE)) {
+      if (nPrefix.startsWith(search.prefix) && nSuffix.endsWith(search.suffix)) {
+        results.addAll((LinkedList<MutableTag>) node.getValue());
+      }
+    } else if (search.mode.equals(SearchMode.WRAPPED)) {
+      if (nFull.contains(search.prefix)) {
+        results.addAll((LinkedList<MutableTag>) node.getValue());
+      }
+    }
+  }
+
+  public LinkedList<MutableTag> search(String search) {
+    if (search.isBlank()) {
+      return new LinkedList<>();
+    }
+
+    if (search.indexOf(' ') > 0) {
+      return search(search.substring(0, search.indexOf(' ')));
+    }
+
+    var ret = new LinkedList<MutableTag>();
+
+    int idx = search.lastIndexOf('*');
+    synchronized (_monitor) {
+      if (search.startsWith("*") && search.endsWith("*")) {
+        // wrapped search
+        var wrapped = formatTag(search.substring(search.indexOf('*') + 1, idx));
+        _search(tagCache.getNode(), ret, TagSearch.wrapped(wrapped), "");
+      } else if (search.endsWith("*")) {
+        // prefix search
+        _search(tagCache.getNode(), ret, TagSearch.prefix(formatTag(search.substring(0, search.length() - 1))), "");
+      } else if (search.startsWith("*")) {
+        // suffix search
+        _search(tagCache.getNode(), ret, TagSearch.suffix(formatTag(search.substring(1))), "");
+      } else if (idx != -1) {
+        // middle search
+        var prefix = formatTag(search.substring(0, idx));
+        var suffix = formatTag(search.substring(idx + 1));
+        _search(tagCache.getNode(), ret, TagSearch.middle(prefix, suffix), "");
+      } else {
+        var fromTree = tagCache.getValuesForKeysStartingWith(search);
+        fromTree.forEach(ret::addAll);
+      }
+    }
+    return ret;
   }
 
   /**
