@@ -27,7 +27,8 @@ public class CLI implements IService {
       new RenderAllComments(),
       new ReprocessAllUploads(),
       new ReprocessSpecificUpload(),
-      new ActiveMediaProcessors()
+      new ActiveMediaProcessors(),
+      new AddTagsFromFilesystem()
     );
   }
 
