@@ -83,6 +83,10 @@ public class App {
     var fileSizeMassive = new TagDescriptor(TagCategory.FILESIZE, "massive");
     var metaHasAudio = new TagDescriptor(TagCategory.META, "has_audio");
 
+    var ratingSafe = new TagDescriptor(TagCategory.RATING, "safe");
+    var ratingQuestionable = new TagDescriptor(TagCategory.RATING, "questionable");
+    var ratingExplicit = new TagDescriptor(TagCategory.RATING, "explicit");
+
     var tags = List.of(
       new TagDescriptor(TagCategory.FILESIZE, "tiny"),
       new TagDescriptor(TagCategory.FILESIZE, "small"),
@@ -110,14 +114,18 @@ public class App {
       new TagDescriptor(TagCategory.META, "has_collection"),
       new TagDescriptor(TagCategory.META, "animated"),
 
-      new TagDescriptor(TagCategory.RATING, "safe"),
-      new TagDescriptor(TagCategory.RATING, "questionable"),
-      new TagDescriptor(TagCategory.RATING, "explicit")
+      ratingSafe,
+      ratingQuestionable,
+      ratingExplicit
     );
 
     var associations = Map.of(
       fileSizeMassive, List.of(new TagDescriptor(TagCategory.USERLAND, "absurd_res")),
-      metaHasAudio, List.of(new TagDescriptor(TagCategory.USERLAND, "sound"), new TagDescriptor(TagCategory.USERLAND, "audio"), new TagDescriptor(TagCategory.USERLAND, "has_sound"), new TagDescriptor(TagCategory.USERLAND, "audio_warning"))
+      metaHasAudio, List.of(new TagDescriptor(TagCategory.USERLAND, "sound"), new TagDescriptor(TagCategory.USERLAND, "audio"), new TagDescriptor(TagCategory.USERLAND, "has_sound"), new TagDescriptor(TagCategory.USERLAND, "audio_warning")),
+
+      ratingSafe, List.of(new TagDescriptor(TagCategory.RATING, "s")),
+      ratingQuestionable, List.of(new TagDescriptor(TagCategory.RATING, "q")),
+      ratingExplicit, List.of(new TagDescriptor(TagCategory.RATING, "e"))
     );
 
     for (var toEnsure : tags) {

@@ -46,4 +46,8 @@ public class TagDescriptor {
 
     return false;
   }
+
+  public int hashCode() {
+    return Objects.hash(category.getName(), name);
+  }
 }
