@@ -629,4 +629,13 @@ public class Database implements IService {
     return false;
   }
 
+  public List<DBUpload> getUploadsTagged(List<DBTag> tags, Handle handle) {
+    var ids = tags.stream().map(tag -> String.valueOf(tag.id)).collect(Collectors.joining(", "));
+    var query = "SELECT u.* FROM upload_tags ut INNER JOIN upload u ON ut.upload = u.id WHERE ut.tag IN (" + ids + ") GROUP BY u.id ORDER BY u.upload_date desc, u.owner asc;";
+
+    return handle.createQuery(query)
+      .map(DBUpload.Mapper)
+      .collect(Collectors.toList());
+  }
+
 }

@@ -390,6 +390,23 @@ public class CLI implements IService {
                 }
               }
             }
+            case "search" -> {
+              var usage = "Usage: search (upload|account) <terms...>";
+              // search (upload|account) <terms...>
+              if (args.isEmpty()) {
+                System.out.println(usage);
+              } else {
+                var domain = args.removeFirst();
+                switch (domain.toLowerCase()) {
+                  case "upload" -> {
+                    // search upload
+                  }
+                  case "account" -> {
+                    // search account
+                  }
+                }
+              }
+            }
           }
         } catch (Exception e) {
           logger.error("Failed to handle scanner iteration.", e);
