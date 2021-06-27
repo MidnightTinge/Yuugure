@@ -23,7 +23,7 @@ public class TagDescriptor {
    * @return The parsed TagDescriptor if valid, null otherwise.
    */
   public static TagDescriptor parse(String input) {
-    int iof = input.lastIndexOf(':');
+    int iof = input.indexOf(':');
     if (iof >= 0) {
       try {
         var category = TagCategory.valueOf(input.substring(0, iof).toUpperCase().trim());
