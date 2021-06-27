@@ -181,7 +181,7 @@ table tag {
 }
 
 table upload_tags {
-  upload int [not null, ref:> tag.id]
+  upload int [not null, ref:> upload.id]
   tag int [not null, ref:> tag.id]
 
   indexes {
