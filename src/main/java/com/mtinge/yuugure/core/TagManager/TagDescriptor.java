@@ -1,16 +1,18 @@
 package com.mtinge.yuugure.core.TagManager;
 
+import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
+@ToString
 public class TagDescriptor {
+  public final TagCategory category;
   public final String name;
-  public final TagType type;
 
-  public TagDescriptor(@NotNull String name, @NotNull TagType type) {
+  public TagDescriptor(@NotNull TagCategory category, @NotNull String name) {
+    this.category = Objects.requireNonNull(category);
     this.name = Objects.requireNonNull(name);
-    this.type = Objects.requireNonNull(type);
   }
 
   /**
@@ -24,15 +26,24 @@ public class TagDescriptor {
     int iof = input.lastIndexOf(':');
     if (iof >= 0) {
       try {
-        var name = input.substring(0, iof);
-        var type = TagType.valueOf(input.substring(iof + 1).toUpperCase().trim());
+        var category = TagCategory.valueOf(input.substring(0, iof).toUpperCase().trim());
+        var name = input.substring(iof + 1);
 
-        return new TagDescriptor(name, type);
+        return new TagDescriptor(category, name);
       } catch (Exception e) {
         e.printStackTrace();
       }
     }
 
     return null;
+  }
+
+  public boolean equals(Object other) {
+    if (other instanceof TagDescriptor) {
+      var td = ((TagDescriptor) other);
+      return td.category.equals(category) && td.name.equals(name);
+    }
+
+    return false;
   }
 }

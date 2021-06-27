@@ -1,9 +1,9 @@
 package com.mtinge.yuugure;
 
 import com.mtinge.yuugure.core.Config;
+import com.mtinge.yuugure.core.TagManager.TagCategory;
 import com.mtinge.yuugure.core.TagManager.TagDescriptor;
 import com.mtinge.yuugure.core.TagManager.TagManager;
-import com.mtinge.yuugure.core.TagManager.TagType;
 import com.mtinge.yuugure.services.cli.CLI;
 import com.mtinge.yuugure.services.database.Database;
 import com.mtinge.yuugure.services.http.WebServer;
@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 public class App {
   private static final Logger logger = LoggerFactory.getLogger(App.class);
@@ -64,8 +65,11 @@ public class App {
     try {
       redis.start();
       database.start();
-      tagManager.reload();
       messaging.start();
+
+      tagManager.reload();
+      ensureDefaultTags();
+
       mediaProcessor.start();
       cli.start();
       webServer.start();
@@ -75,29 +79,60 @@ public class App {
   }
 
   private void ensureDefaultTags() {
+    // extracted for associations
+    var fileSizeMassive = new TagDescriptor(TagCategory.FILESIZE, "massive");
+    var metaHasAudio = new TagDescriptor(TagCategory.META, "has_audio");
+
     var tags = List.of(
-      // MediaProcessor tags
-      new TagDescriptor("video", TagType.META),
-      new TagDescriptor("has_audio", TagType.META),
+      new TagDescriptor(TagCategory.FILESIZE, "tiny"),
+      new TagDescriptor(TagCategory.FILESIZE, "small"),
+      new TagDescriptor(TagCategory.FILESIZE, "medium"),
+      new TagDescriptor(TagCategory.FILESIZE, "large"),
+      new TagDescriptor(TagCategory.FILESIZE, "massive"),
 
-      new TagDescriptor("filesize_tiny", TagType.META),
-      new TagDescriptor("filesize_small", TagType.META),
-      new TagDescriptor("filesize_medium", TagType.META),
-      new TagDescriptor("filesize_large", TagType.META),
-      new TagDescriptor("filesize_massive", TagType.META),
+      new TagDescriptor(TagCategory.DIMENSIONS, "tiny"),
+      new TagDescriptor(TagCategory.DIMENSIONS, "small"),
+      new TagDescriptor(TagCategory.DIMENSIONS, "medium"),
+      new TagDescriptor(TagCategory.DIMENSIONS, "large"),
+      fileSizeMassive,
 
-      new TagDescriptor("dimensions_tiny", TagType.META),
-      new TagDescriptor("dimensions_small", TagType.META),
-      new TagDescriptor("dimensions_medium", TagType.META),
-      new TagDescriptor("dimensions_large", TagType.META),
-      new TagDescriptor("dimensions_massive", TagType.META),
+      new TagDescriptor(TagCategory.LENGTH, "very_short"),
+      new TagDescriptor(TagCategory.LENGTH, "short"),
+      new TagDescriptor(TagCategory.LENGTH, "medium"),
+      new TagDescriptor(TagCategory.LENGTH, "long"),
+      new TagDescriptor(TagCategory.LENGTH, "very_long"),
 
-      new TagDescriptor("length_very_short", TagType.META),
-      new TagDescriptor("length_short", TagType.META),
-      new TagDescriptor("length_medium", TagType.META),
-      new TagDescriptor("length_long", TagType.META),
-      new TagDescriptor("length_very_log", TagType.META)
+      new TagDescriptor(TagCategory.MISC, "tagme"),
+
+      metaHasAudio,
+      new TagDescriptor(TagCategory.META, "has_child"),
+      new TagDescriptor(TagCategory.META, "has_parent"),
+      new TagDescriptor(TagCategory.META, "has_collection"),
+      new TagDescriptor(TagCategory.META, "animated"),
+
+      new TagDescriptor(TagCategory.RATING, "safe"),
+      new TagDescriptor(TagCategory.RATING, "questionable"),
+      new TagDescriptor(TagCategory.RATING, "explicit")
     );
+
+    var associations = Map.of(
+      fileSizeMassive, List.of(new TagDescriptor(TagCategory.USERLAND, "absurd_res")),
+      metaHasAudio, List.of(new TagDescriptor(TagCategory.USERLAND, "sound"), new TagDescriptor(TagCategory.USERLAND, "audio"), new TagDescriptor(TagCategory.USERLAND, "has_sound"), new TagDescriptor(TagCategory.USERLAND, "audio_warning"))
+    );
+
+    for (var toEnsure : tags) {
+      var tag = tagManager.ensureTag(toEnsure);
+      var association = associations.get(toEnsure);
+
+      if (tag != null && association != null && !association.isEmpty()) {
+        for (var toAssociate : association) {
+          var assocTag = tagManager.ensureTag(toAssociate);
+          if (assocTag != null) {
+            tagManager.setParent(toAssociate, toEnsure);
+          }
+        }
+      }
+    }
   }
 
   public static Config config() {

@@ -188,7 +188,7 @@ public class CLI implements IService {
 
                 sb.append("Tags:\n");
                 for (var tag : tags) {
-                  sb.append("\t").append("(ID: ").append(tag.id).append(") ").append(tag.name).append(" {").append(tag.type).append("}\n");
+                  sb.append("\t").append("(ID: ").append(tag.id).append(") ").append(tag.category).append(":").append(tag.name).append("\n");
                 }
                 sb.append("--- Total: ").append(tags.size()).append(" ---");
 
@@ -200,10 +200,10 @@ public class CLI implements IService {
                     App.tagManager().reload();
                   }
                   case "create", "new", "put", "add" -> {
-                    // tags create <name:type...>
+                    // tags create <category:name...>
                     // we need at least 1 args at this point.
                     if (args.size() < 1) {
-                      System.out.println("Usage: " + command + " " + subcommand + " <name:type...>");
+                      System.out.println("Usage: " + command + " " + subcommand + " <category:name...>");
                     } else {
                       for (var tagName : args) {
                         var descriptor = TagDescriptor.parse(tagName);
@@ -219,16 +219,16 @@ public class CLI implements IService {
                             System.out.println("Failed to create tag: " + iae.getMessage());
                           }
                         } else {
-                          System.out.println("Invalid tag format \"" + tagName + "\", expected \"name:type\".");
+                          System.out.println("Invalid tag format \"" + tagName + "\", expected \"category:name\".");
                         }
                       }
                     }
                   }
                   case "delete", "del", "remove" -> {
-                    // tags delete <tag:type...>
+                    // tags delete <category:name...>
                     // we need at least 1 arg at this point.
                     if (args.size() < 1) {
-                      System.out.println("Usage: " + command + " " + subcommand + " <tag:type...>");
+                      System.out.println("Usage: " + command + " " + subcommand + " <category:name...>");
                     } else {
                       for (var tagName : args) {
                         var parsed = TagDescriptor.parse(tagName);
@@ -238,7 +238,7 @@ public class CLI implements IService {
                             System.out.println("Failed to delete tag " + tagName);
                           }
                         } else {
-                          System.out.println("Bad tag input: " + tagName + ", failed to parse as a TagDescriptor (format: \"name:type\")");
+                          System.out.println("Bad tag input: " + tagName + ", failed to parse as a TagDescriptor (format: \"category:name\")");
                         }
                       }
                       System.out.println("All tag deletions complete.");
@@ -248,7 +248,7 @@ public class CLI implements IService {
                     // tags associate <parent> <child>
                     // we need at least 2 args at this point.
                     if (args.size() < 2) {
-                      System.out.println("Usage: " + command + " " + subcommand + " <parent:type> <child:type>");
+                      System.out.println("Usage: " + command + " " + subcommand + " <category:parent_name> <category:child_name>");
                     } else {
                       var parent = args.removeFirst();
                       var child = args.removeFirst();
@@ -257,9 +257,9 @@ public class CLI implements IService {
                       var childDescriptor = TagDescriptor.parse(child);
 
                       if (parentDescriptor == null) {
-                        System.out.println("The privded parent tag \"" + parent + "\" is in an invalid format. Expected \"name:type\"");
+                        System.out.println("The privded parent tag \"" + parent + "\" is in an invalid format. Expected \"category:name\"");
                       } else if (childDescriptor == null) {
-                        System.out.println("The privded child tag \"" + child + "\" is in an invalid format. Expected \"name:type\"");
+                        System.out.println("The privded child tag \"" + child + "\" is in an invalid format. Expected \"category:name\"");
                       } else {
                         if (App.tagManager().setParent(childDescriptor, parentDescriptor)) {
                           System.out.println("Updated " + child + "'s parent to " + parent + ".");
@@ -270,17 +270,17 @@ public class CLI implements IService {
                     }
                   }
                   case "disassociate" -> {
-                    // tags disassociate <child:type>
+                    // tags disassociate <category:name>
                     // we need at least 2 args at this point.
                     if (args.size() < 2) {
-                      System.out.println("Usage: " + command + " " + subcommand + " <child:type>");
+                      System.out.println("Usage: " + command + " " + subcommand + " <category:child_name>");
                     } else {
                       var child = args.removeFirst();
 
                       var childDescriptor = TagDescriptor.parse(child);
 
                       if (childDescriptor == null) {
-                        System.out.println("The privded child tag \"" + child + "\" is in an invalid format. Expected \"name:type\"");
+                        System.out.println("The privded child tag \"" + child + "\" is in an invalid format. Expected \"category:name\"");
                       } else {
                         if (App.tagManager().removeParent(childDescriptor)) {
                           System.out.println("Removed " + child + "'s parent.");
@@ -303,7 +303,7 @@ public class CLI implements IService {
 
                         sb.append("Results:\n");
                         for (var tag : tags) {
-                          sb.append("\t[").append(tag.id).append("] ").append(tag.name).append(" {").append(tag.type).append("}\n");
+                          sb.append("\t[").append(tag.id).append("] ").append(tag.category).append(":").append(tag.name).append("\n");
                         }
                         sb.append("--- Total: ").append(tags.size()).append(" ---");
 

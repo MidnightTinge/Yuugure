@@ -69,9 +69,9 @@ public class TagManager {
       if (exists) throw new IllegalArgumentException("The requested tag name already exists");
 
       var tag = App.database().jdbi().withHandle(handle ->
-        handle.createQuery("INSERT INTO tag (name, type) VALUES (:name, :type) RETURNING *")
+        handle.createQuery("INSERT INTO tag (category, name) VALUES (:category, :name) RETURNING *")
+          .bind("category", descriptor.category.getName())
           .bind("name", descriptor.name)
-          .bind("type", descriptor.type.getType())
           .map(DBTag.Mapper)
           .first()
       );
@@ -130,7 +130,7 @@ public class TagManager {
 
     if (fromCache != null) {
       for (var tag : fromCache) {
-        if (tag.type.equalsIgnoreCase(descriptor.type.type)) {
+        if (tag.category.equalsIgnoreCase(descriptor.category.name)) {
           return tag;
         }
       }
@@ -254,6 +254,10 @@ public class TagManager {
       return false;
     }
 
+    if (child.parent == parent.id) {
+      return false;
+    }
+
     return App.database().jdbi().withHandle(handle -> {
       handle.begin();
       try {
@@ -284,7 +288,7 @@ public class TagManager {
   public boolean removeParent(TagDescriptor descriptor) {
     var tag = getFromTree(descriptor);
     if (tag == null) {
-      logger.warn("Attempted to removeParent on a non-existant tag \"{}:{}\".", descriptor.name, descriptor.type);
+      logger.warn("Attempted to removeParent on a non-existant tag \"{}:{}\".", descriptor.name, descriptor.category);
       return false;
     } else {
       return App.database().jdbi().withHandle(handle -> {
