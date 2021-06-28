@@ -5,6 +5,7 @@ import com.googlecode.concurrenttrees.radix.node.Node;
 import com.googlecode.concurrenttrees.radix.node.concrete.DefaultCharSequenceNodeFactory;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.data.postgres.DBTag;
+import org.jdbi.v3.core.Handle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +56,10 @@ public class TagManager {
     }
   }
 
+  public DBTag createTag(TagDescriptor descriptor) {
+    return App.database().jdbi().withHandle(handle -> createTag(descriptor, handle));
+  }
+
   /**
    * Create a new tag. Inserts into the database then populates the Radix tree.
    *
@@ -64,7 +69,7 @@ public class TagManager {
    *
    * @throws IllegalArgumentException if the tag already exists.
    */
-  public DBTag createTag(TagDescriptor descriptor) {
+  public DBTag createTag(TagDescriptor descriptor, Handle handle) {
     synchronized (_monitor) {
       var exists = getTag(descriptor) != null;
       if (exists) throw new IllegalArgumentException("The requested tag name already exists");
@@ -75,17 +80,19 @@ public class TagManager {
         throw new IllegalArgumentException("Tag names cannot be blank.");
       }
 
-      var tag = App.database().jdbi().withHandle(handle ->
-        handle.createQuery("INSERT INTO tag (category, name) VALUES (:category, :name) RETURNING *")
-          .bind("category", descriptor.category.getName())
-          .bind("name", descriptor.name)
-          .map(DBTag.Mapper)
-          .first()
-      );
+      var tag = handle.createQuery("INSERT INTO tag (category, name) VALUES (:category, :name) RETURNING *")
+        .bind("category", descriptor.category.getName())
+        .bind("name", descriptor.name)
+        .map(DBTag.Mapper)
+        .first();
 
       addOrAppend(tag);
       return tag;
     }
+  }
+
+  public DBTag ensureTag(TagDescriptor descriptor) {
+    return App.database().jdbi().withHandle(handle -> ensureTag(descriptor, handle));
   }
 
   /**
@@ -96,11 +103,11 @@ public class TagManager {
    *
    * @return The tag we ensured.
    */
-  public DBTag ensureTag(TagDescriptor descriptor) {
+  public DBTag ensureTag(TagDescriptor descriptor, Handle handle) {
     synchronized (_monitor) {
       var existing = getTag(descriptor);
       if (existing == null) {
-        existing = createTag(descriptor);
+        existing = createTag(descriptor, handle);
       }
       return existing;
     }

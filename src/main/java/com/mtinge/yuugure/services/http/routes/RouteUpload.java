@@ -6,6 +6,7 @@ import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.core.States;
 import com.mtinge.yuugure.core.TagManager.TagCategory;
 import com.mtinge.yuugure.core.TagManager.TagDescriptor;
+import com.mtinge.yuugure.core.ThreadFactories;
 import com.mtinge.yuugure.core.Utils;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.http.UploadResult;
@@ -14,6 +15,7 @@ import com.mtinge.yuugure.data.postgres.DBProcessingQueue;
 import com.mtinge.yuugure.data.postgres.DBTag;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.http.Responder;
+import com.mtinge.yuugure.services.http.handlers.AddressHandler;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
 import com.mtinge.yuugure.services.http.ws.packets.OutgoingPacket;
 import com.mtinge.yuugure.services.messaging.Messaging;
@@ -35,6 +37,8 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -48,6 +52,8 @@ public class RouteUpload extends Route {
   private Path tempPath;
   private Path finalPath;
 
+  private ExecutorService uploadExecutor;
+
   @SneakyThrows
   public RouteUpload() {
     this.pathHandler = Handlers.path().addExactPath("/", this::upload);
@@ -56,6 +62,8 @@ public class RouteUpload extends Route {
 
     this.tempPath = Path.of(App.config().upload.tempDir).toFile().getCanonicalFile().toPath();
     this.finalPath = Path.of(App.config().upload.finalDir).toFile().getCanonicalFile().toPath();
+
+    this.uploadExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), ThreadFactories.prefixed("UploadExecutor/"));
   }
 
   private void upload(HttpServerExchange exchange) {
@@ -73,6 +81,21 @@ public class RouteUpload extends Route {
         if (exchange.getRequestMethod().equals(Methods.GET)) {
           resp.view("app");
         } else {
+          var check = App.webServer().limiters().uploadLimiter().check(exchange.getAttachment(AddressHandler.ATTACHMENT_KEY));
+          if (check.overLimit) {
+            if (check.panicWorthy) {
+              // if panicWorthy=true we've already panicked.
+              PrometheusMetrics.PANIC_TRIGGERS_TOTAL.inc();
+            }
+            PrometheusMetrics.RATELIMIT_TRIPS_TOTAL.labels("upload").inc();
+            resp.ratelimited(check);
+            return;
+          }
+          if (exchange.isInIoThread()) {
+            exchange.dispatch(this.uploadExecutor, this::upload);
+            return;
+          }
+
           final UploadResult uploadResult = new UploadResult();
           var form = exchange.getAttachment(FormDataParser.FORM_DATA);
           if (form != null) {
@@ -156,88 +179,116 @@ public class RouteUpload extends Route {
                       // insert the upload into the database
                       var mtx = App.redis().getMutex("ul:" + sha256);
                       try {
+                        LinkedList<DBTag> dbtags = null;
                         if (mtx.acquire()) {
-                          App.database().jdbi().useHandle(h -> {
-                            var handle = h.begin();
-                            boolean handled = false;
+                          var tagMutex = App.redis().getMutex("ensure_upload_tags");
+                          try {
+                            // This tag mutex is necessary to handle race conditions where two
+                            // threads attempt to ensure the same tag. While we do have thread locks
+                            // on the tagCache methods, there is a secondary race condition possible
+                            // between transaction commits on the database.
+                            if (tagMutex.acquire()) {
+                              dbtags = App.database().jdbi().withHandle(h -> {
+                                var ret = new LinkedList<DBTag>();
 
-                            try {
-                              var media = handle.createQuery("SELECT * FROM media WHERE sha256 = :sha256")
-                                .bind("sha256", sha256)
-                                .map(DBMedia.Mapper)
-                                .findFirst().orElse(null);
-                              if (media == null) {
-                                media = handle.createQuery("INSERT INTO media (sha256, md5, phash, mime) VALUES (:sha256, :md5, :phash, :mime) RETURNING *")
+                                var handle = h.begin();
+                                for (var tag : tags) {
+                                  ret.add(App.tagManager().ensureTag(tag, handle));
+                                }
+                                handle.commit();
+
+                                return ret;
+                              });
+                            }
+                          } finally {
+                            tagMutex.release();
+                          }
+
+                          if (dbtags == null || dbtags.isEmpty()) {
+                            uploadResult.addError("Failed to ensure tags, please try again later.");
+                          } else {
+                            var inserted = App.database().jdbi().withHandle(h -> {
+                              var handle = h.begin();
+                              boolean handled = false;
+
+                              try {
+                                var media = handle.createQuery("SELECT * FROM media WHERE sha256 = :sha256")
                                   .bind("sha256", sha256)
-                                  .bind("md5", md5)
-                                  .bind("phash", "")
-                                  .bind("mime", mime)
                                   .map(DBMedia.Mapper)
                                   .findFirst().orElse(null);
-                              }
-                              if (media != null) {
-                                var dupedForOwner = handle.createQuery("SELECT EXISTS (SELECT id FROM upload WHERE owner = :owner AND media = :media) AS \"exists\"")
-                                  .bind("owner", account.id)
-                                  .bind("media", media.id)
-                                  .map((r, c) -> r.getBoolean("exists"))
-                                  .findFirst().orElse(false);
-                                if (dupedForOwner) {
-                                  uploadResult.addInputError("file", "You have already uploaded this file.");
-                                } else {
-                                  long uploadState = States.flagged(account.state, States.Account.TRUSTED_UPLOADS) ? 0L : States.Upload.MODERATION_QUEUED;
-                                  if (isPrivate) {
-                                    uploadState = States.addFlag(uploadState, States.Upload.PRIVATE);
-                                  }
-
-                                  var toRet = handle.createQuery("INSERT INTO upload (media, owner, state, upload_date) VALUES (:media, :owner, :state, now()) RETURNING *")
-                                    .bind("media", media.id)
-                                    .bind("owner", account.id)
-                                    .bind("state", uploadState)
-                                    .map(DBUpload.Mapper)
+                                if (media == null) {
+                                  media = handle.createQuery("INSERT INTO media (sha256, md5, phash, mime) VALUES (:sha256, :md5, :phash, :mime) RETURNING *")
+                                    .bind("sha256", sha256)
+                                    .bind("md5", md5)
+                                    .bind("phash", "")
+                                    .bind("mime", mime)
+                                    .map(DBMedia.Mapper)
                                     .findFirst().orElse(null);
-                                  if (toRet != null) {
-                                    var pq = handle.createQuery("INSERT INTO processing_queue (upload) VALUES (:upload) RETURNING *")
-                                      .bind("upload", toRet.id)
-                                      .map(DBProcessingQueue.Mapper)
-                                      .findFirst().orElse(null);
-                                    if (pq != null) {
-
-                                      var toTag = new LinkedList<DBTag>();
-                                      for (var tag : tags) {
-                                        var dbt = App.tagManager().ensureTag(tag);
-                                        if (dbt != null) {
-                                          toTag.add(dbt);
-                                        }
-                                      }
-                                      App.database().addTagsToUpload(toRet.id, toTag, handle);
-
-                                      uploadResult.setSuccess(true);
-                                      uploadResult.setUpload(App.database().makeUploadRenderable(toRet, handle));
-                                      handle.commit();
-
-                                      App.mediaProcessor().wakeWorkers();
-                                    } else {
-                                      uploadResult.addError("Failed to insert into the processing queue, the upload has been aborted. Please try again later.");
-                                      handle.rollback();
-                                    }
-                                    handled = true;
-                                  } else {
-                                    uploadResult.addError("An internal server error occurred.");
-                                  }
                                 }
-                              } else {
-                                logger.error("Failed to create media for upload {}.", sha256);
-                              }
-                            } catch (Exception e) {
-                              handle.rollback();
-                              logger.error("Caught an SQL error during upload.", e);
-                              uploadResult.addError("Failed to finalize upload. Please wait a minute and try again.");
-                            } finally {
-                              if (!handled) {
+                                if (media != null) {
+                                  var dupedForOwner = handle.createQuery("SELECT EXISTS (SELECT id FROM upload WHERE owner = :owner AND media = :media) AS \"exists\"")
+                                    .bind("owner", account.id)
+                                    .bind("media", media.id)
+                                    .map((r, c) -> r.getBoolean("exists"))
+                                    .findFirst().orElse(false);
+                                  if (dupedForOwner) {
+                                    uploadResult.addInputError("file", "You have already uploaded this file. MD5: " + md5 + ". SHA256: " + sha256);
+                                  } else {
+                                    long uploadState = States.flagged(account.state, States.Account.TRUSTED_UPLOADS) ? 0L : States.Upload.MODERATION_QUEUED;
+                                    if (isPrivate) {
+                                      uploadState = States.addFlag(uploadState, States.Upload.PRIVATE);
+                                    }
+
+                                    var toRet = handle.createQuery("INSERT INTO upload (media, owner, state, upload_date) VALUES (:media, :owner, :state, now()) RETURNING *")
+                                      .bind("media", media.id)
+                                      .bind("owner", account.id)
+                                      .bind("state", uploadState)
+                                      .map(DBUpload.Mapper)
+                                      .findFirst().orElse(null);
+                                    if (toRet != null) {
+                                      var pq = handle.createQuery("INSERT INTO processing_queue (upload) VALUES (:upload) RETURNING *")
+                                        .bind("upload", toRet.id)
+                                        .map(DBProcessingQueue.Mapper)
+                                        .findFirst().orElse(null);
+                                      if (pq != null) {
+                                        uploadResult.setSuccess(true);
+                                        uploadResult.setUpload(App.database().makeUploadRenderable(toRet, handle));
+                                        handle.commit();
+                                        handled = true;
+
+                                        App.mediaProcessor().wakeWorkers();
+                                        return toRet;
+                                      } else {
+                                        uploadResult.addError("Failed to insert into the processing queue, the upload has been aborted. Please try again later.");
+                                        handle.rollback();
+                                      }
+                                      handled = true;
+                                    } else {
+                                      uploadResult.addError("An internal server error occurred.");
+                                    }
+                                  }
+                                } else {
+                                  logger.error("Failed to create media for upload {}.", sha256);
+                                }
+                              } catch (Exception e) {
                                 handle.rollback();
+                                handled = true;
+                                logger.error("Caught an SQL error during upload.", e);
+                                uploadResult.addError("Failed to finalize upload. Please wait a minute and try again.");
+                              } finally {
+                                if (!handled) {
+                                  handle.rollback();
+                                }
                               }
+                              return null;
+                            });
+
+                            if (inserted != null) {
+                              // We do tagging as a separate transaction to ensure everything has
+                              // been committed in the database.
+                              App.database().addTagsToUpload(inserted.id, dbtags);
                             }
-                          });
+                          }
                         }
                       } finally {
                         mtx.release();

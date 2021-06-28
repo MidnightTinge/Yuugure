@@ -268,7 +268,7 @@ public class Database implements IService {
     Query uploadFetch;
     if (params.includeBadFlagged() && params.includePrivate()) {
       // we want to fetch everything
-      uploadFetch = handle.createQuery("SELECT * FROM upload WHERE owner = :owner")
+      uploadFetch = handle.createQuery("SELECT * FROM upload WHERE owner = :owner ORDER BY upload_date DESC")
         .bind("owner", accountId);
     } else {
       // we want to do some state filtering
