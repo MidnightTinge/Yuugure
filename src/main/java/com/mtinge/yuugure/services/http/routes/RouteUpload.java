@@ -81,16 +81,16 @@ public class RouteUpload extends Route {
         if (exchange.getRequestMethod().equals(Methods.GET)) {
           resp.view("app");
         } else {
-          var check = App.webServer().limiters().uploadLimiter().check(exchange.getAttachment(AddressHandler.ATTACHMENT_KEY));
-          if (check.overLimit) {
-            if (check.panicWorthy) {
-              // if panicWorthy=true we've already panicked.
-              PrometheusMetrics.PANIC_TRIGGERS_TOTAL.inc();
-            }
-            PrometheusMetrics.RATELIMIT_TRIPS_TOTAL.labels("upload").inc();
-            resp.ratelimited(check);
-            return;
-          }
+//          var check = App.webServer().limiters().uploadLimiter().check(exchange.getAttachment(AddressHandler.ATTACHMENT_KEY));
+//          if (check.overLimit) {
+//            if (check.panicWorthy) {
+//              // if panicWorthy=true we've already panicked.
+//              PrometheusMetrics.PANIC_TRIGGERS_TOTAL.inc();
+//            }
+//            PrometheusMetrics.RATELIMIT_TRIPS_TOTAL.labels("upload").inc();
+//            resp.ratelimited(check);
+//            return;
+//          }
           if (exchange.isInIoThread()) {
             exchange.dispatch(this.uploadExecutor, this::upload);
             return;
@@ -284,9 +284,10 @@ public class RouteUpload extends Route {
                             });
 
                             if (inserted != null) {
-                              // We do tagging as a separate transaction to ensure everything has
-                              // been committed in the database.
+                              // We do tagging/search indexing as a separate transaction to ensure
+                              // everything has been committed in the database.
                               App.database().addTagsToUpload(inserted.id, dbtags);
+                              App.elastic().newUpload(inserted, dbtags);
                             }
                           }
                         }

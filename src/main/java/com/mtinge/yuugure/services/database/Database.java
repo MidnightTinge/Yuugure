@@ -656,4 +656,41 @@ public class Database implements IService {
       .map(DBTag.Mapper)
       .findFirst().orElse(null);
   }
+
+  public List<DBTag> getTagsById(List<Integer> ids) {
+    return jdbi.withHandle(handle -> getTagsById(ids, handle));
+  }
+
+  public List<DBTag> getTagsById(List<Integer> ids, Handle handle) {
+    var qstr = ids.stream().map(String::valueOf).collect(Collectors.joining(","));
+    return handle.createQuery("SELECT * FROM tag WHERE id IN (" + qstr + ")")
+      .map(DBTag.Mapper)
+      .collect(Collectors.toList());
+  }
+
+  public List<RenderableUpload> getUploadsForSearch(List<Integer> ids, DBAccount context) {
+    return jdbi.inTransaction(handle -> getUploadsForSearch(ids, context, handle));
+  }
+
+  public List<RenderableUpload> getUploadsForSearch(List<Integer> ids, DBAccount context, Handle handle) {
+    var qstr = ids.stream().map(String::valueOf).collect(Collectors.joining(","));
+    Query uploadsQuery;
+    if (context != null) {
+      long badState = States.compute(States.Upload.DELETED, States.Upload.DMCA);
+      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE (state & :general_state) = 0 OR (owner = :id AND (state & :contextual_state) = 0) AND id IN (" + qstr + ") ORDER BY upload_date DESC LIMIT 50")
+        .bind("general_state", States.compute(badState, States.Upload.PRIVATE))
+        .bind("contextual_state", badState)
+        .bind("id", context.id);
+    } else {
+      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE (state & :state) = 0 AND id IN (" + qstr + ") ORDER BY upload_date DESC LIMIT 50")
+        .bind("state", States.compute(States.Upload.DELETED, States.Upload.DMCA, States.Upload.PRIVATE));
+    }
+
+    var uploads = uploadsQuery
+      .map(DBUpload.Mapper)
+      .collect(Collectors.toList());
+
+    return makeUploadsRenderable(uploads, handle);
+  }
+
 }

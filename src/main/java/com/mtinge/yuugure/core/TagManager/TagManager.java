@@ -3,8 +3,12 @@ package com.mtinge.yuugure.core.TagManager;
 import com.googlecode.concurrenttrees.radix.ConcurrentRadixTree;
 import com.googlecode.concurrenttrees.radix.node.Node;
 import com.googlecode.concurrenttrees.radix.node.concrete.DefaultCharSequenceNodeFactory;
+import com.mtinge.TagTokenizer.tokenizer.TagToken;
+import com.mtinge.TagTokenizer.tokenizer.TermModifier;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.data.postgres.DBTag;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.jdbi.v3.core.Handle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -250,21 +254,42 @@ public class TagManager {
     var nPrefix = formatTag(path.isBlank() ? nSuffix : path);
     var nFull = path + nSuffix;
 
+    boolean appendable = false;
     if (search.mode.equals(SearchMode.SUFFIX)) {
       if (nSuffix.endsWith(search.suffix)) {
-        results.addAll((LinkedList<MutableTag>) node.getValue());
+        appendable = true;
       }
     } else if (search.mode.equals(SearchMode.PREFIX)) {
       if (nSuffix.startsWith(search.prefix) || formatTag(path + nSuffix).startsWith(search.prefix)) {
-        results.addAll((LinkedList<MutableTag>) node.getValue());
+        appendable = true;
       }
     } else if (search.mode.equals(SearchMode.MIDDLE)) {
       if (nPrefix.startsWith(search.prefix) && nSuffix.endsWith(search.suffix)) {
-        results.addAll((LinkedList<MutableTag>) node.getValue());
+        appendable = true;
       }
     } else if (search.mode.equals(SearchMode.WRAPPED)) {
       if (nFull.contains(search.prefix)) {
-        results.addAll((LinkedList<MutableTag>) node.getValue());
+        appendable = true;
+      }
+    }
+
+    if (appendable) {
+      var tags = (LinkedList<MutableTag>) node.getValue();
+      if (tags.size() == 1) {
+        results.add(tags.getFirst());
+      } else {
+        // attempt to prefer a system tag if it exists
+
+        var n = tags.getFirst();
+        if (n.category.equalsIgnoreCase(TagCategory.USERLAND.name)) {
+          for (MutableTag tag : tags) {
+            if (!tag.category.equalsIgnoreCase(TagCategory.USERLAND.name)) {
+              n = tag;
+              break;
+            }
+          }
+        }
+        results.add(n);
       }
     }
   }
@@ -298,8 +323,8 @@ public class TagManager {
         var suffix = formatTag(search.substring(idx + 1));
         _search(tagCache.getNode(), ret, TagSearch.middle(prefix, suffix), "");
       } else {
-        var fromTree = tagCache.getValuesForKeysStartingWith(search);
-        fromTree.forEach(ret::addAll);
+        var fromTree = tagCache.getValueForExactKey(search);
+        ret.addAll(fromTree);
       }
     }
     return ret;
@@ -383,6 +408,60 @@ public class TagManager {
         return false;
       });
     }
+  }
+
+  private void _injectAs(BoolQueryBuilder builder, MutableTag tag, TermModifier as) {
+    // JDBI sets parent to 0 when null in the database to avoid errors for the primitive.
+    if (tag.parent > 0) {
+      if (as.equals(TermModifier.NOT)) {
+        builder.mustNot(QueryBuilders.termQuery("tags", tag.id));
+        builder.mustNot(QueryBuilders.termQuery("tags", tag.parent));
+      } else {
+        builder.should(QueryBuilders.termQuery("tags", tag.id));
+        builder.should(QueryBuilders.termQuery("tags", tag.parent));
+      }
+    } else {
+      var term = QueryBuilders.termQuery("tags", tag.id);
+      switch (as) {
+        case AND -> builder.must(term);
+        case NOT -> builder.mustNot(term);
+        case OR -> builder.should(term);
+      }
+    }
+  }
+
+  @SuppressWarnings("ConstantConditions")
+  private void _query(BoolQueryBuilder builder, List<TagToken> tokens) {
+    for (var token : tokens) {
+      if (token.type.equals(TagToken.Type.GROUP)) {
+        var mapped = buildQuery(token.children);
+
+        switch (token.modifier) {
+          case AND -> builder.must(mapped);
+          case NOT -> builder.mustNot(mapped);
+          case OR -> builder.should(mapped);
+        }
+      } else if (token.type.equals(TagToken.Type.TERM)) {
+        var tags = search(token.value);
+        if (tags.size() > 1) {
+          // Since we have more than one result we're assuming this was from a wildcard result.
+          // We don't want our wildcard terms to be 'MUST' because we're looking for any of the
+          // following tags, but we also want to respect a 'NOT' wildcard search.
+          for (var tag : tags) {
+            _injectAs(builder, tag, token.modifier.equals(TermModifier.NOT) ? TermModifier.NOT : TermModifier.OR);
+          }
+        } else if (!tags.isEmpty()) {
+          _injectAs(builder, tags.getFirst(), token.modifier);
+        }
+      }
+    }
+  }
+
+  public BoolQueryBuilder buildQuery(List<TagToken> tokens) {
+    var builder = new BoolQueryBuilder();
+    _query(builder, tokens);
+
+    return builder;
   }
 
   private void addOrAppend(DBTag tag) {

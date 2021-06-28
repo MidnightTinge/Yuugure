@@ -6,6 +6,7 @@ import com.mtinge.yuugure.core.TagManager.TagDescriptor;
 import com.mtinge.yuugure.core.TagManager.TagManager;
 import com.mtinge.yuugure.services.cli.CLI;
 import com.mtinge.yuugure.services.database.Database;
+import com.mtinge.yuugure.services.elastic.Elastic;
 import com.mtinge.yuugure.services.http.WebServer;
 import com.mtinge.yuugure.services.messaging.Messaging;
 import com.mtinge.yuugure.services.processor.MediaProcessor;
@@ -30,6 +31,7 @@ public class App {
   private static WebServer webServer;
   private static Database database;
   private static Redis redis;
+  private static Elastic elastic;
   private static Messaging messaging;
   private static MediaProcessor mediaProcessor;
   private static CLI cli;
@@ -41,6 +43,7 @@ public class App {
 
       database = new Database();
       redis = new Redis();
+      elastic = new Elastic();
       messaging = new Messaging();
       mediaProcessor = new MediaProcessor();
       cli = new CLI();
@@ -54,6 +57,7 @@ public class App {
     try {
       redis.init();
       database.init();
+      elastic.init();
       messaging.init();
       mediaProcessor.init();
       cli.init();
@@ -65,6 +69,7 @@ public class App {
     try {
       redis.start();
       database.start();
+      elastic.start();
       messaging.start();
 
       tagManager.reload();
@@ -169,6 +174,10 @@ public class App {
 
   public static TagManager tagManager() {
     return tagManager;
+  }
+
+  public static Elastic elastic() {
+    return elastic;
   }
 
   public static boolean isDebug() {

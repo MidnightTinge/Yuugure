@@ -80,8 +80,8 @@ public class Tokenizer {
     return null;
   }
 
-  public static LinkedList<TokenizerToken> tokenize(LinkedList<LexToken> input) throws SyntaxError {
-    LinkedList<TokenizerToken> tokens = new LinkedList<>();
+  public static LinkedList<TagToken> tokenize(LinkedList<LexToken> input) throws SyntaxError {
+    LinkedList<TagToken> tokens = new LinkedList<>();
     TermModifier modifier = null;
     LexToken[] lexed = input.toArray(new LexToken[0]);
     int i = 0;
@@ -117,9 +117,9 @@ public class Tokenizer {
               // contents.
               LexToken[] toRecurse = new LexToken[j - (i + 1)];
               System.arraycopy(lexed, i + 1, toRecurse, 0, j - (i + 1));
-              LinkedList<TokenizerToken> _parsed = tokenize(new LinkedList<>(List.of(toRecurse)));
+              LinkedList<TagToken> _parsed = tokenize(new LinkedList<>(List.of(toRecurse)));
               if (!_parsed.isEmpty()) {
-                tokens.add(new TokenizerToken(TokenizerToken.Type.GROUP, modifier == null ? TermModifier.AND : modifier, _parsed));
+                tokens.add(new TagToken(TagToken.Type.GROUP, modifier == null ? TermModifier.AND : modifier, _parsed));
               } else {
                 throw new SyntaxError("Invalid/empty group at " + token.index);
               }
@@ -145,7 +145,7 @@ public class Tokenizer {
           // Consume all sequencial char lexer tokens to create a string
           sb.append(lexed[i++].value);
         } while (i < lexed.length && (lexed[i].type == LexToken.Type.CHAR || lexed[i].type == LexToken.Type.CHAR_ESCAPED));
-        tokens.add(new TokenizerToken(TokenizerToken.Type.TERM, modifier == null ? TermModifier.AND : modifier, sb.toString()));
+        tokens.add(new TagToken(TagToken.Type.TERM, modifier == null ? TermModifier.AND : modifier, sb.toString()));
         modifier = null; // ensure modifier resets
       } else if (token.type == LexToken.Type.SEPARATOR) {
         // Separator has no purpose other than to make EndOfTerm. Increment our counter and spin.

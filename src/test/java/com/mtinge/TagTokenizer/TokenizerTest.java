@@ -4,8 +4,8 @@ import com.mtinge.TagTokenizer.lexer.LexToken;
 import com.mtinge.TagTokenizer.lexer.Lexer;
 import com.mtinge.TagTokenizer.tokenizer.TermModifier;
 import com.mtinge.TagTokenizer.tokenizer.Tokenizer;
-import com.mtinge.TagTokenizer.tokenizer.TokenizerToken;
-import com.mtinge.TagTokenizer.tokenizer.TokenizerToken.Type;
+import com.mtinge.TagTokenizer.tokenizer.TagToken;
+import com.mtinge.TagTokenizer.tokenizer.TagToken.Type;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -18,8 +18,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TokenizerTest {
   @Test
   void handlesTerms() throws SyntaxError {
-    LinkedList<TokenizerToken> tokens;
-    TokenizerToken token;
+    LinkedList<TagToken> tokens;
+    TagToken token;
 
     tokens = Tokenizer.tokenize(Lexer.lex("abc def"));
     assertEquals(2, tokens.size());
@@ -35,8 +35,8 @@ public class TokenizerTest {
 
   @Test
   void handlesLeadingGroups() throws SyntaxError {
-    LinkedList<TokenizerToken> tokens;
-    TokenizerToken token;
+    LinkedList<TagToken> tokens;
+    TagToken token;
 
     tokens = Tokenizer.tokenize(Lexer.lex("(abc) def"));
     assertEquals(2, tokens.size());
@@ -58,8 +58,8 @@ public class TokenizerTest {
 
   @Test
   void handlesMixedGroups() throws SyntaxError {
-    LinkedList<TokenizerToken> tokens;
-    TokenizerToken token;
+    LinkedList<TagToken> tokens;
+    TagToken token;
 
     tokens = Tokenizer.tokenize(Lexer.lex("abc (def) ghi"));
     assertEquals(3, tokens.size());
@@ -84,8 +84,8 @@ public class TokenizerTest {
 
   @Test
   void handlesTrailingGroups() throws SyntaxError {
-    LinkedList<TokenizerToken> tokens;
-    TokenizerToken token;
+    LinkedList<TagToken> tokens;
+    TagToken token;
 
     tokens = Tokenizer.tokenize(Lexer.lex("abc (def)"));
     assertEquals(2, tokens.size());
@@ -120,7 +120,7 @@ public class TokenizerTest {
 
   @Test
   void handlesNestedGroups() throws SyntaxError {
-    TokenizerToken token;
+    TagToken token;
     var tokens = Tokenizer.tokenize(Lexer.lex("((a) b (c)) d"));
 
     assertEquals(2, tokens.size());
@@ -140,7 +140,7 @@ public class TokenizerTest {
 
   @Test
   void handlesMultipleNestedGroups() throws SyntaxError {
-    TokenizerToken token;
+    TagToken token;
     var tokens = Tokenizer.tokenize(Lexer.lex("one (two (three (four five) six))"));
     /*
      * TERM: one
@@ -198,8 +198,8 @@ public class TokenizerTest {
 
   @Test
   void handlesGroupModifier() throws SyntaxError {
-    LinkedList<TokenizerToken> tokens;
-    TokenizerToken token;
+    LinkedList<TagToken> tokens;
+    TagToken token;
 
     tokens = Tokenizer.tokenize(Lexer.lex("-(a) +(b) ~(c)"));
     assertEquals(3, tokens.size());

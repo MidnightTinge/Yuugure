@@ -8,10 +8,7 @@ import com.mtinge.RateLimit.LimiterFactory;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.services.IService;
 import com.mtinge.yuugure.services.http.handlers.*;
-import com.mtinge.yuugure.services.http.routes.RouteAPI;
-import com.mtinge.yuugure.services.http.routes.RouteAuth;
-import com.mtinge.yuugure.services.http.routes.RouteIndex;
-import com.mtinge.yuugure.services.http.routes.RouteUpload;
+import com.mtinge.yuugure.services.http.routes.*;
 import com.mtinge.yuugure.services.http.ws.Listener;
 import io.prometheus.client.exporter.MetricsServlet;
 import io.undertow.Handlers;
@@ -138,10 +135,12 @@ public class WebServer implements IService {
                         new RouteUpload().wrap(
                           new RouteAuth().wrap(
                             new RouteAPI().wrap(
-                              // IMPORTANT: Keep index last, it adds a prefixPath for `/` to handle
-                              // static files
-                              new RouteIndex().wrap(
-                                Handlers.path()
+                              new RouteSearch().wrap(
+                                // IMPORTANT: Keep index last, it adds a prefixPath for `/` to handle
+                                // static files
+                                new RouteIndex().wrap(
+                                  Handlers.path()
+                                )
                               )
                             )
                           )

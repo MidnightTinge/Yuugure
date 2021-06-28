@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.time.Duration;
+import java.util.List;
 
 @AllArgsConstructor
 public final class Config {
@@ -35,6 +36,8 @@ public final class Config {
 
   public final HTTP http;
   public final Prometheus prometheus;
+  @Json(name = "elasticsearch")
+  public final Elasticsearch elastic;
   public final Upload upload;
   public final Postgres postgres;
   public final Redis redis;
@@ -44,6 +47,7 @@ public final class Config {
   private Config() {
     this.http = new HTTP();
     this.prometheus = new Prometheus();
+    this.elastic = new Elasticsearch();
     this.upload = new Upload();
     this.postgres = new Postgres();
     this.redis = new Redis();
@@ -94,7 +98,23 @@ public final class Config {
       this.host = null;
       this.port = 9090;
     }
+  }
 
+  @AllArgsConstructor
+  public static final class Elasticsearch {
+    public final List<NodeConfig> nodes;
+
+    public Elasticsearch() {
+      this.nodes = List.of(
+        new NodeConfig("127.0.0.1", 9200)
+      );
+    }
+
+    @AllArgsConstructor
+    public static final class NodeConfig {
+      public final String host;
+      public final int port;
+    }
   }
 
   @AllArgsConstructor
