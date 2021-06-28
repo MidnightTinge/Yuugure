@@ -5,6 +5,7 @@ import com.mtinge.yuugure.core.States;
 import com.mtinge.yuugure.data.http.RenderableComment;
 import com.mtinge.yuugure.data.http.RenderableUpload;
 import com.mtinge.yuugure.data.http.SafeAccount;
+import com.mtinge.yuugure.data.http.SafeTag;
 import com.mtinge.yuugure.data.postgres.*;
 import com.mtinge.yuugure.data.processor.MediaMeta;
 import com.mtinge.yuugure.data.processor.ProcessableUpload;
@@ -236,6 +237,7 @@ public class Database implements IService {
     var mediaCache = new HashMap<Integer, DBMedia>();
     var metaCache = new HashMap<Integer, DBMediaMeta>();
     var ownerCache = new HashMap<Integer, SafeAccount>();
+    var tagCache = new HashMap<Integer, SafeTag>();
 
     var ret = new LinkedList<RenderableUpload>();
     for (var upload : uploads) {
@@ -258,7 +260,22 @@ public class Database implements IService {
         ownerCache.put(upload.owner, owner);
       }
 
-      ret.add(new RenderableUpload(upload, media, meta, owner));
+      var dbTags = handle.createQuery("SELECT t.* FROM upload_tags ut INNER JOIN tag t ON ut.tag = t.id WHERE ut.upload = :upload")
+        .bind("upload", upload.id)
+        .map(DBTag.Mapper)
+        .collect(Collectors.toList());
+      var ulTags = new LinkedList<SafeTag>();
+      for (var tag : dbTags) {
+        var cached = tagCache.get(tag.id);
+        if (cached == null) {
+          cached = SafeTag.fromDb(getTagById(tag.id, handle));
+          tagCache.put(tag.id, cached);
+        }
+
+        ulTags.add(cached);
+      }
+
+      ret.add(new RenderableUpload(upload, media, meta, owner, ulTags));
     }
 
     return ret;
@@ -629,13 +646,14 @@ public class Database implements IService {
     return false;
   }
 
-  public List<DBUpload> getUploadsTagged(List<DBTag> tags, Handle handle) {
-    var ids = tags.stream().map(tag -> String.valueOf(tag.id)).collect(Collectors.joining(", "));
-    var query = "SELECT u.* FROM upload_tags ut INNER JOIN upload u ON ut.upload = u.id WHERE ut.tag IN (" + ids + ") GROUP BY u.id ORDER BY u.upload_date desc, u.owner asc;";
-
-    return handle.createQuery(query)
-      .map(DBUpload.Mapper)
-      .collect(Collectors.toList());
+  public DBTag getTagById(int id) {
+    return jdbi.withHandle(handle -> getTagById(id));
   }
 
+  public DBTag getTagById(int id, Handle handle) {
+    return handle.createQuery("SELECT * FROM tag WHERE id = :id")
+      .bind("id", id)
+      .map(DBTag.Mapper)
+      .findFirst().orElse(null);
+  }
 }

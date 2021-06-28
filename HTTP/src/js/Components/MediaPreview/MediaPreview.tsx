@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {useHistory} from 'react-router-dom';
 
 
 export type MediaPreviewProps = {
@@ -6,12 +7,18 @@ export type MediaPreviewProps = {
 };
 
 export default function MediaPreview({upload}: MediaPreviewProps) {
+  const history = useHistory();
   const isImage = /^image\//i.test(upload.media.mime);
+
+  function handleNavigate(e: React.MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault();
+    history.push(`/view/${upload.upload.id}`);
+  }
 
   return (
     <div className="MediaPreview" data-upload={upload.upload.id} data-media={upload.media.id} data-sha256={upload.media.sha256} data-md5={upload.media.md5} data-mime={upload.media.mime}>
       <div className="ThumbWrapper">
-        <a href={`/view/${upload.upload.id}`} target="_blank" className={upload.state.MODERATION_QUEUED ? 'blurred hover-clear' : ''}>
+        <a href={`/view/${upload.upload.id}`} onClick={handleNavigate} className={upload.state.MODERATION_QUEUED ? 'blurred hover-clear' : ''}>
           <img src={`/thumb/${upload.upload.id}`} alt={`Thumbnail for upload ${upload.upload.id}`} className="thumbnail"/>
         </a>
         <div className="IconsWrapper">

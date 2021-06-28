@@ -48,6 +48,7 @@ type RenderableUpload = {
     username: string;
   };
   state: UploadState;
+  tags: SafeTag[];
 };
 
 type ReportResponse = {
@@ -97,3 +98,10 @@ type RenderableComment = {
 type CommentResponse = InputAwareResponse<{
   comment: RenderableComment
 }>
+
+type SafeTag = {
+  id: number;
+  parent: number;
+  name: string;
+  category: string;
+}

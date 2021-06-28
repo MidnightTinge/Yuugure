@@ -272,7 +272,7 @@ export default function PageView(props: PageViewProps) {
                   <div className="rounded bg-gray-200 border border-gray-300 shadow-sm">
                     <div className="py-0.5 text-center text-gray-700 border-b border-gray-300">Tags</div>
                     <div className="p-2">
-                      <p className="text-gray-400 italic text-sm text-center select-none">Placeholder</p>
+                      {upload.tags.map(tag => (<small className="block text-gray-500" data-tag={tag.id} key={tag.id}>{tag.name}</small>))}
                     </div>
                   </div>
                 </section>
