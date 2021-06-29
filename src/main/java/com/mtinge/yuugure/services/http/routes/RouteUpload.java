@@ -15,6 +15,7 @@ import com.mtinge.yuugure.data.postgres.DBProcessingQueue;
 import com.mtinge.yuugure.data.postgres.DBTag;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.http.Responder;
+import com.mtinge.yuugure.services.http.handlers.AddressHandler;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
 import com.mtinge.yuugure.services.http.ws.packets.OutgoingPacket;
 import com.mtinge.yuugure.services.messaging.Messaging;
@@ -80,16 +81,16 @@ public class RouteUpload extends Route {
         if (exchange.getRequestMethod().equals(Methods.GET)) {
           resp.view("app");
         } else {
-//          var check = App.webServer().limiters().uploadLimiter().check(exchange.getAttachment(AddressHandler.ATTACHMENT_KEY));
-//          if (check.overLimit) {
-//            if (check.panicWorthy) {
-//              // if panicWorthy=true we've already panicked.
-//              PrometheusMetrics.PANIC_TRIGGERS_TOTAL.inc();
-//            }
-//            PrometheusMetrics.RATELIMIT_TRIPS_TOTAL.labels("upload").inc();
-//            resp.ratelimited(check);
-//            return;
-//          }
+          var check = App.webServer().limiters().uploadLimiter().check(exchange.getAttachment(AddressHandler.ATTACHMENT_KEY));
+          if (check.overLimit) {
+            if (check.panicWorthy) {
+              // if panicWorthy=true we've already panicked.
+              PrometheusMetrics.PANIC_TRIGGERS_TOTAL.inc();
+            }
+            PrometheusMetrics.RATELIMIT_TRIPS_TOTAL.labels("upload").inc();
+            resp.ratelimited(check);
+            return;
+          }
           if (exchange.isInIoThread()) {
             exchange.dispatch(this.uploadExecutor, this::upload);
             return;
