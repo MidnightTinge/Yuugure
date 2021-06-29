@@ -1,0 +1,35 @@
+.Pagination {
+  @apply flex justify-center items-center text-gray-700;
+
+  > .Floating {
+    @apply transition duration-150 ease-in h-8 w-8 flex justify-center items-center rounded-full bg-gray-200 cursor-pointer hover:bg-gray-300;
+
+    &.disabled {
+      @apply cursor-not-allowed bg-gray-300 text-gray-400;
+    }
+  }
+
+  > .Pages {
+    @apply flex h-8 font-medium rounded-md bg-gray-200 mx-2;
+  }
+
+  .Pages .Page {
+    @apply w-8 md:flex justify-center items-center hover:bg-gray-300 transition duration-150 ease-in;
+
+    &:not(:only-of-type):first-of-type {
+      @apply pl-2 pr-1 rounded-l-md;
+    }
+
+    &:not(:only-of-type):last-of-type {
+      @apply pr-2 pl-1 rounded-r-md;
+    }
+
+    &:only-of-type {
+      @apply rounded-md;
+    }
+
+    &.active {
+      @apply bg-gray-300 hover:bg-gray-400;
+    }
+  }
+}

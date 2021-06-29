@@ -4,6 +4,7 @@ import com.mtinge.TagTokenizer.SyntaxError;
 import com.mtinge.TagTokenizer.TagTokenizer;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.data.elastic.EUpload;
+import com.mtinge.yuugure.data.elastic.ElasticSearchResult;
 import com.mtinge.yuugure.data.postgres.DBTag;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.IService;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 public class Elastic implements IService {
   private static final Logger logger = LoggerFactory.getLogger(Elastic.class);
   private static final String IDX_UPLOADS = "uploads";
+  public static final int PAGINATION_SIZE = 30;
 
   private RestHighLevelClient client;
 
@@ -140,34 +142,45 @@ public class Elastic implements IService {
     return false;
   }
 
-  public List<Integer> search(BoolQueryBuilder builder) {
-    var ret = new LinkedList<Integer>();
-
+  public ElasticSearchResult search(BoolQueryBuilder builder, int page) {
     try {
       var req = new SearchRequest(IDX_UPLOADS)
-        .source(SearchSourceBuilder.searchSource().query(builder));
+        .source(SearchSourceBuilder.searchSource()
+          .size(PAGINATION_SIZE)
+          .from(Math.max(page - 1, 0) * PAGINATION_SIZE)
+          .query(builder)
+        );
       var res = client.search(req, RequestOptions.DEFAULT);
 
-      for (var hit : res.getHits()) {
-        ret.add(Integer.parseInt(hit.getId()));
+      var hits = new LinkedList<Integer>();
+      for (var hit : res.getHits().getHits()) {
+        hits.add(Integer.parseInt(hit.getId()));
       }
+
+      double totalDocs = res.getHits().getTotalHits().value;
+      if (totalDocs % PAGINATION_SIZE != 0) {
+        --totalDocs;
+      }
+      var max = Math.max(1, Math.ceil(totalDocs / PAGINATION_SIZE));
+
+      return new ElasticSearchResult(page, (int) max, hits);
     } catch (IOException ioe) {
       logger.error("Caught IOException while searching.", ioe);
     } catch (ElasticsearchStatusException e) {
       logger.error("Caught elastic exception while searching.", e);
     }
 
-    return ret;
+    return null;
   }
 
-  public List<Integer> search(String query) {
+  public ElasticSearchResult search(String query, int page) {
     try {
-      return search(App.tagManager().buildQuery(TagTokenizer.parse(query)));
+      return search(App.tagManager().buildQuery(TagTokenizer.parse(query)), page);
     } catch (SyntaxError e) {
       logger.error("Failed to search with user query: \"{}\".", query, e);
     }
 
-    return List.of();
+    return null;
   }
 
   private void createIndexes() throws IOException {

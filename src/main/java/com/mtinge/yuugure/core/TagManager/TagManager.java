@@ -324,7 +324,9 @@ public class TagManager {
         _search(tagCache.getNode(), ret, TagSearch.middle(prefix, suffix), "");
       } else {
         var fromTree = tagCache.getValueForExactKey(search);
-        ret.addAll(fromTree);
+        if (fromTree != null) {
+          ret.addAll(fromTree);
+        }
       }
     }
     return ret;

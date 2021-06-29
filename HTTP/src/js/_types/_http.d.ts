@@ -119,3 +119,13 @@ type BulkRenderableUpload = {
   metas: Record<number, DBMediaMeta>;
   uploads: TaggedUpload[];
 }
+
+type SearchPagination = {
+  current: number;
+  max: number;
+}
+
+type SearchResult = {
+  page: SearchPagination;
+  result: BulkRenderableUpload;
+}

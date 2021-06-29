@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Getter
@@ -677,6 +678,10 @@ public class Database implements IService {
   }
 
   public BulkRenderableUpload getUploadsForSearch(List<Integer> ids, DBAccount context, Handle handle) {
+    if (ids.isEmpty()) {
+      return new BulkRenderableUpload(Map.of(), Map.of(), Map.of(), Map.of(), List.of());
+    }
+
     var qstr = ids.stream().map(String::valueOf).collect(Collectors.joining(","));
     Query uploadsQuery;
     if (context != null) {
