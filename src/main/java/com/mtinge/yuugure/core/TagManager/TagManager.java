@@ -444,7 +444,7 @@ public class TagManager {
           case OR -> builder.should(mapped);
         }
       } else if (token.type.equals(TagToken.Type.TERM)) {
-        var tags = search(token.value);
+        var tags = search(token.value.toLowerCase().trim());
         if (tags.size() > 1) {
           // Since we have more than one result we're assuming this was from a wildcard result.
           // We don't want our wildcard terms to be 'MUST' because we're looking for any of the

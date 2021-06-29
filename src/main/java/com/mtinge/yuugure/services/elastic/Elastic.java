@@ -144,6 +144,10 @@ public class Elastic implements IService {
 
   public ElasticSearchResult search(BoolQueryBuilder builder, int page) {
     try {
+      if (!builder.hasClauses()) {
+        return new ElasticSearchResult(1, 1, List.of());
+      }
+
       var req = new SearchRequest(IDX_UPLOADS)
         .source(SearchSourceBuilder.searchSource()
           .size(PAGINATION_SIZE)
@@ -177,7 +181,7 @@ public class Elastic implements IService {
     try {
       return search(App.tagManager().buildQuery(TagTokenizer.parse(query)), page);
     } catch (SyntaxError e) {
-      logger.error("Failed to search with user query: \"{}\".", query, e);
+      logger.error("Failed to search with user query \"{}\".", query, e);
     }
 
     return null;
