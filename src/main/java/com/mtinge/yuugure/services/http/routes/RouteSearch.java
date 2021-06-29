@@ -25,7 +25,7 @@ public class RouteSearch extends Route {
       if (qp != null && !qp.isEmpty()) {
         var q = qp.getFirst();
         if (q != null && !q.isBlank()) {
-          res.json(Response.good().addAll(App.database().getUploadsForSearch(App.elastic().search(q), exchange.getAttachment(SessionHandler.ATTACHMENT_KEY))));
+          res.json(Response.good().addData(App.database().getUploadsForSearch(App.elastic().search(q), exchange.getAttachment(SessionHandler.ATTACHMENT_KEY))));
         } else {
           res.status(StatusCodes.BAD_REQUEST).json(Response.fromCode(StatusCodes.BAD_REQUEST).addMessage("Missing search query"));
         }

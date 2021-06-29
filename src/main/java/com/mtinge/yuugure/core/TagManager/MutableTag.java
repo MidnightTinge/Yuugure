@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class MutableTag {
-  public int id;
+  public final int id;
   public Integer parent;
   public String category;
   public String name;

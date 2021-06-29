@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useContext, useEffect, useReducer} from 'react';
 import {useHistory} from 'react-router-dom';
+import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
 import MediaPreview from '../../Components/MediaPreview/MediaPreview';
 import {AuthStateContext} from '../../Context/AuthStateProvider';
@@ -39,13 +40,13 @@ export default function PageIndex(props: PageIndexProps) {
 
   useEffect(() => {
     indexStateD({type: 'setPartial', payload: {fetching: true, error: null}});
-    XHR.for(`/api/upload/index`).get().getRouterResponse<RenderableUpload>().then(consumed => {
+    XHR.for(`/api/upload/index`).get().getRouterResponse<BulkRenderableUpload>().then(consumed => {
       indexStateD({
         type: 'set',
         payload: {
           fetching: false,
           error: consumed.message,
-          uploads: consumed.success ? [...consumed.data] : [],
+          uploads: consumed.success ? [...Util.mapBulkUploads(consumed.data[0])] : [],
         },
       });
     }).catch(err => {

@@ -2,7 +2,6 @@ package com.mtinge.yuugure.data.http;
 
 import com.mtinge.yuugure.data.postgres.DBMedia;
 import com.mtinge.yuugure.data.postgres.DBMediaMeta;
-import com.mtinge.yuugure.data.postgres.DBTag;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.data.postgres.states.UploadState;
 import com.squareup.moshi.Json;

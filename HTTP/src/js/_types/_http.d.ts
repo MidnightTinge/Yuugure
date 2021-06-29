@@ -105,3 +105,17 @@ type SafeTag = {
   name: string;
   category: string;
 }
+
+type TaggedUpload = {
+  upload: DBUpload;
+  state: UploadState;
+  tags: number[];
+}
+
+type BulkRenderableUpload = {
+  accounts: Record<number, SafeAccount>;
+  tags: Record<number, SafeTag>;
+  medias: Record<number, DBMedia>;
+  metas: Record<number, DBMediaMeta>;
+  uploads: TaggedUpload[];
+}

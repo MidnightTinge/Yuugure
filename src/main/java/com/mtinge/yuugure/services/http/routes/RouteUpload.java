@@ -15,7 +15,6 @@ import com.mtinge.yuugure.data.postgres.DBProcessingQueue;
 import com.mtinge.yuugure.data.postgres.DBTag;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.http.Responder;
-import com.mtinge.yuugure.services.http.handlers.AddressHandler;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
 import com.mtinge.yuugure.services.http.ws.packets.OutgoingPacket;
 import com.mtinge.yuugure.services.messaging.Messaging;

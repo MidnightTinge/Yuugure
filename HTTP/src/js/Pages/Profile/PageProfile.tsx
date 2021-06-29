@@ -3,6 +3,7 @@ import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
 import {useParams} from 'react-router';
 
 import {AutoSizer, List, ListRowProps, Size} from 'react-virtualized';
+import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
@@ -138,9 +139,9 @@ export default function PageProfile(props: PageProfileProps) {
 
     uploadsDispatch({type: 'set', payload: []});
     setFetchingUploads(true);
-    XHR.for(`/api/profile/${accountId}/uploads`).get().getRouterResponse<RenderableUpload>().then(consumed => {
+    XHR.for(`/api/profile/${accountId}/uploads`).get().getRouterResponse<BulkRenderableUpload>().then(consumed => {
       if (consumed.success) {
-        uploadsDispatch({type: 'set', payload: [...consumed.data]});
+        uploadsDispatch({type: 'set', payload: [...Util.mapBulkUploads(consumed.data[0])]});
       } else {
         setUploadsError(consumed.message);
       }

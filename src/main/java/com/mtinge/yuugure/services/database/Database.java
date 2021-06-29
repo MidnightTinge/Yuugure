@@ -2,10 +2,7 @@ package com.mtinge.yuugure.services.database;
 
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.States;
-import com.mtinge.yuugure.data.http.RenderableComment;
-import com.mtinge.yuugure.data.http.RenderableUpload;
-import com.mtinge.yuugure.data.http.SafeAccount;
-import com.mtinge.yuugure.data.http.SafeTag;
+import com.mtinge.yuugure.data.http.*;
 import com.mtinge.yuugure.data.postgres.*;
 import com.mtinge.yuugure.data.processor.MediaMeta;
 import com.mtinge.yuugure.data.processor.ProcessableUpload;
@@ -210,9 +207,15 @@ public class Database implements IService {
   }
 
   public RenderableUpload makeUploadRenderable(DBUpload upload, Handle handle) {
-    var renderable = makeUploadsRenderable(List.of(upload), handle);
+    var media = getMediaById(upload.media, handle);
+    var meta = getMediaMetaByMedia(upload.media, handle);
+    var owner = SafeAccount.fromDb(getAccountById(upload.owner, handle));
+    var tags = getTagsForUpload(upload.id, handle)
+      .stream()
+      .map(SafeTag::fromDb)
+      .collect(Collectors.toList());
 
-    return renderable.isEmpty() ? null : renderable.get(0);
+    return new RenderableUpload(upload, media, meta, owner, tags);
   }
 
   /**
@@ -220,7 +223,7 @@ public class Database implements IService {
    *
    * @see #makeUploadsRenderable(List, Handle)
    */
-  public List<RenderableUpload> makeUploadsRenderable(List<DBUpload> uploads) {
+  public BulkRenderableUpload makeUploadsRenderable(List<DBUpload> uploads) {
     return jdbi.withHandle(handle -> makeUploadsRenderable(uploads, handle));
   }
 
@@ -233,13 +236,13 @@ public class Database implements IService {
    *
    * @return The list of renderable uploads.
    */
-  public List<RenderableUpload> makeUploadsRenderable(List<DBUpload> uploads, Handle handle) {
+  public BulkRenderableUpload makeUploadsRenderable(List<DBUpload> uploads, Handle handle) {
     var mediaCache = new HashMap<Integer, DBMedia>();
     var metaCache = new HashMap<Integer, DBMediaMeta>();
     var ownerCache = new HashMap<Integer, SafeAccount>();
     var tagCache = new HashMap<Integer, SafeTag>();
 
-    var ret = new LinkedList<RenderableUpload>();
+    var ret = new LinkedList<TaggedUpload>();
     for (var upload : uploads) {
       DBMedia media = mediaCache.get(upload.media);
       if (media == null) {
@@ -260,25 +263,15 @@ public class Database implements IService {
         ownerCache.put(upload.owner, owner);
       }
 
-      var dbTags = handle.createQuery("SELECT t.* FROM upload_tags ut INNER JOIN tag t ON ut.tag = t.id WHERE ut.upload = :upload")
-        .bind("upload", upload.id)
-        .map(DBTag.Mapper)
-        .collect(Collectors.toList());
-      var ulTags = new LinkedList<SafeTag>();
-      for (var tag : dbTags) {
-        var cached = tagCache.get(tag.id);
-        if (cached == null) {
-          cached = SafeTag.fromDb(getTagById(tag.id, handle));
-          tagCache.put(tag.id, cached);
-        }
-
-        ulTags.add(cached);
+      var tags = getTagsForUpload(upload.id);
+      for (var tag : tags) {
+        tagCache.putIfAbsent(tag.id, SafeTag.fromDb(tag));
       }
 
-      ret.add(new RenderableUpload(upload, media, meta, owner, ulTags));
+      ret.add(new TaggedUpload(upload, tags.stream().map(t -> t.id).collect(Collectors.toList())));
     }
 
-    return ret;
+    return new BulkRenderableUpload(ownerCache, tagCache, mediaCache, metaCache, ret);
   }
 
   private Query _uploadsForAccount(int accountId, UploadFetchParams params, Handle handle) {
@@ -312,7 +305,7 @@ public class Database implements IService {
     );
   }
 
-  public List<RenderableUpload> getRenderableUploadsForAccount(int accountId, UploadFetchParams params) {
+  public BulkRenderableUpload getRenderableUploadsForAccount(int accountId, UploadFetchParams params) {
     return jdbi.withHandle(handle -> {
       var uploads = _uploadsForAccount(accountId, params, handle)
         .map(DBUpload.Mapper)
@@ -582,11 +575,11 @@ public class Database implements IService {
     return makeCommentsRenderable(getCommentsForUpload(id, includeBadFlagged, handle), handle);
   }
 
-  public List<RenderableUpload> getIndexUploads(DBAccount context) {
+  public BulkRenderableUpload getIndexUploads(DBAccount context) {
     return jdbi.withHandle(handle -> getIndexUploads(context, handle));
   }
 
-  public List<RenderableUpload> getIndexUploads(DBAccount context, Handle handle) {
+  public BulkRenderableUpload getIndexUploads(DBAccount context, Handle handle) {
     Query uploadsQuery;
     if (context != null) {
       long badState = States.compute(States.Upload.DELETED, States.Upload.DMCA);
@@ -668,21 +661,32 @@ public class Database implements IService {
       .collect(Collectors.toList());
   }
 
-  public List<RenderableUpload> getUploadsForSearch(List<Integer> ids, DBAccount context) {
+  public List<DBTag> getTagsForUpload(int id) {
+    return jdbi.withHandle(handle -> getTagsForUpload(id, handle));
+  }
+
+  public List<DBTag> getTagsForUpload(int id, Handle handle) {
+    return handle.createQuery("SELECT t.* FROM upload_tags ut INNER JOIN tag t ON t.id = ut.tag WHERE ut.upload = :id")
+      .bind("id", id)
+      .map(DBTag.Mapper)
+      .collect(Collectors.toList());
+  }
+
+  public BulkRenderableUpload getUploadsForSearch(List<Integer> ids, DBAccount context) {
     return jdbi.inTransaction(handle -> getUploadsForSearch(ids, context, handle));
   }
 
-  public List<RenderableUpload> getUploadsForSearch(List<Integer> ids, DBAccount context, Handle handle) {
+  public BulkRenderableUpload getUploadsForSearch(List<Integer> ids, DBAccount context, Handle handle) {
     var qstr = ids.stream().map(String::valueOf).collect(Collectors.joining(","));
     Query uploadsQuery;
     if (context != null) {
       long badState = States.compute(States.Upload.DELETED, States.Upload.DMCA);
-      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE (state & :general_state) = 0 OR (owner = :id AND (state & :contextual_state) = 0) AND id IN (" + qstr + ") ORDER BY upload_date DESC LIMIT 50")
+      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE ((state & :general_state) = 0 OR (owner = :id AND (state & :contextual_state) = 0)) AND id IN (" + qstr + ") ORDER BY upload_date DESC LIMIT 50")
         .bind("general_state", States.compute(badState, States.Upload.PRIVATE))
         .bind("contextual_state", badState)
         .bind("id", context.id);
     } else {
-      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE (state & :state) = 0 AND id IN (" + qstr + ") ORDER BY upload_date DESC LIMIT 50")
+      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE ((state & :state) = 0) AND id IN (" + qstr + ") ORDER BY upload_date DESC LIMIT 50")
         .bind("state", States.compute(States.Upload.DELETED, States.Upload.DMCA, States.Upload.PRIVATE));
     }
 
