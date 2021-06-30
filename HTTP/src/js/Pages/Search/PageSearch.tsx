@@ -6,6 +6,7 @@ import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
 import LoadingPing from '../../Components/LoadingPing';
 import MediaPreview from '../../Components/MediaPreview/MediaPreview';
+import Pagination from '../../Components/Pagination/Pagination';
 
 type SearchState = {
   page: SearchPagination;
@@ -100,41 +101,9 @@ export default function PageSearch(props: PageSearchProps) {
     setPage(1);
   }
 
-  function makePaginationUrl(page: number) {
-    return `/search?q=${encodeURIComponent(query)}&page=${encodeURIComponent(page)}`;
-  }
-
-  function makePageNavigator(page: number) {
-    return (e: React.MouseEvent<HTMLAnchorElement>) => {
-      e.preventDefault();
-      goToPage(page);
-    };
-  }
-
-  function goToPage(page: number) {
+  function handlePaginationNav(page: number) {
     setPage(page);
   }
-
-  const pagination = useMemo(() => {
-    let curPage = page >> 0 || 1;
-    let lastPage = data == null || data.page == null ? 1 : (data.page.max >> 0 || 1);
-
-    const pgExtend = lastPage > 10;
-    const stepStart = curPage < 10 ? 1 : curPage - 4;
-    const stepEnd = curPage < 10 ? Math.min(lastPage, 10) : Math.min(curPage + 5, lastPage);
-    const onFirstPage = curPage <= 1;
-    const onLastPage = curPage >= lastPage;
-
-    return {
-      pgExtend,
-      stepStart,
-      stepEnd,
-      onFirstPage,
-      onLastPage,
-      curPage,
-      lastPage,
-    };
-  }, [data == null ? 1 : data.page.max, page]);
 
   return (
     query == null ? (
@@ -195,32 +164,7 @@ export default function PageSearch(props: PageSearchProps) {
           </div>
           {isSuccess ? (
             <div className="m-1 p-3">
-              <div className="Pagination">
-                {(({onFirstPage, onLastPage, pgExtend, stepStart, stepEnd, curPage, lastPage} = pagination) => {
-                  const leftIcon = (<i className="fas fa-chevron-left"/>);
-                  const rightIcon = (<i className="fas fa-chevron-right"/>);
-
-                  const leftFloat = onFirstPage ? (<button className="Floating disabled" disabled>{leftIcon}</button>) : (<a href={makePaginationUrl(1)} onClick={makePageNavigator(1)} className="Floating">{leftIcon}</a>);
-                  const rightFloat = onLastPage ? (<button className="Floating disabled" disabled>{rightIcon}</button>) : (<a href={makePaginationUrl(lastPage)} onClick={makePageNavigator(lastPage)} className="Floating">{rightIcon}</a>);
-
-                  const pages = [];
-                  for (let i = stepStart; i <= stepEnd; i++) {
-                    pages.push(
-                      <a href={makePaginationUrl(i)} key={i} className={Util.joinedClassName('Page', curPage === i ? 'active' : null)} onClick={makePageNavigator(i)}>{i}</a>,
-                    );
-                  }
-
-                  return (
-                    <>
-                      {leftFloat}
-                      <div className="Pages">
-                        {pages}
-                      </div>
-                      {rightFloat}
-                    </>
-                  );
-                })()}
-              </div>
+              <Pagination current={page} max={data != null ? data.page.max : 1} urlFormat={`/search?q=${encodeURIComponent(query)}`} onNav={handlePaginationNav}/>
             </div>
           ) : null}
         </div>
