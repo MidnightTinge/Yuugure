@@ -10,6 +10,7 @@ import com.mtinge.yuugure.data.postgres.DBTag;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.statement.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,9 +19,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A tag management class that interfaces with the <code>tag</code> table and attemtps to be the
- * source of truth on DB state. Provides tag caching based on name and RadixTree access for wildcard
- * efficiency.
+ * A tag management class that interfaces with the <code>tag</code> database table and attemtps to
+ * be the source of truth on DB state. Provides tag caching based on name and RadixTree access for
+ * wildcard efficiency.
  */
 public class TagManager {
   private static final Logger logger = LoggerFactory.getLogger(TagManager.class);
@@ -60,6 +61,13 @@ public class TagManager {
     }
   }
 
+  /**
+   * Create a new tag. Inserts into the database then populates the Radix tree.
+   *
+   * @param descriptor The tag descriptor to create.
+   *
+   * @return The tag to return.
+   */
   public DBTag createTag(TagDescriptor descriptor) {
     return App.database().jdbi().withHandle(handle -> createTag(descriptor, handle));
   }
@@ -68,6 +76,7 @@ public class TagManager {
    * Create a new tag. Inserts into the database then populates the Radix tree.
    *
    * @param descriptor The tag descriptor.
+   * @param handle The database handle to reuse.
    *
    * @return The created tag.
    *
@@ -84,17 +93,48 @@ public class TagManager {
         throw new IllegalArgumentException("Tag names cannot be blank.");
       }
 
-      var tag = handle.createQuery("INSERT INTO tag (category, name) VALUES (:category, :name) RETURNING *")
-        .bind("category", descriptor.category.getName())
-        .bind("name", descriptor.name)
-        .map(DBTag.Mapper)
-        .first();
+      Integer parent = null;
+      var others = getAllFromTree(descriptor.name);
+      if (others != null && !others.isEmpty()) {
+        for (var other : others) {
+          if (!other.category.equalsIgnoreCase(descriptor.category.name)) {
+            if (other.parent != null && other.parent > 0) {
+              parent = other.parent;
+            } else {
+              parent = other.id;
+            }
+            break;
+          }
+        }
+      }
+
+      Query query;
+      if (parent != null) {
+        query = handle.createQuery("INSERT INTO tag (category, name, parent) VALUES (:category, :name, :parent) RETURNING *")
+          .bind("category", descriptor.category.getName())
+          .bind("name", descriptor.name)
+          .bind("parent", parent);
+      } else {
+        query = handle.createQuery("INSERT INTO tag (category, name) VALUES (:category, :name) RETURNING *")
+          .bind("category", descriptor.category.getName())
+          .bind("name", descriptor.name);
+      }
+
+      var tag = query.map(DBTag.Mapper).first();
 
       addOrAppend(tag);
       return tag;
     }
   }
 
+  /**
+   * Ensures the given TagDescriptor exists in our tree. If it does not, we create it on the
+   * database.
+   *
+   * @param descriptor The tag descriptor.
+   *
+   * @return The tag we ensured.
+   */
   public DBTag ensureTag(TagDescriptor descriptor) {
     return App.database().jdbi().withHandle(handle -> ensureTag(descriptor, handle));
   }
@@ -104,6 +144,7 @@ public class TagManager {
    * database.
    *
    * @param descriptor The tag descriptor.
+   * @param handle The database handle to reuse.
    *
    * @return The tag we ensured.
    */
@@ -155,6 +196,19 @@ public class TagManager {
     }
 
     return null;
+  }
+
+  /**
+   * Gets all tags matching the given {@code value} regardless of their {@code category}.
+   *
+   * @param value The tag name to search for.
+   *
+   * @return The matching tags.
+   */
+  private List<MutableTag> getAllFromTree(String value) {
+    synchronized (_monitor) {
+      return tagCache.getValueForExactKey(formatTag(value));
+    }
   }
 
   /**
@@ -294,6 +348,15 @@ public class TagManager {
     }
   }
 
+  /**
+   * Searches the tree for the given input. If there is no asterisk then this functions the same as
+   * {@link ConcurrentRadixTree#getValueForExactKey(CharSequence)}
+   *
+   * @param search The search term. If there is an asterisk, then wildcard searching is
+   *   attempted.
+   *
+   * @return The {@link MutableTag}s present for the search hits.
+   */
   public LinkedList<MutableTag> search(String search) {
     if (search.isBlank()) {
       return new LinkedList<>();
@@ -379,6 +442,13 @@ public class TagManager {
     });
   }
 
+  /**
+   * Removes a tag association.
+   *
+   * @param descriptor The tag to remove ancestors of.
+   *
+   * @return Whether or not we updated the tag.
+   */
   public boolean removeParent(TagDescriptor descriptor) {
     var tag = getFromTree(descriptor);
     if (tag == null) {
@@ -459,6 +529,16 @@ public class TagManager {
     }
   }
 
+  /**
+   * Returns a {@link BoolQueryBuilder} equivilent to the provided tokenized input for elastic
+   * searching.
+   *
+   * @param tokens The tokens to map.
+   *
+   * @return The mapped tokens.
+   *
+   * @see com.mtinge.yuugure.services.elastic.Elastic#search(BoolQueryBuilder, int)
+   */
   public BoolQueryBuilder buildQuery(List<TagToken> tokens) {
     var builder = new BoolQueryBuilder();
     _query(builder, tokens);
