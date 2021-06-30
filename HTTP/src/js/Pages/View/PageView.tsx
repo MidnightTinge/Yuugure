@@ -155,6 +155,27 @@ export default function PageView(props: PageViewProps) {
     (window as any).CURRENT_UPLOAD = upload;
   }, [upload]);
 
+  const tags = useMemo(() => {
+    if (upload == null) {
+      return {user: [], system: []};
+    }
+
+    let user = [];
+    let system = [];
+    for (let tag of upload.tags) {
+      if (tag.category === 'userland') {
+        user.push(tag);
+      } else {
+        system.push(tag);
+      }
+    }
+
+    user.sort((a, b) => a.name.localeCompare(b.name));
+    system.sort((a, b) => a.name.localeCompare(b.name));
+
+    return {user, system};
+  }, [upload]);
+
   function handleReport() {
     setShowReport(true);
   }
@@ -167,10 +188,17 @@ export default function PageView(props: PageViewProps) {
     setConstrain(!constrain);
   }
 
-  function makeNavigator(to: string) {
+  function makeInternalNavigator(to: string) {
     return (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       navigator.navigate(to);
+    };
+  }
+
+  function makeRedirector(to: string) {
+    return (e: React.MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      history.push(to);
     };
   }
 
@@ -255,24 +283,25 @@ export default function PageView(props: PageViewProps) {
                   <InternalNavContext.Consumer>
                     {({path = ''}) => (
                       <ListGroup>
-                        <ListGroup.Item active={path === 'view'} onClick={makeNavigator('view')}><i className="fas fa-image"/> View</ListGroup.Item>
-                        <ListGroup.Item active={path === 'comments'} onClick={makeNavigator('comments')}>
+                        <ListGroup.Item active={path === 'view'} onClick={makeInternalNavigator('view')}><i className="fas fa-image"/> View</ListGroup.Item>
+                        <ListGroup.Item active={path === 'comments'} onClick={makeInternalNavigator('comments')}>
                           <i className="fas fa-comment-alt" aria-hidden={true}/> Comments
                           <span className="inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg bg-blue-100 border border-blue-200 text-blue-400 opacity-95 shadow">
                               {comments.fetching ? (<Spinner/>) : (comments.comments.length)}
                             </span>
                         </ListGroup.Item>
-                        <ListGroup.Item active={path === 'edit'} onClick={makeNavigator('edit')}><i className="fas fa-pencil-alt"/> Edit</ListGroup.Item>
-                        <ListGroup.Item active={path === 'actions'} onClick={makeNavigator('actions')}><i className="fas fa-wrench"/> Actions</ListGroup.Item>
+                        <ListGroup.Item active={path === 'edit'} onClick={makeInternalNavigator('edit')}><i className="fas fa-pencil-alt"/> Edit</ListGroup.Item>
+                        <ListGroup.Item active={path === 'actions'} onClick={makeInternalNavigator('actions')}><i className="fas fa-wrench"/> Actions</ListGroup.Item>
                       </ListGroup>
                     )}
                   </InternalNavContext.Consumer>
                 </section>
                 <section className="mt-2">
                   <div className="rounded bg-gray-200 border border-gray-300 shadow-sm">
-                    <div className="py-0.5 text-center text-gray-700 border-b border-gray-300">Tags</div>
+                    <div className="py-0.5 text-center text-gray-800 border-b border-gray-300">Tags</div>
                     <div className="p-2">
-                      {upload.tags.map(tag => (<small className="block text-gray-500" data-tag={tag.id} key={tag.id}>{tag.name}</small>))}
+                      {tags.system.map(tag => (<div><a href={`/search?q=${encodeURIComponent(`${tag.category}:${tag.name}`)}`} onClick={makeRedirector(`/search?q=${encodeURIComponent(`${tag.category}:${tag.name}`)}`)} className="whitespace-pre-wrap break-all text-gray-700 hover:underline hover:text-gray-500" key={tag.id} data-tag={tag.id} data-category={tag.category} data-name={tag.name}>{tag.category}:{tag.name}</a></div>))}
+                      {tags.user.map(tag => (<div><a href={`/search?q=${encodeURIComponent(tag.name)}`} onClick={makeRedirector(`/search?q=${encodeURIComponent(tag.name)}`)} className="whitespace-pre-wrap break-all text-gray-700 hover:underline hover:text-gray-500" key={tag.id} data-tag={tag.id} data-category={tag.category} data-name={tag.name}>{tag.name}</a></div>))}
                     </div>
                   </div>
                 </section>
