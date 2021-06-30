@@ -3,6 +3,7 @@ package com.mtinge.yuugure.services.elastic;
 import com.mtinge.TagTokenizer.SyntaxError;
 import com.mtinge.TagTokenizer.TagTokenizer;
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.data.elastic.EUpload;
 import com.mtinge.yuugure.data.elastic.ElasticSearchResult;
 import com.mtinge.yuugure.data.postgres.DBTag;
@@ -88,6 +89,7 @@ public class Elastic implements IService {
       }
     } catch (IOException ioe) {
       logger.error("Caught IOException while fetching tags for upload {}.", id, ioe);
+      PrometheusMetrics.ELASTIC_IO_ERRORS.labels("getTagsForUpload").inc();
     } catch (ElasticsearchStatusException e) {
       if (!e.status().equals(RestStatus.NOT_FOUND)) {
         logger.error("Caught elastic exception while fetching tags for upload {}.", id, e);
@@ -111,6 +113,7 @@ public class Elastic implements IService {
       }
     } catch (IOException ioe) {
       logger.error("Caught IOException while setting tags for upload {}.", id, ioe);
+      PrometheusMetrics.ELASTIC_IO_ERRORS.labels("setTagsForUpload").inc();
     } catch (ElasticsearchStatusException e) {
       logger.error("Caught elastic exception while setting tags for upload {}.", id, e);
     }
@@ -135,6 +138,7 @@ public class Elastic implements IService {
       }
     } catch (IOException ioe) {
       logger.error("Caught IOException while setting tags for upload {}.", upload.id, ioe);
+      PrometheusMetrics.ELASTIC_IO_ERRORS.labels("newUpload").inc();
     } catch (ElasticsearchStatusException e) {
       logger.error("Caught elastic exception while setting tags for upload {}.", upload.id, e);
     }
@@ -170,6 +174,7 @@ public class Elastic implements IService {
       return new ElasticSearchResult(page, (int) max, hits);
     } catch (IOException ioe) {
       logger.error("Caught IOException while searching.", ioe);
+      PrometheusMetrics.ELASTIC_IO_ERRORS.labels("search").inc();
     } catch (ElasticsearchStatusException e) {
       logger.error("Caught elastic exception while searching.", e);
     }

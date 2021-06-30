@@ -1,6 +1,7 @@
 package com.mtinge.yuugure.services.http.routes;
 
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.http.SearchPagination;
 import com.mtinge.yuugure.data.http.SearchResult;
@@ -39,6 +40,7 @@ public class RouteSearch extends Route {
 
         var q = qQuery.getFirst();
         if (q != null && !q.isBlank()) {
+          PrometheusMetrics.SEARCH_TOTAL.labels(String.valueOf(exchange.getAttachment(SessionHandler.ATTACHMENT_KEY) != null)).inc(); // label: authed
           var searchResult = App.elastic().search(q, page);
           if (searchResult != null) {
             var uploads = App.database().getUploadsForSearch(searchResult.hits, exchange.getAttachment(SessionHandler.ATTACHMENT_KEY));
