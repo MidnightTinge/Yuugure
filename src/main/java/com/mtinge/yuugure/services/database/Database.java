@@ -500,7 +500,7 @@ public class Database implements IService {
           .collect(Collectors.toList());
 
         // Set tags
-        App.elastic().setTagsForUpload(result.dequeued().upload.id, curTags);
+        App.elastic().setTagsForUpload(result.dequeued().upload.id, toSet);
       } else {
         logger.warn("Failed to create tags for upload {} while handling a processor result. Messages:", result.dequeued().upload.id);
         tds.messages.forEach(logger::warn);
