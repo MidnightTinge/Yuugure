@@ -300,8 +300,8 @@ export default function PageView(props: PageViewProps) {
                   <div className="rounded bg-gray-200 border border-gray-300 shadow-sm">
                     <div className="py-0.5 text-center text-gray-800 border-b border-gray-300">Tags</div>
                     <div className="p-2">
-                      {tags.system.map(tag => (<div><a href={`/search?q=${encodeURIComponent(`${tag.category}:${tag.name}`)}`} onClick={makeRedirector(`/search?q=${encodeURIComponent(`${tag.category}:${tag.name}`)}`)} className="whitespace-pre-wrap break-all text-gray-700 hover:underline hover:text-gray-500" key={tag.id} data-tag={tag.id} data-category={tag.category} data-name={tag.name}>{tag.category}:{tag.name}</a></div>))}
-                      {tags.user.map(tag => (<div><a href={`/search?q=${encodeURIComponent(tag.name)}`} onClick={makeRedirector(`/search?q=${encodeURIComponent(tag.name)}`)} className="whitespace-pre-wrap break-all text-gray-700 hover:underline hover:text-gray-500" key={tag.id} data-tag={tag.id} data-category={tag.category} data-name={tag.name}>{tag.name}</a></div>))}
+                      {tags.system.map(tag => (<div key={tag.id}><a href={`/search?q=${encodeURIComponent(`${tag.category}:${tag.name}`)}`} onClick={makeRedirector(`/search?q=${encodeURIComponent(`${tag.category}:${tag.name}`)}`)} className="whitespace-pre-wrap break-all text-gray-700 hover:underline hover:text-gray-500" data-tag={tag.id} data-category={tag.category} data-name={tag.name}>{tag.category}:{tag.name}</a></div>))}
+                      {tags.user.map(tag => (<div key={tag.id}><a href={`/search?q=${encodeURIComponent(tag.name)}`} onClick={makeRedirector(`/search?q=${encodeURIComponent(tag.name)}`)} className="whitespace-pre-wrap break-all text-gray-700 hover:underline hover:text-gray-500" data-tag={tag.id} data-category={tag.category} data-name={tag.name}>{tag.name}</a></div>))}
                     </div>
                   </div>
                 </section>

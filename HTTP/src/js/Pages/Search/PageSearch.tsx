@@ -87,8 +87,8 @@ export default function PageSearch(props: PageSearchProps) {
       if (_query !== query) {
         setQuery(_query);
       }
-      if (_page != null && _page !== page) {
-        setPage(_page);
+      if (_page !== page) {
+        setPage(_page == null ? 1 : _page);
       }
     }
   }, [location]);
