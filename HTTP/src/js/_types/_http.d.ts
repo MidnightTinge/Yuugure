@@ -28,6 +28,7 @@ type AuthConfirmResponse = InputAwareResponse<{
 type UploadResult = InputAwareResponse<{
   success: boolean;
   upload?: RenderableUpload;
+  notices: string[];
 }>
 
 type UploadState = {
@@ -48,6 +49,7 @@ type RenderableUpload = {
     username: string;
   };
   state: UploadState;
+  tags: SafeTag[];
 };
 
 type ReportResponse = {
@@ -97,3 +99,34 @@ type RenderableComment = {
 type CommentResponse = InputAwareResponse<{
   comment: RenderableComment
 }>
+
+type SafeTag = {
+  id: number;
+  parent: number;
+  name: string;
+  category: string;
+}
+
+type TaggedUpload = {
+  upload: DBUpload;
+  state: UploadState;
+  tags: number[];
+}
+
+type BulkRenderableUpload = {
+  accounts: Record<number, SafeAccount>;
+  tags: Record<number, SafeTag>;
+  medias: Record<number, DBMedia>;
+  metas: Record<number, DBMediaMeta>;
+  uploads: TaggedUpload[];
+}
+
+type SearchPagination = {
+  current: number;
+  max: number;
+}
+
+type SearchResult = {
+  page: SearchPagination;
+  result: BulkRenderableUpload;
+}

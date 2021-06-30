@@ -51,4 +51,10 @@ public class PrometheusMetrics {
   public static final Counter ETAG_CACHE_HITS = Counter.build().namespace("yuugure_etag_cache").name("hits").help("The total number of cache hits on the ETag cache.").register();
   public static final Counter ETAG_CACHE_MISSES = Counter.build().namespace("yuugure_etag_cache").name("misses").labelNames("reason").help("The total number of cache misses on the ETag cache.").register();
 
+  // Search
+  public static final Counter SEARCH_TOTAL = Counter.build().namespace("yuugure_search").name("total_searches").labelNames("authed").help("The total number of searches served by the app.").register();
+
+  // Elastic client-side tracking
+  //  Note: It is expected to run node_exporter to get server-side metrics, so these will only cover client-side jobs.
+  public static final Counter ELASTIC_IO_ERRORS = Counter.build().namespace("yuugure_elastic").name("io_errors").labelNames("job").help("The total number of IOExceptions caught by the client.").register();
 }

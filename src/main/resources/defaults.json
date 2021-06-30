@@ -15,6 +15,14 @@
     "host": null,
     "port": 9090
   },
+  "elasticsearch": {
+    "nodes": [
+      {
+        "host": "127.0.0.1",
+        "port": 9200
+      }
+    ]
+  },
   "upload": {
     "tempDir": "./data/uploads/temp/",
     "finalDir": "./data/uploads/final/",

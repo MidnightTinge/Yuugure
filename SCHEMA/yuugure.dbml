@@ -162,3 +162,29 @@ table panic_connection {
     addr [unique]
   }
 }
+
+table tag {
+  id         int  [pk, increment]
+  parent     int  [ref:> tag.id]
+  category   text [not null] // enables us to do something like `filesize:tiny` in an aggregatable way
+  name       text [not null]
+  assoc_type text // associations are to other objects allowing us to have an `artist:name` associated with an `artist` table.
+  assoc_id   int
+
+  indexes {
+    (`lower(category)`, `lower(name)`) [unique]
+    `lower(category)`
+    `lower(name)`
+    (assoc_type, assoc_id)
+    assoc_type // for future aggregation
+  }
+}
+
+table upload_tags {
+  upload int [not null, ref:> upload.id]
+  tag int [not null, ref:> tag.id]
+
+  indexes {
+    (upload, tag) [unique]
+  }
+}

@@ -8,7 +8,7 @@ type DBMedia = {
 
 type DBMediaMeta = {
   id: number;
-  media: Extendable<DBMedia>;
+  media: number;
   width: number;
   height: number;
   video: boolean;
@@ -19,8 +19,8 @@ type DBMediaMeta = {
 
 type DBUpload = {
   id: number;
-  media: Extendable<DBMedia>;
-  parent: Extendable<DBUpload>;
+  media: number;
+  parent: number;
   owner: number;
   upload_date: number;
   state: bigint;

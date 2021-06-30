@@ -6,6 +6,7 @@ import com.github.kokorin.jaffree.ffmpeg.Filter;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;
 import com.github.kokorin.jaffree.ffmpeg.UrlOutput;
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.core.TagManager.TagCategory;
 import com.mtinge.yuugure.core.ThreadFactories;
 import com.mtinge.yuugure.data.processor.MediaMeta;
 import com.mtinge.yuugure.data.processor.ProcessableUpload;
@@ -33,7 +34,6 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p>The MediaProcessor's job is to take an upload and perform tasks that require external tools
@@ -132,7 +132,38 @@ public class MediaProcessor implements IService {
         // Create thumbnail
         if (createThumbnail(fullPath, thumbPath, meta.video() ? ((long) Math.floor(meta.videoDuration() / 8)) : 0, isJpeg ? "mjpeg" : null)) {
           // TODO automated tagging should happen here when tagging is implemented.
-          return result.success(true);
+          var tags = new LinkedList<String>();
+
+          // Automated Tagging
+          //  Meta
+          if (meta.video()) {
+            tags.add("meta:video");
+          }
+          if (meta.hasAudio()) {
+            tags.add("meta:has_audio");
+          }
+
+          //  Filesize
+          var fs = FileSize.get(streams.format.getSize().intValue());
+          if (fs != null) {
+            tags.add(TagCategory.FILESIZE.getName() + ":" + fs);
+          }
+
+          //  Dimensions
+          var dm = FileDimension.get(meta.width() * meta.height());
+          if (dm != null) {
+            tags.add(TagCategory.DIMENSIONS.getName() + ":" + dm);
+          }
+
+          //  Length
+          if (meta.video()) {
+            var fl = FileLengths.get(meta.videoDuration());
+            if (fl != null) {
+              tags.add(TagCategory.LENGTH.getName() + ":" + fl);
+            }
+          }
+
+          return result.tags(tags).success(true);
         } else {
           // else: failed to create thumbnail
           return result.success(false).message("Thumbnail generation failed.");

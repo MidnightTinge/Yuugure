@@ -57,7 +57,7 @@ public class Response {
     return this;
   }
 
-  public Response addAll(List<Object> data) {
+  public Response addAll(List<?> data) {
     this.data.addAll(data);
     return this;
   }

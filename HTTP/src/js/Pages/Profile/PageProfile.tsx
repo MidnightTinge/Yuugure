@@ -1,8 +1,9 @@
 import * as React from 'react';
-import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
+import {useContext, useEffect, useMemo, useState} from 'react';
 import {useParams} from 'react-router';
 
 import {AutoSizer, List, ListRowProps, Size} from 'react-virtualized';
+import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
@@ -11,41 +12,20 @@ import InternalRouter from '../../Components/InternalNav/InternalRouter';
 import InternalSwitch from '../../Components/InternalNav/InternalSwitch';
 import useInternalNavigator from '../../Components/InternalNav/useInternalNavigator';
 import ListGroup from '../../Components/ListGroup/ListGroup';
+import LoadingPing from '../../Components/LoadingPing';
 import MediaPreviewBlock from '../../Components/MediaPreview/MediaPreviewBlock';
 import {CloseSource} from '../../Components/Modal/Modal';
 import ReportModal from '../../Components/modals/ReportModal';
 import Spinner from '../../Components/Spinner';
 import {AuthStateContext} from '../../Context/AuthStateProvider';
 import {WebSocketContext} from '../../Context/WebSocketProvider';
+import useUploadReducer from '../../Hooks/useUploadReducer';
 import NotFound from '../404/NotFound';
 import AccountSettings from './AccountSettings';
-
-type UploadState = {
-  uploads: RenderableUpload[];
-};
 
 export type PageProfileProps = {
   self?: boolean;
 };
-
-function UploadReducer(state: UploadState, action: { type: string, payload?: Arrayable<RenderableUpload> }): UploadState {
-  let payload = Array.isArray(action.payload) ? action.payload : [action.payload];
-
-  switch (action.type) {
-    case 'add': {
-      return {
-        ...state,
-        uploads: [...state.uploads, ...payload],
-      };
-    }
-    case 'set': {
-      return {
-        ...state,
-        uploads: [...payload],
-      };
-    }
-  }
-}
 
 export default function PageProfile(props: PageProfileProps) {
   const {ws, rooms} = useContext(WebSocketContext);
@@ -63,7 +43,7 @@ export default function PageProfile(props: PageProfileProps) {
   const [uploadsError, setUploadsError] = useState<string>(null);
 
   const [profile, setProfile] = useState<ProfileResponse>(null);
-  const [uploads, uploadsDispatch] = useReducer(UploadReducer, {uploads: []}, () => ({uploads: []}));
+  const [uploads, uploadsDispatch, uploadActions] = useUploadReducer();
 
   const [showReport, setShowReport] = useState(false);
 
@@ -85,7 +65,7 @@ export default function PageProfile(props: PageProfileProps) {
     }
 
     function handleUpload(args: { upload: RenderableUpload }) {
-      uploadsDispatch({type: 'add', payload: args.upload});
+      uploadActions.add(args.upload);
     }
 
     let id = accountId === '@me' ? (authState.authed ? authState.account.id : null) : accountId;
@@ -136,11 +116,11 @@ export default function PageProfile(props: PageProfileProps) {
     if (accountId === lastAccountId) return;
     setLastAccountId(accountId);
 
-    uploadsDispatch({type: 'set', payload: []});
+    uploadActions.set([]);
     setFetchingUploads(true);
-    XHR.for(`/api/profile/${accountId}/uploads`).get().getRouterResponse<RenderableUpload>().then(consumed => {
+    XHR.for(`/api/profile/${accountId}/uploads`).get().getRouterResponse<BulkRenderableUpload>().then(consumed => {
       if (consumed.success) {
-        uploadsDispatch({type: 'set', payload: [...consumed.data]});
+        uploadActions.set([...Util.mapBulkUploads(consumed.data[0])]);
       } else {
         setUploadsError(consumed.message);
       }
@@ -190,7 +170,7 @@ export default function PageProfile(props: PageProfileProps) {
         ) : (
           fetching ? (
             <div className="flex flex-col items-center justify-center h-full">
-              <i className="fas fa-address-card fa-4x text-gray-300 animate-ping"/>
+              <LoadingPing icon="fas fa-address-card"/>
             </div>
           ) : (
             <InternalRouter defaultPath="details">

@@ -3,10 +3,23 @@ package com.mtinge.yuugure.data.http;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.LinkedList;
+import java.util.List;
+
 @Getter
+@Setter
 public class UploadResult extends InputAwareResponse {
-  @Setter
   private boolean success = false;
-  @Setter
   private RenderableUpload upload = null;
+  private List<String> notices;
+
+  public UploadResult() {
+    super();
+    this.notices = new LinkedList<>();
+  }
+
+  public UploadResult addNotice(String notice) {
+    this.notices.add(notice);
+    return this;
+  }
 }
