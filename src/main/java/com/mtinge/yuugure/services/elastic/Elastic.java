@@ -25,6 +25,8 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,6 +158,7 @@ public class Elastic implements IService {
         .source(SearchSourceBuilder.searchSource()
           .size(PAGINATION_SIZE)
           .from(Math.max(page - 1, 0) * PAGINATION_SIZE)
+          .sort(SortBuilders.fieldSort("id").order(SortOrder.DESC))
           .query(builder)
         );
       var res = client.search(req, RequestOptions.DEFAULT);
