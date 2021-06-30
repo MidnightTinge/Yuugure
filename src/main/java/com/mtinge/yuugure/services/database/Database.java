@@ -2,6 +2,7 @@ package com.mtinge.yuugure.services.database;
 
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.States;
+import com.mtinge.yuugure.core.TagManager.TagCategory;
 import com.mtinge.yuugure.core.TagManager.TagDescriptor;
 import com.mtinge.yuugure.data.http.*;
 import com.mtinge.yuugure.data.postgres.*;
@@ -25,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Getter
 @Accessors(fluent = true)
@@ -480,13 +482,24 @@ public class Database implements IService {
 
       var tds = App.tagManager().ensureAll(result.tags().stream().map(TagDescriptor::parse).collect(Collectors.toList()), false);
       if (!tds.tags.isEmpty()) {
-        // we ignore if this was true/false because it'll return false if the tags are the same
+        // We ignore if this was true/false because it'll return false if the tags are the same
         // which can happen on a reprocess.
         addTagsToUpload(result.dequeued().upload.id, tds.tags, handle);
-        var curTags = handle.createQuery("SELECT tag FROM upload_tags WHERE upload = :upload")
+
+        // Get current tags and filter out system tags (we're overriding with processor result)
+        var curTags = handle.createQuery("SELECT t.* FROM upload_tags ut INNER JOIN tag t on ut.tag = t.id WHERE upload = :upload")
           .bind("upload", result.dequeued().upload.id)
-          .map((r, __) -> r.getInt("tag"))
+          .map(DBTag.Mapper)
+          .stream()
+          .filter(t -> t.category.equalsIgnoreCase(TagCategory.USERLAND.getName()))
+          .map(t -> t.id)
           .collect(Collectors.toList());
+
+        // Concat the processor result's tags
+        var toSet = Stream.concat(tds.tags.stream().map(t -> t.id), curTags.stream())
+          .collect(Collectors.toList());
+
+        // Set tags
         App.elastic().setTagsForUpload(result.dequeued().upload.id, curTags);
       } else {
         logger.warn("Failed to create tags for upload {} while handling a processor result. Messages:", result.dequeued().upload.id);
