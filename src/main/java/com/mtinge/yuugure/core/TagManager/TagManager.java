@@ -159,6 +159,65 @@ public class TagManager {
   }
 
   /**
+   * Ensures all tags in a mutexed block.
+   *
+   * @param descriptors The tags to ensure.
+   * @param enforceUserlandCreation Whether or not to allow the creation of non-userland tags. If
+   *   a tag comes up that doesn't exist and doesn't have a userland category we skip its creation.
+   *
+   * @return The ensured tags.
+   */
+  public List<DBTag> ensureAll(List<TagDescriptor> descriptors, boolean enforceUserlandCreation) {
+    return App.database().jdbi().inTransaction(handle -> ensureAll(descriptors, enforceUserlandCreation, handle));
+  }
+
+  /**
+   * Ensures all tags in a mutexed block.
+   *
+   * @param descriptors The tags to ensure.
+   * @param enforceUserlandCreation Whether or not to allow the creation of non-userland tags. If
+   *   a tag comes up that doesn't exist and doesn't have a userland category we skip its creation.
+   * @param handle The database handle to reuse.
+   *
+   * @return The ensured tags.
+   */
+  public List<DBTag> ensureAll(List<TagDescriptor> descriptors, boolean enforceUserlandCreation, Handle handle) {
+    var mtx = App.redis().getMutex("tm:ensure");
+    try {
+      mtx.acquire();
+
+      var tags = new LinkedList<DBTag>();
+      var created = new LinkedList<DBTag>();
+
+      for (var descriptor : descriptors) {
+        var existing = getTag(descriptor);
+        if (existing == null) {
+          // create the tag, ensuring userland enforcement is respected
+          if (!enforceUserlandCreation || descriptor.category.equals(TagCategory.USERLAND)) {
+            existing = handle.createQuery("INSERT INTO tag (category, name) VALUES (:category, :name) RETURNING *")
+              .bind("category", descriptor.category.name)
+              .bind("name", descriptor.name.toLowerCase().trim())
+              .map(DBTag.Mapper)
+              .first();
+            created.add(existing);
+          }
+        }
+
+        tags.add(existing);
+      }
+
+      // ensure our new tags are in the cache
+      for (var tag : created) {
+        addOrAppend(tag);
+      }
+
+      return tags;
+    } finally {
+      mtx.release();
+    }
+  }
+
+  /**
    * Gets a tag from the Radix tree with the specified name.
    *
    * @param descriptor The tag descriptor.

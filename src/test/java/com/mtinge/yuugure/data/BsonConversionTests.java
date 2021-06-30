@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 @DisplayName("MediaProcessor BSON Converters")
 public class BsonConversionTests {
@@ -87,6 +88,7 @@ public class BsonConversionTests {
       .meta(meta)
       .message("An internal server error occurred.")
       .success(false)
+      .tags(List.of("one", "two", "three"))
       .build();
 
     var bob = new BasicOutputBuffer();
@@ -107,6 +109,13 @@ public class BsonConversionTests {
     Assertions.assertNotNull(deserialized.meta());
     Assertions.assertNotNull(deserialized.dequeued());
     Assertions.assertNotNull(deserialized.message());
+    Assertions.assertNotNull(deserialized.tags());
+
+    Assertions.assertFalse(deserialized.tags().isEmpty());
+    Assertions.assertEquals(3, deserialized.tags().size());
+    Assertions.assertEquals("one", deserialized.tags().remove(0));
+    Assertions.assertEquals("two", deserialized.tags().remove(0));
+    Assertions.assertEquals("three", deserialized.tags().remove(0));
 
     Assertions.assertEquals(deserialized, result);
   }

@@ -2,6 +2,7 @@ package com.mtinge.yuugure.services.database;
 
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.States;
+import com.mtinge.yuugure.core.TagManager.TagDescriptor;
 import com.mtinge.yuugure.data.http.*;
 import com.mtinge.yuugure.data.postgres.*;
 import com.mtinge.yuugure.data.processor.MediaMeta;
@@ -476,6 +477,19 @@ public class Database implements IService {
         .bind("errored", !result.success())
         .bind("error_text", result.message())
         .execute();
+
+      var tds = App.tagManager().ensureAll(result.tags().stream().map(TagDescriptor::parse).collect(Collectors.toList()), false);
+      if (!tds.isEmpty()) {
+        if (addTagsToUpload(result.dequeued().upload.id, tds, handle)) {
+          var curTags = handle.createQuery("SELECT tag FROM upload_tags WHERE upload = :upload")
+            .bind("upload", result.dequeued().upload.id)
+            .map((r, __) -> r.getInt("tag"))
+            .collect(Collectors.toList());
+          App.elastic().setTagsForUpload(result.dequeued().upload.owner, curTags);
+        } else {
+          logger.warn("Failed to set tags for upload {} while handing a processor result.", result.dequeued().upload.id);
+        }
+      }
 
       handle.commit();
       handled = true;

@@ -86,6 +86,7 @@ public class App {
   private void ensureDefaultTags() {
     // extracted for associations
     var fileSizeMassive = new TagDescriptor(TagCategory.FILESIZE, "massive");
+    var dimensionsMassive = new TagDescriptor(TagCategory.DIMENSIONS, "massive");
     var metaHasAudio = new TagDescriptor(TagCategory.META, "has_audio");
 
     var ratingSafe = new TagDescriptor(TagCategory.RATING, "safe");
@@ -97,13 +98,13 @@ public class App {
       new TagDescriptor(TagCategory.FILESIZE, "small"),
       new TagDescriptor(TagCategory.FILESIZE, "medium"),
       new TagDescriptor(TagCategory.FILESIZE, "large"),
-      new TagDescriptor(TagCategory.FILESIZE, "massive"),
+      fileSizeMassive,
 
       new TagDescriptor(TagCategory.DIMENSIONS, "tiny"),
       new TagDescriptor(TagCategory.DIMENSIONS, "small"),
       new TagDescriptor(TagCategory.DIMENSIONS, "medium"),
       new TagDescriptor(TagCategory.DIMENSIONS, "large"),
-      fileSizeMassive,
+      dimensionsMassive,
 
       new TagDescriptor(TagCategory.LENGTH, "very_short"),
       new TagDescriptor(TagCategory.LENGTH, "short"),
@@ -114,6 +115,7 @@ public class App {
       new TagDescriptor(TagCategory.MISC, "tagme"),
 
       metaHasAudio,
+      new TagDescriptor(TagCategory.META, "video"),
       new TagDescriptor(TagCategory.META, "has_child"),
       new TagDescriptor(TagCategory.META, "has_parent"),
       new TagDescriptor(TagCategory.META, "has_collection"),
@@ -125,7 +127,7 @@ public class App {
     );
 
     var associations = Map.of(
-      fileSizeMassive, List.of(new TagDescriptor(TagCategory.USERLAND, "absurd_res")),
+      dimensionsMassive, List.of(new TagDescriptor(TagCategory.USERLAND, "absurd_res")),
       metaHasAudio, List.of(new TagDescriptor(TagCategory.USERLAND, "sound"), new TagDescriptor(TagCategory.USERLAND, "audio"), new TagDescriptor(TagCategory.USERLAND, "has_sound"), new TagDescriptor(TagCategory.USERLAND, "audio_warning")),
 
       ratingSafe, List.of(new TagDescriptor(TagCategory.RATING, "s")),

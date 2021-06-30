@@ -179,30 +179,22 @@ public class RouteUpload extends Route {
                       // insert the upload into the database
                       var mtx = App.redis().getMutex("ul:" + sha256);
                       try {
-                        LinkedList<DBTag> dbtags = null;
+                        LinkedList<DBTag> dbtags;
                         if (mtx.acquire()) {
-                          var tagMutex = App.redis().getMutex("ensure_upload_tags");
-                          try {
-                            // This tag mutex is necessary to handle race conditions where two
-                            // threads attempt to ensure the same tag. While we do have thread locks
-                            // on the tagCache methods, there is a secondary race condition possible
-                            // between transaction commits on the database.
-                            if (tagMutex.acquire()) {
-                              dbtags = App.database().jdbi().withHandle(h -> {
-                                var ret = new LinkedList<DBTag>();
+                          dbtags = App.database().jdbi().withHandle(h -> {
+                            var ret = new LinkedList<DBTag>();
 
-                                var handle = h.begin();
-                                for (var tag : tags) {
-                                  ret.add(App.tagManager().ensureTag(tag, handle));
-                                }
-                                handle.commit();
-
-                                return ret;
-                              });
+                            var handle = h.begin();
+                            try {
+                              ret.addAll(App.tagManager().ensureAll(tags, true, handle));
+                              handle.commit();
+                            } catch (Exception e) {
+                              logger.error("(upload) Failed to ensure tags \"{}\".", tags.stream().map(t -> t.name).collect(Collectors.joining(", ")), e);
+                              handle.rollback();
                             }
-                          } finally {
-                            tagMutex.release();
-                          }
+
+                            return ret;
+                          });
 
                           if (dbtags == null || dbtags.isEmpty()) {
                             uploadResult.addError("Failed to ensure tags, please try again later.");
