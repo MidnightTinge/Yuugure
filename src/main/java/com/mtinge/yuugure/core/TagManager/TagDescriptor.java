@@ -2,11 +2,15 @@ package com.mtinge.yuugure.core.TagManager;
 
 import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
 @ToString
 public class TagDescriptor {
+  private static final Logger logger = LoggerFactory.getLogger(TagDescriptor.class);
+
   public final TagCategory category;
   public final String name;
 
@@ -19,23 +23,43 @@ public class TagDescriptor {
    * Parse a TagDescriptor from the "name:type" format.
    *
    * @param input The text to parse.
+   * @param defaultUserland If there is no category we'll force it to {@link TagCategory#USERLAND}
+   *   when true.
+   *
+   * @return The parsed TagDescriptor if valid, null otherwise.
+   */
+  public static TagDescriptor parse(@NotNull String input, boolean defaultUserland) {
+    TagCategory category = null;
+    String name = null;
+    int iof = input.indexOf(':');
+    if (iof >= 0) {
+      var cat = input.substring(0, iof).toUpperCase().trim();
+      try {
+        category = TagCategory.valueOf(cat);
+        name = input.substring(iof + 1);
+      } catch (IllegalArgumentException iae) {
+        logger.error("Got invalid category {}", cat, iae);
+        if (defaultUserland) {
+          category = TagCategory.USERLAND;
+        }
+      }
+    } else if (defaultUserland) {
+      name = input;
+      category = TagCategory.USERLAND;
+    }
+
+    return category == null || name == null ? null : new TagDescriptor(category, name);
+  }
+
+  /**
+   * Parse a TagDescriptor from the "name:type" format.
+   *
+   * @param input The text to parse.
    *
    * @return The parsed TagDescriptor if valid, null otherwise.
    */
   public static TagDescriptor parse(String input) {
-    int iof = input.indexOf(':');
-    if (iof >= 0) {
-      try {
-        var category = TagCategory.valueOf(input.substring(0, iof).toUpperCase().trim());
-        var name = input.substring(iof + 1);
-
-        return new TagDescriptor(category, name);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    }
-
-    return null;
+    return parse(input, false);
   }
 
   public boolean equals(Object other) {

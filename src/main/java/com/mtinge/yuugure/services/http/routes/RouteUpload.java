@@ -110,8 +110,18 @@ public class RouteUpload extends Route {
             } else {
               var tags = Arrays.stream(frmTags.getValue().split(" "))
                 .filter(str -> !str.isBlank())
-                .map(str -> new TagDescriptor(TagCategory.USERLAND, str))
+                .map(str -> TagDescriptor.parse(str, true))
                 .collect(Collectors.toList());
+
+              // Strip all system tags from the user's posted tags
+              var iter = tags.iterator();
+              while (iter.hasNext()) {
+                var tag = iter.next();
+                if (!tag.category.equals(TagCategory.USERLAND)) {
+                  iter.remove();
+                  uploadResult.addNotice("Refused to accept tag \"" + tag.name + "\" due to it being a system tag.");
+                }
+              }
 
               // Ensure we have a file
               var frmFile = form.getFirst("file");

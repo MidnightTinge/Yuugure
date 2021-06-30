@@ -480,15 +480,14 @@ public class Database implements IService {
 
       var tds = App.tagManager().ensureAll(result.tags().stream().map(TagDescriptor::parse).collect(Collectors.toList()), false);
       if (!tds.tags.isEmpty()) {
-        if (addTagsToUpload(result.dequeued().upload.id, tds.tags, handle)) {
-          var curTags = handle.createQuery("SELECT tag FROM upload_tags WHERE upload = :upload")
-            .bind("upload", result.dequeued().upload.id)
-            .map((r, __) -> r.getInt("tag"))
-            .collect(Collectors.toList());
-          App.elastic().setTagsForUpload(result.dequeued().upload.owner, curTags);
-        } else {
-          logger.warn("Failed to set tags for upload {} while handing a processor result.", result.dequeued().upload.id);
-        }
+        // we ignore if this was true/false because it'll return false if the tags are the same
+        // which can happen on a reprocess.
+        addTagsToUpload(result.dequeued().upload.id, tds.tags, handle);
+        var curTags = handle.createQuery("SELECT tag FROM upload_tags WHERE upload = :upload")
+          .bind("upload", result.dequeued().upload.id)
+          .map((r, __) -> r.getInt("tag"))
+          .collect(Collectors.toList());
+        App.elastic().setTagsForUpload(result.dequeued().upload.id, curTags);
       } else {
         logger.warn("Failed to create tags for upload {} while handling a processor result. Messages:", result.dequeued().upload.id);
         tds.messages.forEach(logger::warn);

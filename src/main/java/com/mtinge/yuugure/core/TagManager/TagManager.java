@@ -175,13 +175,15 @@ public class TagManager {
       var created = new LinkedList<DBTag>();
 
       for (var descriptor : descriptors) {
-        var others = getAllFromTree(descriptor.name);
-        if (others != null && !others.isEmpty()) {
-          boolean foundUserland = false;
-          if (others.stream().anyMatch(t -> !t.category.equalsIgnoreCase(TagCategory.USERLAND.name))) {
-            // Found a system tag, block creation
-            result.addMessage(tagConflictRefusal(descriptor.name));
-            continue;
+        if (descriptor.category.equals(TagCategory.USERLAND)) {
+          var others = getAllFromTree(descriptor.name);
+          if (others != null && !others.isEmpty()) {
+            boolean foundUserland = false;
+            if (others.stream().anyMatch(t -> !t.category.equalsIgnoreCase(TagCategory.USERLAND.name))) {
+              // Found a system tag, block creation
+              result.addMessage(tagConflictRefusal(descriptor.name));
+              continue;
+            }
           }
         }
 
