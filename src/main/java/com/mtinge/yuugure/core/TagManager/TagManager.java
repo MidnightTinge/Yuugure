@@ -10,7 +10,6 @@ import com.mtinge.yuugure.data.postgres.DBTag;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.jdbi.v3.core.Handle;
-import org.jdbi.v3.core.statement.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +67,7 @@ public class TagManager {
    *
    * @return The tag to return.
    */
-  public DBTag createTag(TagDescriptor descriptor) {
+  public TagCreationResult createTag(TagDescriptor descriptor) {
     return App.database().jdbi().withHandle(handle -> createTag(descriptor, handle));
   }
 
@@ -82,7 +81,7 @@ public class TagManager {
    *
    * @throws IllegalArgumentException if the tag already exists.
    */
-  public DBTag createTag(TagDescriptor descriptor, Handle handle) {
+  public TagCreationResult createTag(TagDescriptor descriptor, Handle handle) {
     synchronized (_monitor) {
       var exists = getTag(descriptor) != null;
       if (exists) throw new IllegalArgumentException("The requested tag name already exists");
@@ -93,37 +92,22 @@ public class TagManager {
         throw new IllegalArgumentException("Tag names cannot be blank.");
       }
 
-      Integer parent = null;
       var others = getAllFromTree(descriptor.name);
       if (others != null && !others.isEmpty()) {
-        for (var other : others) {
-          if (!other.category.equalsIgnoreCase(descriptor.category.name)) {
-            if (other.parent != null && other.parent > 0) {
-              parent = other.parent;
-            } else {
-              parent = other.id;
-            }
-            break;
-          }
+        boolean foundUserland = false;
+        if (others.stream().anyMatch(t -> !t.category.equalsIgnoreCase(TagCategory.USERLAND.name))) {
+          // Found a system tag, block creation
+          return TagCreationResult.forMessages(List.of(tagConflictRefusal(descriptor.name)));
         }
       }
 
-      Query query;
-      if (parent != null) {
-        query = handle.createQuery("INSERT INTO tag (category, name, parent) VALUES (:category, :name, :parent) RETURNING *")
-          .bind("category", descriptor.category.getName())
-          .bind("name", descriptor.name)
-          .bind("parent", parent);
-      } else {
-        query = handle.createQuery("INSERT INTO tag (category, name) VALUES (:category, :name) RETURNING *")
-          .bind("category", descriptor.category.getName())
-          .bind("name", descriptor.name);
-      }
-
-      var tag = query.map(DBTag.Mapper).first();
+      var tag = handle.createQuery("INSERT INTO tag (category, name) VALUES (:category, :name) RETURNING *")
+        .bind("category", descriptor.category.getName())
+        .bind("name", descriptor.name)
+        .map(DBTag.Mapper).first();
 
       addOrAppend(tag);
-      return tag;
+      return TagCreationResult.forTags(List.of(tag));
     }
   }
 
@@ -135,7 +119,7 @@ public class TagManager {
    *
    * @return The tag we ensured.
    */
-  public DBTag ensureTag(TagDescriptor descriptor) {
+  public TagCreationResult ensureTag(TagDescriptor descriptor) {
     return App.database().jdbi().withHandle(handle -> ensureTag(descriptor, handle));
   }
 
@@ -148,13 +132,14 @@ public class TagManager {
    *
    * @return The tag we ensured.
    */
-  public DBTag ensureTag(TagDescriptor descriptor, Handle handle) {
+  public TagCreationResult ensureTag(TagDescriptor descriptor, Handle handle) {
     synchronized (_monitor) {
       var existing = getTag(descriptor);
       if (existing == null) {
-        existing = createTag(descriptor, handle);
+        return createTag(descriptor, handle);
       }
-      return existing;
+
+      return TagCreationResult.forTags(List.of(existing));
     }
   }
 
@@ -167,7 +152,7 @@ public class TagManager {
    *
    * @return The ensured tags.
    */
-  public List<DBTag> ensureAll(List<TagDescriptor> descriptors, boolean enforceUserlandCreation) {
+  public TagCreationResult ensureAll(List<TagDescriptor> descriptors, boolean enforceUserlandCreation) {
     return App.database().jdbi().inTransaction(handle -> ensureAll(descriptors, enforceUserlandCreation, handle));
   }
 
@@ -181,15 +166,25 @@ public class TagManager {
    *
    * @return The ensured tags.
    */
-  public List<DBTag> ensureAll(List<TagDescriptor> descriptors, boolean enforceUserlandCreation, Handle handle) {
+  public TagCreationResult ensureAll(List<TagDescriptor> descriptors, boolean enforceUserlandCreation, Handle handle) {
     var mtx = App.redis().getMutex("tm:ensure");
     try {
       mtx.acquire();
 
-      var tags = new LinkedList<DBTag>();
+      var result = new TagCreationResult(new LinkedList<>(), new LinkedList<>());
       var created = new LinkedList<DBTag>();
 
       for (var descriptor : descriptors) {
+        var others = getAllFromTree(descriptor.name);
+        if (others != null && !others.isEmpty()) {
+          boolean foundUserland = false;
+          if (others.stream().anyMatch(t -> !t.category.equalsIgnoreCase(TagCategory.USERLAND.name))) {
+            // Found a system tag, block creation
+            result.addMessage(tagConflictRefusal(descriptor.name));
+            continue;
+          }
+        }
+
         var existing = getTag(descriptor);
         if (existing == null) {
           // create the tag, ensuring userland enforcement is respected
@@ -203,15 +198,16 @@ public class TagManager {
           }
         }
 
-        tags.add(existing);
+        result.addTag(existing);
       }
 
-      // ensure our new tags are in the cache
+      // ensure our new tags are in the cache. don't add/append until we're done iterating to avoid
+      // cache getting an entry when an exception is thrown
       for (var tag : created) {
         addOrAppend(tag);
       }
 
-      return tags;
+      return result;
     } finally {
       mtx.release();
     }
@@ -649,5 +645,9 @@ public class TagManager {
 
   private String formatTag(String tag) {
     return tag.toLowerCase().trim();
+  }
+
+  private String tagConflictRefusal(String tagName) {
+    return "Refused to create tag \"" + tagName + "\" due to conflicting system tag of the same name.";
   }
 }

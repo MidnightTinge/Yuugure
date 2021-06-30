@@ -186,7 +186,11 @@ public class RouteUpload extends Route {
 
                             var handle = h.begin();
                             try {
-                              ret.addAll(App.tagManager().ensureAll(tags, true, handle));
+                              var ensured = App.tagManager().ensureAll(tags, true, handle);
+
+                              ret.addAll(ensured.tags);
+                              ensured.messages.forEach(uploadResult::addNotice);
+
                               handle.commit();
                             } catch (Exception e) {
                               logger.error("(upload) Failed to ensure tags \"{}\".", tags.stream().map(t -> t.name).collect(Collectors.joining(", ")), e);
@@ -197,7 +201,9 @@ public class RouteUpload extends Route {
                           });
 
                           if (dbtags == null || dbtags.isEmpty()) {
-                            uploadResult.addError("Failed to ensure tags, please try again later.");
+                            if (uploadResult.getNotices().isEmpty()) {
+                              uploadResult.addError("Failed to ensure tags, please try again later.");
+                            } // else: we already reported the TagCreationResult messages.
                           } else {
                             var inserted = App.database().jdbi().withHandle(h -> {
                               var handle = h.begin();

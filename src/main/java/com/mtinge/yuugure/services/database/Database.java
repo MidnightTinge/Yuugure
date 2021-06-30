@@ -479,8 +479,8 @@ public class Database implements IService {
         .execute();
 
       var tds = App.tagManager().ensureAll(result.tags().stream().map(TagDescriptor::parse).collect(Collectors.toList()), false);
-      if (!tds.isEmpty()) {
-        if (addTagsToUpload(result.dequeued().upload.id, tds, handle)) {
+      if (!tds.tags.isEmpty()) {
+        if (addTagsToUpload(result.dequeued().upload.id, tds.tags, handle)) {
           var curTags = handle.createQuery("SELECT tag FROM upload_tags WHERE upload = :upload")
             .bind("upload", result.dequeued().upload.id)
             .map((r, __) -> r.getInt("tag"))
@@ -489,6 +489,9 @@ public class Database implements IService {
         } else {
           logger.warn("Failed to set tags for upload {} while handing a processor result.", result.dequeued().upload.id);
         }
+      } else {
+        logger.warn("Failed to create tags for upload {} while handling a processor result. Messages:", result.dequeued().upload.id);
+        tds.messages.forEach(logger::warn);
       }
 
       handle.commit();

@@ -210,11 +210,13 @@ public class CLI implements IService {
                         var descriptor = TagDescriptor.parse(tagName);
                         if (descriptor != null) {
                           try {
-                            var tag = App.tagManager().createTag(descriptor);
-                            if (tag != null) {
+                            var res = App.tagManager().createTag(descriptor);
+                            if (!res.tags.isEmpty()) {
+                              var tag = res.tags.get(0);
                               System.out.println("Created tag " + tag.id + " (" + tag.name + ")");
                             } else {
-                              System.out.println("Failed to create tag, tagManager returned null.");
+                              System.err.println("Failed to create tags. From tagManager:");
+                              res.messages.forEach(System.err::println);
                             }
                           } catch (IllegalArgumentException iae) {
                             System.out.println("Failed to create tag: " + iae.getMessage());
@@ -344,7 +346,9 @@ public class CLI implements IService {
                             if (descriptor == null) {
                               System.out.println("Skipping tag " + tagName + " due to invalid format. Expected \"name:type\".");
                             } else {
-                              tags.add(App.tagManager().ensureTag(descriptor));
+                              var ensured = App.tagManager().ensureTag(descriptor);
+                              tags.addAll(ensured.tags);
+                              ensured.messages.forEach(System.err::println);
                             }
                           }
 
@@ -371,7 +375,9 @@ public class CLI implements IService {
                             if (descriptor == null) {
                               System.out.println("Skipping tag " + tagName + " due to invalid format. Expected \"name:type\".");
                             } else {
-                              tags.add(App.tagManager().ensureTag(descriptor));
+                              var ensured = App.tagManager().ensureTag(descriptor);
+                              tags.addAll(ensured.tags);
+                              ensured.messages.forEach(System.err::println);
                             }
                           }
 
