@@ -443,8 +443,18 @@ public class TagManager {
         var suffix = formatTag(search.substring(idx + 1));
         _search(tagCache.getNode(), ret, TagSearch.middle(prefix, suffix), "");
       } else {
-        var fromTree = tagCache.getValueForExactKey(search);
-        if (fromTree != null) {
+        var td = TagDescriptor.parse(search);
+        if (td != null) {
+          var fromTree = tagCache.getValueForExactKey(td.name);
+          if (fromTree != null) {
+            for (var tag : fromTree) {
+              if (tag.category.equalsIgnoreCase(td.category.name)) {
+                ret.add(tag);
+              }
+            }
+          }
+        } else {
+          var fromTree = tagCache.getValueForExactKey(search);
           ret.addAll(fromTree);
         }
       }
