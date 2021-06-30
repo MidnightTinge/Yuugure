@@ -32,13 +32,13 @@ public class TagDescriptor {
     TagCategory category = null;
     String name = null;
     int iof = input.indexOf(':');
-    if (iof >= 0) {
+    if (iof >= 0 && iof < input.length() - 1) {
       var cat = input.substring(0, iof).toUpperCase().trim();
+      name = input.substring(iof + 1);
       try {
         category = TagCategory.valueOf(cat);
-        name = input.substring(iof + 1);
       } catch (IllegalArgumentException iae) {
-        logger.error("Got invalid category {}", cat, iae);
+        // ignored, assumed a tag like "16:9_aspect_ratio"
         if (defaultUserland) {
           category = TagCategory.USERLAND;
         }
@@ -48,7 +48,7 @@ public class TagDescriptor {
       category = TagCategory.USERLAND;
     }
 
-    return category == null || name == null ? null : new TagDescriptor(category, name);
+    return category == null ? null : new TagDescriptor(category, name);
   }
 
   /**
