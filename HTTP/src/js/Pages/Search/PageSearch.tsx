@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from 'react-query';
+import {useLocation} from 'react-router';
 import {useHistory} from 'react-router-dom';
 import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
@@ -17,8 +18,22 @@ export type PageSearchProps = {
   //
 };
 
+function parseLocation(): Record<string, any> {
+  if (document.location.search) {
+    return (document.location.search.startsWith('?') ? document.location.search.substring(1) : document.location.search)
+      .split('&')
+      .map(str => str.split('='))
+      .reduce((map: Record<string, any>, val, idx, arr) => {
+        map[decodeURIComponent(val[0])] = decodeURIComponent(val[1]);
+        return map;
+      }, {});
+  }
+  return {};
+}
+
 export default function PageSearch(props: PageSearchProps) {
   const history = useHistory();
+  const location = useLocation();
   const [query, setQuery] = useState<string>(null);
   const [page, setPage] = useState<number>(1);
 
@@ -55,38 +70,45 @@ export default function PageSearch(props: PageSearchProps) {
     refetchOnReconnect: 'always',
   });
 
-  // Update the browser URL
+  // Parse location params on URL change, update query/page if necessary.
+  // Fixes browser back/forward button navigation.
   useEffect(() => {
-    if (query != null && page != null) {
-      history.push(`/search?q=${encodeURIComponent(query)}&page=${encodeURIComponent(page)}`);
+    const {page: p, q} = parseLocation();
+
+    let _page, _query;
+    if (p != null && !isNaN(p)) {
+      _page = (p >> 0) || 1;
     }
-  }, [page, query]);
+    if (q != null && q.trim().length > 0) {
+      _query = q;
+    }
+
+    if (_query != null) {
+      if (_query !== query) {
+        setQuery(_query);
+      }
+      if (_page != null && _page !== page) {
+        setPage(_page);
+      }
+    }
+  }, [location]);
 
   // Update query/page from URL params on mount
   useEffect(function mounted() {
     if (document.location.search) {
-      let page = 1;
-      let query = null;
+      const {page, q} = parseLocation();
+      let _page = 1, _query = null;
 
-      if (document.location.search) {
-        let parsed = (document.location.search.startsWith('?') ? document.location.search.substring(1) : document.location.search)
-          .split('&')
-          .map(str => str.split('='))
-          .reduce((map: Record<string, any>, val, idx, arr) => {
-            map[decodeURIComponent(val[0])] = decodeURIComponent(val[1]);
-            return map;
-          }, {});
-        if (parsed.page != null && !isNaN(parsed.page)) {
-          page = parsed.page >> 0 || 1;
-        }
-        if (parsed.q != null) {
-          query = parsed.q;
-        }
+      if (page != null && !isNaN(page)) {
+        _page = page >> 0 || 1;
+      }
+      if (q != null && q.trim().length > 0) {
+        _query = q;
       }
 
-      if (query != null && query.trim().length > 0) {
-        setPage(page);
-        setQuery(query);
+      if (_query != null && _query.trim().length > 0) {
+        setPage(_page);
+        setQuery(_query);
       }
     }
 
@@ -99,10 +121,12 @@ export default function PageSearch(props: PageSearchProps) {
     e.preventDefault();
     setQuery(txtSearch.current.value);
     setPage(1);
+    history.push(`/search?q=${encodeURIComponent(txtSearch.current.value)}&page=${encodeURIComponent(1)}`);
   }
 
   function handlePaginationNav(page: number) {
     setPage(page);
+    history.push(`/search?q=${encodeURIComponent(query)}&page=${encodeURIComponent(page)}`);
   }
 
   return (
