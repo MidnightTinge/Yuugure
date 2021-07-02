@@ -10,6 +10,7 @@ import com.mtinge.yuugure.services.IService;
 import com.mtinge.yuugure.services.http.handlers.*;
 import com.mtinge.yuugure.services.http.routes.*;
 import com.mtinge.yuugure.services.http.ws.Listener;
+import com.mtinge.yuugure.services.http.ws.Lobby;
 import io.prometheus.client.exporter.MetricsServlet;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
@@ -187,5 +188,9 @@ public class WebServer implements IService {
   @Override
   public void stop() throws Exception {
     this.undertow.stop();
+  }
+
+  public Lobby lobby() {
+    return wsListener.getLobby();
   }
 }

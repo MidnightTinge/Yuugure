@@ -188,3 +188,39 @@ table upload_tags {
     (upload, tag) [unique]
   }
 }
+
+table upload_bookmark {
+  active  boolean [not null, default: `false`]
+  public  boolean [not null]
+  upload  int     [not null, ref:> upload.id]
+  account int     [not null, ref:> account.id]
+
+  indexes {
+    (upload, account) [pk]
+    upload
+    account
+    (upload, account) [unique, name: "bookmark_account_upload_pair_unique"]
+    (account, active)
+    (upload, active)
+    (upload, active, public)
+    (account, active, public)
+  }
+}
+
+table upload_vote {
+  active  boolean [not null, default: `false`]
+  is_up   boolean [not null, default: `false`]
+  upload  int     [not null, ref:> upload.id]
+  account int     [not null, ref:> account.id]
+
+  indexes {
+    (upload, account) [pk]
+    upload
+    account
+    active
+    (upload, account) [unique, name: "vote_account_upload_pair_unique"]
+    (account, active)
+    (upload, active)
+    (upload, active, is_up)
+  }
+}

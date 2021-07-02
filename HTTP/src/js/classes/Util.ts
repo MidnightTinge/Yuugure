@@ -20,6 +20,8 @@ export default class Util {
         owner: bulk.accounts[upload.owner],
         state: bulk.uploads[i].state,
         tags: bulk.uploads[i].tags.map(tid => bulk.tags[tid]),
+        votes: bulk.uploads[i].votes,
+        bookmarks: bulk.uploads[i].bookmarks,
       });
     }
 

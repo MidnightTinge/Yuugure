@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useCallback, useEffect, useReducer} from 'react';
+import {useCallback, useContext, useEffect, useReducer} from 'react';
 import namedContext from '../classes/NamedContext';
 import {XHR} from '../classes/XHR';
 
@@ -77,4 +77,10 @@ export default function AuthStateProvider({children}: any) {
       {children}
     </AuthStateContext.Provider>
   );
+}
+
+export function useAuthState() {
+  const context = useContext(AuthStateContext);
+
+  return context.state;
 }

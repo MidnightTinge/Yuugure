@@ -18,6 +18,7 @@ import lombok.experimental.Accessors;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.statement.Query;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -206,11 +207,11 @@ public class Database implements IService {
       .findFirst().orElse(null);
   }
 
-  public RenderableUpload makeUploadRenderable(DBUpload upload) {
-    return jdbi.withHandle(handle -> makeUploadRenderable(upload, handle));
+  public RenderableUpload makeUploadRenderable(DBUpload upload, @Nullable DBAccount accountContext) {
+    return jdbi.withHandle(handle -> makeUploadRenderable(upload, accountContext, handle));
   }
 
-  public RenderableUpload makeUploadRenderable(DBUpload upload, Handle handle) {
+  public RenderableUpload makeUploadRenderable(DBUpload upload, @Nullable DBAccount accountContext, Handle handle) {
     var media = getMediaById(upload.media, handle);
     var meta = getMediaMetaByMedia(upload.media, handle);
     var owner = SafeAccount.fromDb(getAccountById(upload.owner, handle));
@@ -218,17 +219,19 @@ public class Database implements IService {
       .stream()
       .map(SafeTag::fromDb)
       .collect(Collectors.toList());
+    var voteState = getVoteStateForUpload(upload.id, accountContext, handle);
+    var bookmarkState = getBookmarkStateForUpload(upload.id, accountContext, handle);
 
-    return new RenderableUpload(upload, media, meta, owner, tags);
+    return new RenderableUpload(upload, media, meta, owner, tags, voteState, bookmarkState);
   }
 
   /**
-   * Shorthand for {@link #makeUploadsRenderable(List, Handle)}
+   * Shorthand for {@link #makeUploadsRenderable(List, DBAccount, Handle)}
    *
-   * @see #makeUploadsRenderable(List, Handle)
+   * @see #makeUploadsRenderable(List, DBAccount, Handle)
    */
-  public BulkRenderableUpload makeUploadsRenderable(List<DBUpload> uploads) {
-    return jdbi.withHandle(handle -> makeUploadsRenderable(uploads, handle));
+  public BulkRenderableUpload makeUploadsRenderable(List<DBUpload> uploads, @Nullable DBAccount accountContext) {
+    return jdbi.withHandle(handle -> makeUploadsRenderable(uploads, accountContext, handle));
   }
 
   /**
@@ -240,13 +243,13 @@ public class Database implements IService {
    *
    * @return The list of renderable uploads.
    */
-  public BulkRenderableUpload makeUploadsRenderable(List<DBUpload> uploads, Handle handle) {
+  public BulkRenderableUpload makeUploadsRenderable(List<DBUpload> uploads, @Nullable DBAccount accountContext, Handle handle) {
     var mediaCache = new HashMap<Integer, DBMedia>();
     var metaCache = new HashMap<Integer, DBMediaMeta>();
     var ownerCache = new HashMap<Integer, SafeAccount>();
     var tagCache = new HashMap<Integer, SafeTag>();
 
-    var ret = new LinkedList<TaggedUpload>();
+    var ret = new LinkedList<ExtendedUpload>();
     for (var upload : uploads) {
       DBMedia media = mediaCache.get(upload.media);
       if (media == null) {
@@ -257,7 +260,7 @@ public class Database implements IService {
       // note: we cache on the media ID since that's our indexed association.
       DBMediaMeta meta = metaCache.get(upload.media);
       if (meta == null) {
-        meta = getMediaMetaByMedia(upload.media);
+        meta = getMediaMetaByMedia(upload.media, handle);
         metaCache.put(upload.media, meta);
       }
 
@@ -267,12 +270,18 @@ public class Database implements IService {
         ownerCache.put(upload.owner, owner);
       }
 
-      var tags = getTagsForUpload(upload.id);
+      var tags = getTagsForUpload(upload.id, handle);
       for (var tag : tags) {
         tagCache.putIfAbsent(tag.id, SafeTag.fromDb(tag));
       }
 
-      ret.add(new TaggedUpload(upload, tags.stream().map(t -> t.id).collect(Collectors.toList())));
+      // fetch active votes
+      var voteState = getVoteStateForUpload(upload.id, accountContext, handle);
+
+      // fetch public, active upload bookmarks
+      var bookmarkState = getBookmarkStateForUpload(upload.id, accountContext, handle);
+
+      ret.add(new ExtendedUpload(upload, tags.stream().map(t -> t.id).collect(Collectors.toList()), bookmarkState, voteState));
     }
 
     return new BulkRenderableUpload(ownerCache, tagCache, mediaCache, metaCache, ret);
@@ -309,13 +318,13 @@ public class Database implements IService {
     );
   }
 
-  public BulkRenderableUpload getRenderableUploadsForAccount(int accountId, UploadFetchParams params) {
+  public BulkRenderableUpload getRenderableUploadsForAccount(int accountId, UploadFetchParams params, @Nullable DBAccount accountContext) {
     return jdbi.withHandle(handle -> {
       var uploads = _uploadsForAccount(accountId, params, handle)
         .map(DBUpload.Mapper)
         .collect(Collectors.toList());
 
-      return makeUploadsRenderable(uploads, handle);
+      return makeUploadsRenderable(uploads, accountContext, handle);
     });
   }
 
@@ -605,11 +614,11 @@ public class Database implements IService {
     return makeCommentsRenderable(getCommentsForUpload(id, includeBadFlagged, handle), handle);
   }
 
-  public BulkRenderableUpload getIndexUploads(DBAccount context) {
+  public BulkRenderableUpload getIndexUploads(@Nullable DBAccount context) {
     return jdbi.withHandle(handle -> getIndexUploads(context, handle));
   }
 
-  public BulkRenderableUpload getIndexUploads(DBAccount context, Handle handle) {
+  public BulkRenderableUpload getIndexUploads(@Nullable DBAccount context, Handle handle) {
     Query uploadsQuery;
     if (context != null) {
       long badState = States.compute(States.Upload.DELETED, States.Upload.DMCA);
@@ -626,7 +635,7 @@ public class Database implements IService {
       .map(DBUpload.Mapper)
       .collect(Collectors.toList());
 
-    return makeUploadsRenderable(uploads, handle);
+    return makeUploadsRenderable(uploads, context, handle);
   }
 
   public boolean addTagsToUpload(int id, List<DBTag> tags) {
@@ -706,7 +715,7 @@ public class Database implements IService {
     return jdbi.inTransaction(handle -> getUploadsForSearch(ids, context, handle));
   }
 
-  public BulkRenderableUpload getUploadsForSearch(List<Integer> ids, DBAccount context, Handle handle) {
+  public BulkRenderableUpload getUploadsForSearch(List<Integer> ids, @Nullable DBAccount context, Handle handle) {
     if (ids.isEmpty()) {
       return new BulkRenderableUpload(Map.of(), Map.of(), Map.of(), Map.of(), List.of());
     }
@@ -728,7 +737,84 @@ public class Database implements IService {
       .map(DBUpload.Mapper)
       .collect(Collectors.toList());
 
-    return makeUploadsRenderable(uploads, handle);
+    return makeUploadsRenderable(uploads, context, handle);
   }
 
+  public List<DBUploadVote> getVotesForUpload(int uploadId, boolean includeInactive) {
+    return jdbi.withHandle(handle -> getVotesForUpload(uploadId, includeInactive, handle));
+  }
+
+  public List<DBUploadVote> getVotesForUpload(int uploadId, boolean includeInactive, Handle handle) {
+    Query query;
+    if (includeInactive) {
+      query = handle.createQuery("SELECT * FROM upload_vote WHERE upload = :upload")
+        .bind("upload", uploadId);
+    } else {
+      query = handle.createQuery("SELECT * FROM upload_vote WHERE upload = :upload AND active")
+        .bind("upload", uploadId);
+    }
+
+    return query.map(DBUploadVote.Mapper).collect(Collectors.toList());
+  }
+
+  public UploadVoteState getVoteStateForUpload(int uploadId, @Nullable DBAccount accountContext, Handle handle) {
+    var dbVotes = getVotesForUpload(uploadId, false);
+
+    DBUploadVote ourVote = null;
+    int totalUpvotes = 0;
+    int totalDownvotes = 0;
+
+    for (var vote : dbVotes) {
+      if (vote.isUp) {
+        totalUpvotes++;
+      } else {
+        totalDownvotes++;
+      }
+
+      if (accountContext != null && ourVote == null) {
+        if (vote.account == accountContext.id) {
+          ourVote = vote;
+        }
+      }
+    }
+
+    return new UploadVoteState(totalUpvotes, totalDownvotes, ourVote != null, ourVote != null && ourVote.isUp);
+  }
+
+  public List<DBUploadBookmark> getBookmarksForUpload(int uploadId, BookmarkFetchParams fetchParams) {
+    return jdbi.withHandle(handle -> getBookmarksForUpload(uploadId, fetchParams, handle));
+  }
+
+  public List<DBUploadBookmark> getBookmarksForUpload(int uploadId, BookmarkFetchParams fetchParams, Handle handle) {
+    Query query;
+    String sql;
+    if (fetchParams.includePrivate) {
+      sql = "SELECT * FROM upload_bookmark WHERE upload = :upload";
+    } else {
+      sql = "SELECT * FROM upload_bookmark WHERE upload = :upload AND public";
+    }
+
+    if (!fetchParams.includeInactive) {
+      sql += " AND active";
+    }
+
+    return handle.createQuery(sql)
+      .bind("upload", uploadId)
+      .map(DBUploadBookmark.Mapper)
+      .collect(Collectors.toList());
+  }
+
+  public UploadBookmarkState getBookmarkStateForUpload(int uploadId, @Nullable DBAccount accountContext, Handle handle) {
+    var dbBookmarks = getBookmarksForUpload(uploadId, new BookmarkFetchParams(false, false));
+    DBUploadBookmark ourBookmark = null;
+    if (accountContext != null) {
+      ourBookmark = handle.createQuery("SELECT * FROM upload_bookmark WHERE upload = :upload AND account = :account AND active")
+        .bind("upload", uploadId)
+        .bind("account", accountContext.id)
+        .map(DBUploadBookmark.Mapper)
+        .findFirst().orElse(null);
+    }
+
+    return new UploadBookmarkState(dbBookmarks.size(), ourBookmark != null, ourBookmark != null && ourBookmark.isPublic);
+  }
 }

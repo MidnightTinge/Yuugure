@@ -1,11 +1,9 @@
 import * as React from 'react';
 import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
 import {useParams} from 'react-router';
-import {useHistory} from 'react-router-dom';
-import {AutoSizer, CellMeasurer, CellMeasurerCache, List, ListRowProps} from 'react-virtualized';
+import namedContext from '../../classes/NamedContext';
 import {XHR} from '../../classes/XHR';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
-import Comment from '../../Components/Comment';
 
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
 import InternalRoute from '../../Components/InternalNav/InternalRoute';
@@ -14,65 +12,144 @@ import InternalSwitch from '../../Components/InternalNav/InternalSwitch';
 import useInternalNavigator from '../../Components/InternalNav/useInternalNavigator';
 import ListGroup from '../../Components/ListGroup/ListGroup';
 import {CloseSource} from '../../Components/Modal/Modal';
-import NewCommentBlock from '../../Components/modals/NewCommentBlock';
 import ReportModal from '../../Components/modals/ReportModal';
 import Spinner from '../../Components/Spinner';
 import UploadViewer from '../../Components/UploadViewer/UploadViewer';
-import {AuthStateContext} from '../../Context/AuthStateProvider';
+import {useAuthState} from '../../Context/AuthStateProvider';
 import {WebSocketContext} from '../../Context/WebSocketProvider';
 import NotFound from '../404/NotFound';
+import BookmarkFavBar, {Action, ActionHandler, BookmarkState} from './BookmarkFavBar/BookmarkFavBar';
+import useCommentsReducer, {CommentsState} from './ViewerComments/CommentsReducer';
+import ViewerComments from './ViewerComments/ViewerComments';
+import ViewerDetails from './ViewerDetails';
+import ViewerTags from './ViewerTags';
 
-type CommentsState = {
-  fetching: boolean;
+const UploadAction = Object.freeze({
+  SET: 'set',
+  PARTIAL: 'partial',
+
+  UPLOAD_SET: 'set/upload',
+
+  BOOKMARK_ADDED: 'bookmarks/total_added',
+  BOOKMARK_REMOVED: 'bookmarks/total_removed',
+  BOOKMARKS_SET: 'bookmarks/set',
+
+  VOTE_SWAPPED: 'votes/swapped',
+  VOTE_ADDED: 'votes/added',
+  VOTE_REMOVED: 'votes/removed',
+  VOTES_SET: 'votes/set',
+});
+
+type UploadState = {
+  fetched: boolean;
   error: string;
-  comments: RenderableComment[];
+  upload: RenderableUpload;
 }
 
-function CommentsReducer(state: CommentsState, action: { type: string, payload?: any }): CommentsState {
+function UploadReducer(state: UploadState, action: ReducerAction): UploadState {
   switch (action.type) {
-    case 'fetching/fetching': {
-      return {
-        ...state,
-        fetching: action.payload,
-      };
+    case UploadAction.SET: {
+      return {...action.payload};
     }
-    case 'fetching/error': {
-      return {
-        ...state,
-        error: action.payload,
-      };
-    }
-    case 'fetching/set': {
+    case UploadAction.PARTIAL: {
       return {
         ...state,
         ...action.payload,
       };
     }
-    case 'comments/add': {
-      let payload = Array.isArray(action.payload) ? action.payload : [action.payload];
+    case UploadAction.UPLOAD_SET: {
       return {
         ...state,
-        comments: [...payload, ...state.comments],
+        upload: {...action.payload},
       };
     }
-    case 'comments/remove': {
-      return {
-        ...state,
-        comments: state.comments.filter(x => x.id !== action.payload.id),
-      };
+
+    case UploadAction.BOOKMARK_ADDED: {
+      // someone added a bookmark
+
+      if (state.upload) {
+        const toSet = Object.assign({}, state);
+        toSet.upload.bookmarks = Object.assign({}, toSet.upload.bookmarks, {
+          total_public: toSet.upload.bookmarks.total_public + 1,
+        });
+
+        return toSet;
+      }
+      return state;
     }
-    case 'comments/update': {
-      return {
-        ...state,
-        comments: state.comments.map(x => x.id === action.payload.id ? {...x, ...action.payload} : x),
-      };
+    case UploadAction.BOOKMARK_REMOVED: {
+      // someone removed a bookmark
+
+      if (state.upload) {
+        const toSet = Object.assign({}, state);
+        toSet.upload.bookmarks = Object.assign({}, toSet.upload.bookmarks, {
+          total_public: toSet.upload.bookmarks.total_public - 1,
+        });
+
+        return toSet;
+      }
+      return state;
     }
-    case 'comments/set': {
-      let payload = Array.isArray(action.payload) ? action.payload : [action.payload];
-      return {
-        ...state,
-        comments: [...payload],
-      };
+    case UploadAction.BOOKMARKS_SET: {
+      if (state.upload) {
+        const toSet = Object.assign({}, state);
+        toSet.upload.bookmarks = Object.assign({}, toSet.upload.bookmarks, action.payload);
+
+        return toSet;
+      }
+      return state;
+    }
+
+    case UploadAction.VOTE_SWAPPED: {
+      // someone swapped one vote type for another (up->down/down->up)
+
+      if (state.upload) {
+        const toSet = Object.assign({}, state);
+        toSet.upload.votes = Object.assign({}, toSet.upload.votes, {
+          // subtract 1 from downvotes if we swapped to an upvote
+          total_downvotes: toSet.upload.votes.total_downvotes + (action.payload.upvote ? -1 : 1),
+          // add 1 to upvotes if we swapped to an upvote
+          total_upvotes: toSet.upload.votes.total_upvotes + (action.payload.upvote ? 1 : -1),
+        });
+
+        return toSet;
+      }
+      return state;
+    }
+    case UploadAction.VOTE_ADDED: {
+      // someone added a new vote
+
+      if (state.upload) {
+        const toSet = Object.assign({}, state);
+
+        let toMerge: Partial<UploadVoteState> = (action.payload.upvote) ? ({total_upvotes: toSet.upload.votes.total_upvotes + 1}) : ({total_downvotes: toSet.upload.votes.total_downvotes + 1});
+        toSet.upload.votes = Object.assign({}, toSet.upload.votes, toMerge);
+
+        return toSet;
+      }
+      return state;
+    }
+    case UploadAction.VOTE_REMOVED: {
+      // someone removed a vote
+
+      if (state.upload) {
+        const toSet = Object.assign({}, state);
+
+        let toMerge: Partial<UploadVoteState> = (action.payload.upvote) ? ({total_upvotes: toSet.upload.votes.total_upvotes - 1}) : ({total_downvotes: toSet.upload.votes.total_downvotes - 1});
+        toSet.upload.votes = Object.assign({}, toSet.upload.votes, toMerge);
+
+        return toSet;
+      }
+      return state;
+    }
+    case UploadAction.VOTES_SET: {
+      if (state.upload) {
+        const toSet = Object.assign({}, state);
+        toSet.upload.votes = Object.assign({}, toSet.upload.votes, action.payload);
+
+        return toSet;
+      }
+      return state;
     }
   }
 
@@ -83,20 +160,25 @@ export type PageViewProps = {
   //
 };
 
+type PageViewContextProps = {
+  upload: Nullable<RenderableUpload>,
+  comments: CommentsState,
+}
+export const PageViewContext = namedContext<PageViewContextProps>('PageViewContext', {upload: null, comments: {comments: [], fetching: false, error: null}});
+
 export default function PageView(props: PageViewProps) {
   const params = useParams<{ uploadId: string }>();
-  const history = useHistory();
-  const {state: authState} = useContext(AuthStateContext);
+  const authState = useAuthState();
   const navigator = useInternalNavigator(true);
-  const [fetched, setFetched] = useState(false);
-  const [error, setError] = useState<string>(null);
-  const [upload, setUpload] = useState<RenderableUpload>(null);
   const [got404, setGot404] = useState(false);
   const [censored, setCensored] = useState(false);
   const [constrain, setConstrain] = useState(true);
   const [showReport, setShowReport] = useState(false);
 
-  const [comments, commentsDispatch] = useReducer(CommentsReducer, {comments: [], fetching: false, error: null}, () => ({comments: [], fetching: false, error: null}));
+  const [renderable, uploadDispatch] = useReducer(UploadReducer, {fetched: false, error: null, upload: null}, () => ({fetched: false, error: null, upload: null}));
+  const {upload, fetched, error} = renderable;
+
+  const [comments, commentsDispatch] = useCommentsReducer();
 
   const reportable = useMemo<{ type: string, id: number }>(() => (upload ? {type: 'upload', id: upload.upload.id} : {type: null, id: null}), [upload]);
 
@@ -109,23 +191,47 @@ export default function PageView(props: PageViewProps) {
       }
     }
 
+    function handleVote(packet: VotesUpdatedPacket) {
+      switch (packet.action) {
+        case 'add': {
+          uploadDispatch({type: UploadAction.VOTE_ADDED, payload: {upvote: packet.upvote}});
+          break;
+        }
+        case 'remove': {
+          uploadDispatch({type: UploadAction.VOTE_REMOVED, payload: {upvote: packet.upvote}});
+          break;
+        }
+        case 'swap': {
+          uploadDispatch({type: UploadAction.VOTE_SWAPPED, payload: {upvote: packet.upvote}});
+          break;
+        }
+      }
+    }
+
+    function handleBookmark(packet: BookmarksUpdatedPacket) {
+      uploadDispatch({type: packet.change === 'add' ? UploadAction.BOOKMARK_ADDED : UploadAction.BOOKMARK_REMOVED});
+    }
+
     if (params && params.uploadId) {
       if (ws != null) {
         ws.on('comment', handleComment);
+        ws.on('votes_updated', handleVote);
+        ws.on('bookmarks_updated', handleBookmark);
         rooms.join(`upload:${params.uploadId}`);
       }
 
       XHR.for(`/api/upload/${params.uploadId}`).get().getRouterResponse<RenderableUpload>().then(consumed => {
         if (consumed.success) {
-          setUpload(consumed.data[0]);
+          uploadDispatch({type: UploadAction.UPLOAD_SET, payload: consumed.data[0]});
         } else {
-          setError(consumed.message);
+          setGot404(consumed.code === 404);
+          uploadDispatch({type: UploadAction.PARTIAL, payload: {error: consumed.message}});
         }
       }).catch(err => {
         console.error('failed to get upload:', err);
-        setError(err.toString());
+        uploadDispatch({type: UploadAction.PARTIAL, payload: {error: err.toString()}});
       }).then(() => {
-        setFetched(true);
+        uploadDispatch({type: UploadAction.PARTIAL, payload: {fetched: true}});
       });
 
       commentsDispatch({type: 'fetch/fetching', payload: true});
@@ -147,6 +253,8 @@ export default function PageView(props: PageViewProps) {
       if (ws != null) { // ws shouldn't ever be null but just in case.
         rooms.leave(`upload:${params.uploadId}`);
         ws.removeEventHandler('comment', handleComment);
+        ws.removeEventHandler('bookmarks_updated', handleBookmark);
+        ws.removeEventHandler('votes_updated', handleVote);
       }
     };
   }, []);
@@ -155,26 +263,29 @@ export default function PageView(props: PageViewProps) {
     (window as any).CURRENT_UPLOAD = upload;
   }, [upload]);
 
-  const tags = useMemo(() => {
-    if (upload == null) {
-      return {user: [], system: []};
+  const bookmarkState: BookmarkState = useMemo(() => {
+    let ret: BookmarkState = {
+      bookmark: {
+        active: false,
+        isPrivate: false,
+      },
+      downvote: false,
+      upvote: false,
+    };
+
+    if (upload != null) {
+      ret = {
+        bookmark: {
+          active: upload.bookmarks.bookmarked,
+          isPrivate: !upload.bookmarks.bookmarked_publicly,
+        },
+        upvote: upload.votes.voted && upload.votes.is_upvote,
+        downvote: upload.votes.voted && !upload.votes.is_upvote,
+      };
     }
 
-    let user = [];
-    let system = [];
-    for (let tag of upload.tags) {
-      if (tag.category === 'userland') {
-        user.push(tag);
-      } else {
-        system.push(tag);
-      }
-    }
-
-    user.sort((a, b) => a.name.localeCompare(b.name));
-    system.sort((a, b) => a.name.localeCompare(b.name));
-
-    return {user, system};
-  }, [upload]);
+    return ret;
+  }, [upload?.bookmarks, upload?.votes]);
 
   function handleReport() {
     setShowReport(true);
@@ -195,13 +306,6 @@ export default function PageView(props: PageViewProps) {
     };
   }
 
-  function makeRedirector(to: string) {
-    return (e: React.MouseEvent<HTMLAnchorElement>) => {
-      e.preventDefault();
-      history.push(to);
-    };
-  }
-
   function closeModal() {
     setShowReport(false);
   }
@@ -212,148 +316,139 @@ export default function PageView(props: PageViewProps) {
     }
   }
 
-  const cellMeasurerCache = useMemo(() => {
-    return new CellMeasurerCache({
-      defaultHeight: 50,
-      fixedWidth: true,
-      keyMapper: (row) => {
-        return comments.comments[row].id;
-      },
-    });
-  }, [comments]);
+  const handleBookmarkBarAction: ActionHandler = (action: Action) => {
+    if (upload == null) return;
 
-  function commentRowRenderer({key, index, style, parent}: ListRowProps): React.ReactNode {
-    return (
-      <CellMeasurer
-        cache={cellMeasurerCache}
-        columnIndex={0}
-        key={key}
-        rowIndex={index}
-        parent={parent}>
-        {({registerChild}) => (
-          <div ref={registerChild} style={style} className="px-2 py-0.5">
-            <Comment comment={comments.comments[index]}/>
-          </div>
-        )}
-      </CellMeasurer>
-    );
-  }
+    let url = `/api/upload/${upload.upload.id}`;
+    if (action.type === 'bookmark') {
+      url += `/bookmark?private=${!action.args.public}`;
+    } else if (action.type === 'vote') {
+      url += `/${action.args.upvote ? 'upvote' : 'downvote'}`;
+    }
+
+    (action.args.remove ? XHR.for(url).delete(XHR.BODY_TYPE.NONE) : XHR.for(url).patch(XHR.BODY_TYPE.NONE))
+      .getRouterResponse<boolean>()
+      .then(consumed => {
+        if (consumed.success) {
+          let [updated] = consumed.data;
+          if (updated) {
+            // note: I'm having issues getting consistent results using spread, not sure if I'm
+            //       doing something wrong or what but I'm moving forward with assign until I can
+            //       figure out what exactly is wrong. My main concern right now is to get this
+            //       functional.
+            if (action.type === 'bookmark') {
+              const bookmarks = Object.assign({}, upload.bookmarks, {
+                bookmarked_publicly: action.args.public === true,
+                bookmarked: !action.args.remove,
+              });
+
+              uploadDispatch({type: UploadAction.BOOKMARKS_SET, payload: bookmarks});
+            } else if (action.type === 'vote') {
+              const votes = Object.assign({}, upload.votes, {
+                is_upvote: action.args.upvote === true,
+                voted: !action.args.remove,
+              });
+
+              uploadDispatch({type: UploadAction.VOTES_SET, payload: votes});
+            }
+          }
+        }
+      })
+      .catch(err => {
+        console.error('Failed to update bookmark state:', err);
+      });
+  };
 
   return (
-    <>
-      <ReportModal targetType={reportable.type} targetId={reportable.id} onCloseRequest={handleCloseRequest} show={showReport}/>
-      {!fetched ? (
-        <div className="flex flex-col w-full h-full items-center justify-center">
-          <div className="flex-shrink">
-            <div className="block text-center">
-              <i className="fas fa-circle-notch fa-spin fa-4x text-gray-300"/>
+    <PageViewContext.Provider value={{upload, comments}}>
+      <>
+        <ReportModal targetType={reportable.type} targetId={reportable.id} onCloseRequest={handleCloseRequest} show={showReport}/>
+        {!fetched ? (
+          <div className="flex flex-col w-full h-full items-center justify-center">
+            <div className="flex-shrink">
+              <div className="block text-center">
+                <i className="fas fa-circle-notch fa-spin fa-4x text-gray-300"/>
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        (error || !upload ? (
-          got404 ? (
-            <NotFound/>
-          ) : (
-            <CenteredBlockPage pageBackground="bg-red-50" cardBackground="bg-red-200" cardBorder="border-red-300">
-              <p className="text-center">Failed to request the upload from the server. Please try again.</p>
-              <p className="text-sm mt-4">Error:</p>
-              <p className="block ml-2 text-sm whitespace-pre-wrap text-gray-800">{error || 'An internal server error occurred. No upload was returned by the server.'}</p>
-            </CenteredBlockPage>
-          )
         ) : (
-          <InternalRouter defaultPath="view">
-            <div className="grid grid-cols-12 gap-2 p-2 pb-0 h-full">
-              <div className="col-span-4 md:col-span-2">
-                <section className="text-right">
-                  {authState && authState.authed ? (
+          (error || !upload ? (
+            got404 ? (
+              <NotFound/>
+            ) : (
+              <CenteredBlockPage pageBackground="bg-red-50" cardBackground="bg-red-200" cardBorder="border-red-300">
+                <p className="text-center">Failed to request the upload from the server. Please try again.</p>
+                <p className="text-sm mt-4">Error:</p>
+                <p className="block ml-2 text-sm whitespace-pre-wrap text-gray-800">{error || 'An internal server error occurred. No upload was returned by the server.'}</p>
+              </CenteredBlockPage>
+            )
+          ) : (
+            <InternalRouter defaultPath="view">
+              <div className="grid grid-cols-12 gap-2 p-2 pb-0 h-full">
+                <div className="col-span-4 md:col-span-2">
+                  <section className="text-right">
+                    {authState && authState.authed ? (
+                      <div>
+                        {authState.account.id === upload.owner.id ? (
+                          <button onClick={handleDelete} className="text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Delete</button>
+                        ) : null}
+                        <button onClick={handleReport} className="ml-1 text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Report</button>
+                      </div>
+                    ) : null}
                     <div>
-                      {authState.account.id === upload.owner.id ? (
-                        <button onClick={handleDelete} className="text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Delete</button>
-                      ) : null}
-                      <button onClick={handleReport} className="ml-1 text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Report</button>
+                      <a href={`/full/${upload.upload.id}`} target="_blank" className="underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none">Direct Link</a>
+                      <button className="ml-1 underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none" onClick={handleToggleResize}>Toggle Resize</button>
                     </div>
-                  ) : null}
-                  <div>
-                    <a href={`/full/${upload.upload.id}`} target="_blank" className="underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none">Direct Link</a>
-                    <button className="ml-1 underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none" onClick={handleToggleResize}>Toggle Resize</button>
-                  </div>
-                </section>
-                <section className="mt-2">
-                  <InternalNavContext.Consumer>
-                    {({path = ''}) => (
-                      <ListGroup>
-                        <ListGroup.Item active={path === 'view'} onClick={makeInternalNavigator('view')}><i className="fas fa-image"/> View</ListGroup.Item>
-                        <ListGroup.Item active={path === 'comments'} onClick={makeInternalNavigator('comments')}>
-                          <i className="fas fa-comment-alt" aria-hidden={true}/> Comments
-                          <span className="inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg bg-blue-100 border border-blue-200 text-blue-400 opacity-95 shadow">
+                  </section>
+                  <section className="mt-2">
+                    <InternalNavContext.Consumer>
+                      {({path = ''}) => (
+                        <ListGroup>
+                          <ListGroup.Item active={path === 'view'} onClick={makeInternalNavigator('view')}><i className="fas fa-image"/> View</ListGroup.Item>
+                          <ListGroup.Item active={path === 'comments'} onClick={makeInternalNavigator('comments')}>
+                            <i className="fas fa-comment-alt" aria-hidden={true}/> Comments
+                            <span className="inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg bg-blue-100 border border-blue-200 text-blue-400 opacity-95 shadow">
                               {comments.fetching ? (<Spinner/>) : (comments.comments.length)}
                             </span>
-                        </ListGroup.Item>
-                        <ListGroup.Item active={path === 'edit'} onClick={makeInternalNavigator('edit')}><i className="fas fa-pencil-alt"/> Edit</ListGroup.Item>
-                        <ListGroup.Item active={path === 'actions'} onClick={makeInternalNavigator('actions')}><i className="fas fa-wrench"/> Actions</ListGroup.Item>
-                      </ListGroup>
-                    )}
-                  </InternalNavContext.Consumer>
-                </section>
-                <section className="mt-2">
-                  <div className="rounded bg-gray-200 border border-gray-300 shadow-sm">
-                    <div className="py-0.5 text-center text-gray-800 border-b border-gray-300">Tags</div>
-                    <div className="p-2">
-                      {tags.system.map(tag => (<div key={tag.id}><a href={`/search?q=${encodeURIComponent(`${tag.category}:${tag.name}`)}`} onClick={makeRedirector(`/search?q=${encodeURIComponent(`${tag.category}:${tag.name}`)}`)} className="whitespace-pre-wrap break-all text-gray-700 hover:underline hover:text-gray-500" data-tag={tag.id} data-category={tag.category} data-name={tag.name}>{tag.category}:{tag.name}</a></div>))}
-                      {tags.user.map(tag => (<div key={tag.id}><a href={`/search?q=${encodeURIComponent(tag.name)}`} onClick={makeRedirector(`/search?q=${encodeURIComponent(tag.name)}`)} className="whitespace-pre-wrap break-all text-gray-700 hover:underline hover:text-gray-500" data-tag={tag.id} data-category={tag.category} data-name={tag.name}>{tag.name}</a></div>))}
-                    </div>
-                  </div>
-                </section>
+                          </ListGroup.Item>
+                          <ListGroup.Item active={path === 'edit'} onClick={makeInternalNavigator('edit')}><i className="fas fa-pencil-alt"/> Edit</ListGroup.Item>
+                          <ListGroup.Item active={path === 'actions'} onClick={makeInternalNavigator('actions')}><i className="fas fa-wrench"/> Actions</ListGroup.Item>
+                        </ListGroup>
+                      )}
+                    </InternalNavContext.Consumer>
+                  </section>
+                  {/* the box-shadow on the internal navigation makes the spacing here a bit wonky */}
+                  <section className="mt-1.5">
+                    <BookmarkFavBar resourceType="upload" bookmarkState={bookmarkState} onAction={handleBookmarkBarAction} resourceId={upload.upload.id}/>
+                  </section>
+                  <section className="mt-1">
+                    <ViewerDetails/>
+                  </section>
+                  <section className="mt-1">
+                    <ViewerTags/>
+                  </section>
+                </div>
+                <div className="col-span-8 md:col-span-10">
+                  <InternalSwitch>
+                    <InternalRoute path="comments">
+                      <ViewerComments/>
+                    </InternalRoute>
+                    <InternalRoute path="edit">
+                      <p>hello edit</p>
+                    </InternalRoute>
+                    <InternalRoute path="actions">
+                      <p>hello actions</p>
+                    </InternalRoute>
+                    <InternalRoute path="*">
+                      <UploadViewer upload={upload.upload} media={upload.media} censored={censored} constrained={constrain}/>
+                    </InternalRoute>
+                  </InternalSwitch>
+                </div>
               </div>
-              <div className="col-span-8 md:col-span-10">
-                <InternalSwitch>
-                  <InternalRoute path="comments">
-                    <div className="flex flex-col h-full">
-                      {authState.authed || comments.error ? (
-                        <div className="bg-gray-100 border border-gray-200 rounded-sm shadow px-3 py-1 mb-2 flex-grow-0 flex-shrink">
-                          {comments.error ? (<p className="text-red-500 text-lg whitespace-pre-wrap">{error}</p>) : null}
-                          {authState.authed ? (
-                            authState.account.state.COMMENTS_RESTRICTED ? (
-                              <p className="text-center text-red-500 text-lg">You are restricted from creating new comments.</p>
-                            ) : (
-                              <NewCommentBlock targetType="upload" targetId={upload.upload.id}/>
-                            )
-                          ) : null}
-                        </div>
-                      ) : null}
-                      <div className="flex-grow flex-shrink-0">
-                        <AutoSizer>
-                          {({width, height}) => (
-                            <List
-                              width={width}
-                              height={height}
-                              deferredMeasurementCache={cellMeasurerCache}
-                              overscanRowCount={0}
-                              rowCount={comments.comments.length}
-                              rowHeight={({index}) => cellMeasurerCache.getHeight(index, 0)}
-                              rowRenderer={commentRowRenderer}
-                            />
-                          )}
-                        </AutoSizer>
-                      </div>
-                    </div>
-                  </InternalRoute>
-                  <InternalRoute path="edit">
-                    <p>hello edit</p>
-                  </InternalRoute>
-                  <InternalRoute path="actions">
-                    <p>hello actions</p>
-                  </InternalRoute>
-                  <InternalRoute path="*">
-                    <UploadViewer upload={upload.upload} media={upload.media} censored={censored} constrained={constrain}/>
-                  </InternalRoute>
-                </InternalSwitch>
-              </div>
-            </div>
-          </InternalRouter>
-        ))
-      )}
-    </>
+            </InternalRouter>
+          ))
+        )}
+      </>
+    </PageViewContext.Provider>
   );
 }

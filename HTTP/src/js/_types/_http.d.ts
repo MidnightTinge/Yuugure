@@ -49,6 +49,8 @@ type RenderableUpload = {
     username: string;
   };
   state: UploadState;
+  votes: UploadVoteState;
+  bookmarks: UploadBookmarkState;
   tags: SafeTag[];
 };
 
@@ -107,10 +109,25 @@ type SafeTag = {
   category: string;
 }
 
-type TaggedUpload = {
+type UploadBookmarkState = {
+  total_public: number;
+  bookmarked: boolean;
+  bookmarked_publicly: boolean;
+}
+
+type UploadVoteState = {
+  total_upvotes: number;
+  total_downvotes: number;
+  voted: boolean;
+  is_upvote: boolean;
+}
+
+type ExtendedUpload = {
   upload: DBUpload;
   state: UploadState;
   tags: number[];
+  bookmarks: UploadBookmarkState;
+  votes: UploadVoteState;
 }
 
 type BulkRenderableUpload = {
@@ -118,7 +135,7 @@ type BulkRenderableUpload = {
   tags: Record<number, SafeTag>;
   medias: Record<number, DBMedia>;
   metas: Record<number, DBMediaMeta>;
-  uploads: TaggedUpload[];
+  uploads: ExtendedUpload[];
 }
 
 type SearchPagination = {

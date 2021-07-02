@@ -62,7 +62,7 @@
     "webpack-stream": "^5.2.1"
   },
   "dependencies": {
-    "@popperjs/core": "^2.5.3",
+    "@popperjs/core": "^2.9.1",
     "anchorme": "^2.1.2",
     "crel": "^4.2.1",
     "debounce": "^1.2.0",
@@ -71,6 +71,7 @@
     "marked": "^2.0.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "react-popper": "^2.2.5",
     "react-query": "^3.18.1",
     "react-router": "^5.2.0",
     "react-router-dom": "^5.2.0",

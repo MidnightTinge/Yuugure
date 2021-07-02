@@ -17,15 +17,19 @@ public final class RenderableUpload {
   public final DBMediaMeta mediaMeta;
   public final SafeAccount owner;
   public final UploadState state;
+  public final UploadVoteState votes;
+  public final UploadBookmarkState bookmarks;
   public final List<SafeTag> tags;
 
-  public RenderableUpload(DBUpload upload, DBMedia media, DBMediaMeta mediaMeta, SafeAccount owner, List<SafeTag> tags) {
+  public RenderableUpload(DBUpload upload, DBMedia media, DBMediaMeta mediaMeta, SafeAccount owner, List<SafeTag> tags, UploadVoteState voteState, UploadBookmarkState bookmarkStatus) {
     this.upload = upload;
     this.media = media;
     this.mediaMeta = mediaMeta;
     this.owner = owner;
     this.tags = tags;
     this.state = UploadState.fromDb(upload);
+    this.votes = voteState;
+    this.bookmarks = bookmarkStatus;
   }
 
 }

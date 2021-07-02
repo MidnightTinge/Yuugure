@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useHistory} from 'react-router-dom';
+import Util from '../../classes/Util';
 
 
 export type MediaPreviewProps = {
@@ -38,17 +39,17 @@ export default function MediaPreview({upload}: MediaPreviewProps) {
         </div>
       </div>
       <div className="DetailsWrapper">
-        <div className="Detail" title="Public Favorites" data-detail="favorites" data-detail-value={0/* TODO */}>
+        <div className={Util.joinedClassName('Detail', upload.bookmarks.bookmarked ? 'text-pink-500' : null)} title="Public Favorites" data-detail="favorites" data-detail-value={upload.bookmarks.total_public}>
           <i className="fas fa-heart"/>
-          <span className="text-pink-500">0</span>
+          <span className="text-pink-500">{upload.bookmarks.total_public}</span>
         </div>
-        <div className="Detail" title="Upvotes" data-detail="downvotes" data-detail-value={0/* TODO */}>
+        <div className={Util.joinedClassName('Detail', (upload.votes.voted && upload.votes.is_upvote) ? 'text-green-500' : null)} title="Upvotes" data-detail="downvotes" data-detail-value={upload.votes.total_upvotes}>
           <i className="fas fa-chevron-up"/>
-          <span className="text-green-500">0</span>
+          <span className="text-green-500">{upload.votes.total_upvotes}</span>
         </div>
-        <div className="Detail" title="Downvotes" data-detail="downvotes" data-detail-value={0/* TODO */}>
+        <div className={Util.joinedClassName('Detail', (upload.votes.voted && !upload.votes.is_upvote) ? 'text-red-500' : null)} title="Downvotes" data-detail="downvotes" data-detail-value={upload.votes.total_downvotes}>
           <i className="fas fa-chevron-down"/>
-          <span className="text-red-500">0</span>
+          <span className="text-red-500">{upload.votes.total_downvotes}</span>
         </div>
       </div>
     </div>

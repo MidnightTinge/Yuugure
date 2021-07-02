@@ -260,7 +260,7 @@ public class RouteUpload extends Route {
                                         .findFirst().orElse(null);
                                       if (pq != null) {
                                         uploadResult.setSuccess(true);
-                                        uploadResult.setUpload(App.database().makeUploadRenderable(toRet, handle));
+                                        uploadResult.setUpload(App.database().makeUploadRenderable(toRet, account, handle));
                                         handle.commit();
                                         handled = true;
 

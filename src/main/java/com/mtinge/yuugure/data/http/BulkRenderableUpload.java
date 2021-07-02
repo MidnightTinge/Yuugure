@@ -13,5 +13,5 @@ public class BulkRenderableUpload {
   public final Map<Integer, SafeTag> tags;
   public final Map<Integer, DBMedia> medias;
   public final Map<Integer, DBMediaMeta> metas;
-  public final List<TaggedUpload> uploads;
+  public final List<ExtendedUpload> uploads;
 }

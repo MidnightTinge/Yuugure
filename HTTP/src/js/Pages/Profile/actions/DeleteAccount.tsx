@@ -17,7 +17,7 @@ export default function DeleteAccount(props: DeleteAccountProps) {
 
   function handleAction() {
     makeDangerousPasswordConfirmation({
-      warningText: 'Your account will be deleted, your likes and votes will be removed from uploads, and your uploads will be removed. There is no way to undo this action.',
+      warningText: 'Your account will be deleted, your bookmarks and votes will be removed from uploads, and your uploads will be marked as deleted. There is no way to undo this action.',
       confirmPhrase: 'delete account',
     }).then((state) => {
       if (state.authed === true) {

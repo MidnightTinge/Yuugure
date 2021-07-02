@@ -7,14 +7,18 @@ import lombok.AllArgsConstructor;
 import java.util.List;
 
 @AllArgsConstructor
-public final class TaggedUpload {
+public final class ExtendedUpload {
   public final DBUpload upload;
   public final UploadState state;
   public final List<Integer> tags;
+  public final UploadBookmarkState bookmarks;
+  public final UploadVoteState votes;
 
-  public TaggedUpload(DBUpload upload, List<Integer> tags) {
+  public ExtendedUpload(DBUpload upload, List<Integer> tags, UploadBookmarkState bookmarks, UploadVoteState votes) {
     this.upload = upload;
     this.state = UploadState.fromDb(upload);
     this.tags = tags;
+    this.bookmarks = bookmarks;
+    this.votes = votes;
   }
 }

@@ -52,7 +52,7 @@ public class ProfileResource extends APIResource<DBAccount> {
       if (action.equalsIgnoreCase("uploads")) {
         if (MethodValidator.handleMethodValidation(exchange, Methods.GET, Methods.DELETE)) {
           if (exchange.getRequestMethod().equals(Methods.GET)) {
-            res.json(Response.good(App.database().getRenderableUploadsForAccount(resource.resource.id, new UploadFetchParams(false, authed != null && authed.id == resource.resource.id))));
+            res.json(Response.good(App.database().getRenderableUploadsForAccount(resource.resource.id, new UploadFetchParams(false, authed != null && authed.id == resource.resource.id), authed)));
           } else if (exchange.getRequestMethod().equals(Methods.DELETE)) {
             if (authed.id != resource.resource.id) {
               res.json(Response.fromCode(StatusCodes.FORBIDDEN));

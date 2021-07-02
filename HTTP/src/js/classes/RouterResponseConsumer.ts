@@ -1,6 +1,7 @@
 export type ConsumedRouterResponse<T> = {
   success: boolean;
   message: string;
+  code: number;
   data: T[];
 }
 
@@ -46,12 +47,14 @@ export default function RouterResponseConsumer<T = any>(response: RouterResponse
     return {
       success: response.code === 200,
       message: message,
+      code: response.code,
       data: data,
     };
   } else {
     return {
       success: false,
       message: MESSAGES[500],
+      code: -1,
       data: [],
     };
   }

@@ -126,7 +126,7 @@ export default function PageProfile(props: PageProfileProps) {
       }
     }).catch(err => {
       console.error('Failed to fetch uploads.', err);
-      setUploadsError(err.toString());
+      setUploadsError(err ? err.toString() : 'An internal server error occurred. Please try again later.');
     }).then(() => {
       setFetchingUploads(false);
     });
@@ -187,7 +187,7 @@ export default function PageProfile(props: PageProfileProps) {
                               {fetchingUploads ? (<Spinner/>) : (uploads.uploads.length)}
                             </span>
                           </ListGroup.Item>
-                          <ListGroup.Item active={path === 'likes'} onClick={makeNavigator('likes')}><i className="fas fa-heart" aria-hidden={true}/> Likes</ListGroup.Item>
+                          <ListGroup.Item active={path === 'bookmarks'} onClick={makeNavigator('bookmarks')}><i className="fas fa-bookmark" aria-hidden={true}/> Bookmarks</ListGroup.Item>
                           <ListGroup.Item active={path === 'votes'} onClick={makeNavigator('votes')}><i className="fas fa-check-circle" aria-hidden={true}/> Votes</ListGroup.Item>
                           {profile && profile.self ? (
                             <ListGroup.Item active={path === 'settings'} onClick={makeNavigator('settings')}><i className="fas fa-user-cog" aria-hidden={true}/> Settings</ListGroup.Item>
@@ -219,8 +219,8 @@ export default function PageProfile(props: PageProfileProps) {
                         )}
                       </div>
                     </InternalRoute>
-                    <InternalRoute path="likes">
-                      <p>hello likes</p>
+                    <InternalRoute path="bookmarks">
+                      <p>hello bookmarks</p>
                     </InternalRoute>
                     <InternalRoute path="votes">
                       <p>hello votes</p>
@@ -244,7 +244,7 @@ export default function PageProfile(props: PageProfileProps) {
                                 <td className="text-left">{uploads.uploads.length}</td>
                               </tr>
                               <tr>
-                                <th className="text-right pr-2">Likes</th>
+                                <th className="text-right pr-2">Bookmarks</th>
                                 <td className="text-left">{0 /*TODO*/}</td>
                               </tr>
                             </tbody>
