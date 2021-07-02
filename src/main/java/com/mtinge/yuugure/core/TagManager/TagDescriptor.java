@@ -40,6 +40,7 @@ public class TagDescriptor {
       } catch (IllegalArgumentException iae) {
         // ignored, assumed a tag like "16:9_aspect_ratio"
         if (defaultUserland) {
+          name = input;
           category = TagCategory.USERLAND;
         }
       }
