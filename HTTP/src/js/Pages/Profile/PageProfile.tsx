@@ -2,7 +2,7 @@ import * as React from 'react';
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {useParams} from 'react-router';
 
-import {AutoSizer, List, ListRowProps, Size} from 'react-virtualized';
+import {ListRowProps} from 'react-virtualized';
 import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
 import {AlertType} from '../../Components/Alerts/Alert/Alert';
@@ -24,6 +24,7 @@ import {WebSocketContext} from '../../Context/WebSocketProvider';
 import useUploadReducer from '../../Hooks/useUploadReducer';
 import NotFound from '../404/NotFound';
 import AccountSettings from './AccountSettings';
+import UploadsRenderer from './UploadsRenderer';
 
 export type PageProfileProps = {
   self?: boolean;
@@ -44,10 +45,14 @@ export default function PageProfile(props: PageProfileProps) {
   const [got404, setGot404] = useState(false);
 
   const [fetchingUploads, setFetchingUploads] = useState(false);
-  const [uploadsErrored, setUploadsErrored] = useState<boolean>(false);
+  const [uploadsErrored, setUploadsErrored] = useState(false);
+
+  const [fetchingBookmarks, setFetchingBookmarks] = useState(false);
+  const [bookmarksErrored, setBookmarksErrored] = useState(false);
 
   const [profile, setProfile] = useState<ProfileResponse>(null);
   const [uploads, uploadsDispatch, uploadActions] = useUploadReducer();
+  const [bookmarks, bDispatch, bActions] = useUploadReducer();
 
   const [showReport, setShowReport] = useState(false);
 
@@ -105,7 +110,6 @@ export default function PageProfile(props: PageProfileProps) {
     });
 
     return function unmounted() {
-
       setFetching(false);
       setFetched(false);
       setGot404(false);
@@ -120,6 +124,11 @@ export default function PageProfile(props: PageProfileProps) {
     if (accountId === lastAccountId) return;
     setLastAccountId(accountId);
 
+    reloadUploads();
+    reloadBookmarks();
+  }, [profile]);
+
+  function reloadUploads() {
     uploadActions.set([]);
     setFetchingUploads(true);
     XHR.for(`/api/profile/${accountId}/uploads`).get().getRouterResponse<BulkRenderableUpload>().then(consumed => {
@@ -130,7 +139,7 @@ export default function PageProfile(props: PageProfileProps) {
         setUploadsErrored(true);
         alerts.add({
           type: AlertType.ERROR,
-          header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Error</>),
+          header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Uploads Error</>),
           body: `Failed to fetch uploads.\n${consumed.message}`,
         });
       }
@@ -138,14 +147,42 @@ export default function PageProfile(props: PageProfileProps) {
       console.error('Failed to fetch uploads.', err);
       alerts.add({
         type: AlertType.ERROR,
-        header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Error</>),
+        header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Uploads Error</>),
         body: `Failed to fetch uploads.\n${err ? err.toString() : 'An internal server error occurred, please try again later.'}`,
       });
       setUploadsErrored(true);
     }).then(() => {
       setFetchingUploads(false);
     });
-  }, [profile]);
+  }
+
+  function reloadBookmarks() {
+    bActions.set([]);
+    setFetchingBookmarks(true);
+    XHR.for(`/api/profile/${accountId}/bookmarks`).get().getRouterResponse<BulkRenderableUpload>().then(consumed => {
+      if (consumed.success) {
+        bActions.set([...Util.mapBulkUploads(consumed.data[0])]);
+        setBookmarksErrored(false);
+      } else {
+        setBookmarksErrored(true);
+        alerts.add({
+          type: AlertType.ERROR,
+          header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Bookmarks Error</>),
+          body: `Failed to fetch bookmarks.\n${consumed.message}`,
+        });
+      }
+    }).catch(err => {
+      console.error('Failed to fetch bookmarks.', err);
+      alerts.add({
+        type: AlertType.ERROR,
+        header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Bookmarks Error</>),
+        body: `Failed to fetch bookmarks.\n${err ? err.toString() : 'An internal server error occurred, please try again later.'}`,
+      });
+      setUploadsErrored(true);
+    }).then(() => {
+      setFetchingBookmarks(false);
+    });
+  }
 
   function makeNavigator(to: string) {
     return (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -204,7 +241,14 @@ export default function PageProfile(props: PageProfileProps) {
                               )}
                             </span>
                           </ListGroup.Item>
-                          <ListGroup.Item active={path === 'bookmarks'} onClick={makeNavigator('bookmarks')}><i className="fas fa-bookmark" aria-hidden={true}/> Bookmarks</ListGroup.Item>
+                          <ListGroup.Item active={path === 'bookmarks'} onClick={makeNavigator('bookmarks')}>
+                            <i className="fas fa-bookmark" aria-hidden={true}/> Bookmarks
+                            <span className={`inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg border ${!bookmarksErrored ? 'bg-blue-100 border-blue-200 text-blue-400' : 'bg-red-100 border-red-200 text-red-400'} opacity-95 shadow`}>
+                              {fetchingBookmarks ? (<Spinner/>) : (
+                                bookmarksErrored ? (<i className="fas fa-exclamation-triangle text-xs"/>) : (bookmarks.uploads.length)
+                              )}
+                            </span>
+                          </ListGroup.Item>
                           <ListGroup.Item active={path === 'votes'} onClick={makeNavigator('votes')}><i className="fas fa-check-circle" aria-hidden={true}/> Votes</ListGroup.Item>
                           {profile && profile.self ? (
                             <ListGroup.Item active={path === 'settings'} onClick={makeNavigator('settings')}><i className="fas fa-user-cog" aria-hidden={true}/> Settings</ListGroup.Item>
@@ -217,27 +261,10 @@ export default function PageProfile(props: PageProfileProps) {
                 <div className="col-span-8 md:col-span-10">
                   <InternalSwitch>
                     <InternalRoute path="uploads">
-                      <div className="h-full">
-                        {uploads.uploads && uploads.uploads.length ? (
-                          <>
-                            {uploadsErrored ? (
-                              <p className="text-red-500 whitespace-pre-wrap">Failed to fetch uploads. Please try again later.</p>
-                            ) : null}
-                            <AutoSizer>
-                              {({width, height}: Size) => (
-                                <List rowCount={uploads.uploads.length} rowHeight={250} width={width} height={height} rowRenderer={rowRenderer}/>
-                              )}
-                            </AutoSizer>
-                          </>
-                        ) : (
-                          uploadsErrored ? (
-                            <p className="text-red-500 whitespace-pre-wrap">Failed to fetch uploads. Please try again later.</p>
-                          ) : null
-                        )}
-                      </div>
+                      <UploadsRenderer uploads={uploads ? uploads.uploads : null} errored={uploadsErrored}/>
                     </InternalRoute>
                     <InternalRoute path="bookmarks">
-                      <p>hello bookmarks</p>
+                      <UploadsRenderer uploads={bookmarks ? bookmarks.uploads : null} errored={bookmarksErrored}/>
                     </InternalRoute>
                     <InternalRoute path="votes">
                       <p>hello votes</p>
