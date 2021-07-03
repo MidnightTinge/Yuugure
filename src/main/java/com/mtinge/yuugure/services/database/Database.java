@@ -328,6 +328,31 @@ public class Database implements IService {
     });
   }
 
+  public BulkRenderableUpload getRenderableBookmarksForAccount(int accountId, @Nullable DBAccount accountContext) {
+    return jdbi.withHandle(handle -> {
+      boolean ctxIsRequested = accountContext != null && accountContext.id == accountId;
+
+      long generalState = States.compute(States.Upload.DELETED, States.Upload.DMCA);
+      long privState = States.compute(generalState, States.Upload.PRIVATE);
+
+      String uploadFilter = "((u.state & :generalState) = 0 OR (u.owner = :accountId AND (u.state & :privState) = 0))";
+      String sql = "SELECT u.* FROM upload_bookmark b INNER JOIN upload u on b.upload = u.id INNER JOIN account a on b.account = a.id WHERE b.active AND b.account = :accountId";
+      if (!ctxIsRequested) {
+        sql += " AND b.public";
+      }
+      sql += " AND " + uploadFilter + " ORDER BY u.upload_date DESC";
+
+      var uploads = handle.createQuery(sql)
+        .bind("generalState", generalState)
+        .bind("accountId", accountId)
+        .bind("privState", privState)
+        .map(DBUpload.Mapper)
+        .collect(Collectors.toList());
+
+      return makeUploadsRenderable(uploads, accountContext, handle);
+    });
+  }
+
   public void deleteAccount(int account) {
     jdbi.inTransaction(handle -> {
       // lock objects

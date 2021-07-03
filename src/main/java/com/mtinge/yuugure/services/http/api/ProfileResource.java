@@ -81,6 +81,10 @@ public class ProfileResource extends APIResource<DBAccount> {
             }
           }
         }
+      } else if (action.equalsIgnoreCase("bookmarks")) {
+        if (MethodValidator.handleMethodValidation(exchange, Methods.GET)) {
+          res.json(Response.good(App.database().getRenderableBookmarksForAccount(resource.resource.id, authed)));
+        }
       }
     } else {
       sendTerminalForState(exchange, resource.state);
