@@ -113,8 +113,8 @@ public class UploadResource extends APIResource<DBUpload> {
                 var affected = handle.createUpdate("INSERT INTO upload_bookmark (account, upload, active, public) VALUES (:account, :upload, :active, :public) ON CONFLICT ON CONSTRAINT upload_bookmark_pkey DO UPDATE SET account = :account, upload = :upload, active = :active, public = :public")
                   .bind("account", authed.id)
                   .bind("upload", resource.resource.id)
-                  .bind("active", !_isPrivate)
-                  .bind("public", exchange.getRequestMethod().equals(Methods.PATCH))
+                  .bind("public", !_isPrivate)
+                  .bind("active", exchange.getRequestMethod().equals(Methods.PATCH))
                   .execute();
                 handle.commit();
 
