@@ -1,0 +1,28 @@
+.AlertContainer {
+  @apply absolute top-2 right-2 overflow-hidden;
+  /* header height */
+  padding-top: 2.5em;
+
+  /* spacing.3 for Alert's .mb-3 */
+  max-height: calc(100vh - theme('spacing.3'));
+  /*width: calc(100vw / 3);*/
+  max-width: calc(100vw / 3);
+
+  .Alert {
+    @apply relative w-full flex flex-col mb-3 shadow rounded opacity-80 backdrop-blur-lg hover:opacity-100;
+
+    .AlertHeader {
+      /* note: border/bg colors are handled by contextual classes in React */
+      @apply relative text-lg flex-shrink px-2 rounded-t border;
+
+      .CloseButton {
+        @apply absolute right-2 top-px text-red-800;
+      }
+    }
+
+    .AlertBody {
+      /* note: border/bg colors are handled by contextual classes in React */
+      @apply relative p-2 flex-grow border border-t-0 rounded-b whitespace-pre-wrap;
+    }
+  }
+}

@@ -4,6 +4,7 @@ import {render} from 'react-dom';
 import {QueryClient, QueryClientProvider} from 'react-query';
 
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
+import AlertsProvider from './Components/Alerts/AlertsProvider';
 import PageRenderer from './Components/PageRenderer';
 import AuthStateProvider from './Context/AuthStateProvider';
 import WebSocketProvider from './Context/WebSocketProvider';
@@ -29,61 +30,63 @@ function App() {
   }, []);
 
   return (
-    <AuthStateProvider>
-      <WebSocketProvider>
-        <QueryClientProvider client={queryClient}>
-          <Router>
-            <Switch>
-              <Route path="/auth/login">
-                <PageRenderer active="login">
-                  <PageLogin/>
-                </PageRenderer>
-              </Route>
-              <Route path="/auth/register">
-                <PageRenderer active="register">
-                  <PageRegister/>
-                </PageRenderer>
-              </Route>
-              <Route path="/upload">
-                <PageRenderer active="upload" authControlled>
-                  <PageUpload/>
-                </PageRenderer>
-              </Route>
-              <Route path="/" exact>
-                <PageRenderer active="index">
-                  <PageIndex/>
-                </PageRenderer>
-              </Route>
-              <Route path="/view/:uploadId">
-                <PageRenderer active="view">
-                  <PageView/>
-                </PageRenderer>
-              </Route>
-              <Route path="/user/:accountId">
-                <PageRenderer active="profile">
-                  <PageProfile/>
-                </PageRenderer>
-              </Route>
-              <Route path="/profile">
-                <PageRenderer active="profile">
-                  <PageProfile self={true}/>
-                </PageRenderer>
-              </Route>
-              <Route path="/search">
-                <PageRenderer active="search">
-                  <PageSearch/>
-                </PageRenderer>
-              </Route>
-              <Route path="*">
-                <PageRenderer active="404">
-                  <Page404/>
-                </PageRenderer>
-              </Route>
-            </Switch>
-          </Router>
-        </QueryClientProvider>
-      </WebSocketProvider>
-    </AuthStateProvider>
+    <AlertsProvider>
+      <AuthStateProvider>
+        <WebSocketProvider>
+          <QueryClientProvider client={queryClient}>
+            <Router>
+              <Switch>
+                <Route path="/auth/login">
+                  <PageRenderer active="login">
+                    <PageLogin/>
+                  </PageRenderer>
+                </Route>
+                <Route path="/auth/register">
+                  <PageRenderer active="register">
+                    <PageRegister/>
+                  </PageRenderer>
+                </Route>
+                <Route path="/upload">
+                  <PageRenderer active="upload" authControlled>
+                    <PageUpload/>
+                  </PageRenderer>
+                </Route>
+                <Route path="/" exact>
+                  <PageRenderer active="index">
+                    <PageIndex/>
+                  </PageRenderer>
+                </Route>
+                <Route path="/view/:uploadId">
+                  <PageRenderer active="view">
+                    <PageView/>
+                  </PageRenderer>
+                </Route>
+                <Route path="/user/:accountId">
+                  <PageRenderer active="profile">
+                    <PageProfile/>
+                  </PageRenderer>
+                </Route>
+                <Route path="/profile">
+                  <PageRenderer active="profile">
+                    <PageProfile self={true}/>
+                  </PageRenderer>
+                </Route>
+                <Route path="/search">
+                  <PageRenderer active="search">
+                    <PageSearch/>
+                  </PageRenderer>
+                </Route>
+                <Route path="*">
+                  <PageRenderer active="404">
+                    <Page404/>
+                  </PageRenderer>
+                </Route>
+              </Switch>
+            </Router>
+          </QueryClientProvider>
+        </WebSocketProvider>
+      </AuthStateProvider>
+    </AlertsProvider>
   );
 }
 

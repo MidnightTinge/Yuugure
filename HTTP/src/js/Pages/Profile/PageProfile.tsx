@@ -5,6 +5,8 @@ import {useParams} from 'react-router';
 import {AutoSizer, List, ListRowProps, Size} from 'react-virtualized';
 import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
+import {AlertType} from '../../Components/Alerts/Alert/Alert';
+import {useAlertContext} from '../../Components/Alerts/AlertsProvider';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
 import InternalRoute from '../../Components/InternalNav/InternalRoute';
@@ -34,13 +36,15 @@ export default function PageProfile(props: PageProfileProps) {
   const params = useParams<{ accountId: string }>();
   const navigator = useInternalNavigator(true);
 
+  const alerts = useAlertContext();
+
   const [fetching, setFetching] = useState(false);
   const [fetched, setFetched] = useState(false);
   const [error, setError] = useState<string>(null);
   const [got404, setGot404] = useState(false);
 
   const [fetchingUploads, setFetchingUploads] = useState(false);
-  const [uploadsError, setUploadsError] = useState<string>(null);
+  const [uploadsErrored, setUploadsErrored] = useState<boolean>(false);
 
   const [profile, setProfile] = useState<ProfileResponse>(null);
   const [uploads, uploadsDispatch, uploadActions] = useUploadReducer();
@@ -107,7 +111,7 @@ export default function PageProfile(props: PageProfileProps) {
       setGot404(false);
       setError(null);
       setFetchingUploads(false);
-      setUploadsError(null);
+      setUploadsErrored(null);
       setShowReport(false);
     };
   }, [accountId]);
@@ -121,12 +125,23 @@ export default function PageProfile(props: PageProfileProps) {
     XHR.for(`/api/profile/${accountId}/uploads`).get().getRouterResponse<BulkRenderableUpload>().then(consumed => {
       if (consumed.success) {
         uploadActions.set([...Util.mapBulkUploads(consumed.data[0])]);
+        setUploadsErrored(false);
       } else {
-        setUploadsError(consumed.message);
+        setUploadsErrored(true);
+        alerts.add({
+          type: AlertType.ERROR,
+          header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Error</>),
+          body: `Failed to fetch uploads.\n${consumed.message}`,
+        });
       }
     }).catch(err => {
       console.error('Failed to fetch uploads.', err);
-      setUploadsError(err ? err.toString() : 'An internal server error occurred. Please try again later.');
+      alerts.add({
+        type: AlertType.ERROR,
+        header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Error</>),
+        body: `Failed to fetch uploads.\n${err ? err.toString() : 'An internal server error occurred, please try again later.'}`,
+      });
+      setUploadsErrored(true);
     }).then(() => {
       setFetchingUploads(false);
     });
@@ -183,8 +198,10 @@ export default function PageProfile(props: PageProfileProps) {
                           <ListGroup.Item active={path === 'details'} onClick={makeNavigator('details')}><i className="fas fa-address-card" aria-hidden={true}/> Details</ListGroup.Item>
                           <ListGroup.Item active={path === 'uploads'} onClick={makeNavigator('uploads')}>
                             <i className="fas fa-folder-open" aria-hidden={true}/> Uploads
-                            <span className="inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg bg-blue-100 border border-blue-200 text-blue-400 opacity-95 shadow">
-                              {fetchingUploads ? (<Spinner/>) : (uploads.uploads.length)}
+                            <span className={`inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg border ${!uploadsErrored ? 'bg-blue-100 border-blue-200 text-blue-400' : 'bg-red-100 border-red-200 text-red-400'} opacity-95 shadow`}>
+                              {fetchingUploads ? (<Spinner/>) : (
+                                uploadsErrored ? (<i className="fas fa-exclamation-triangle text-xs"/>) : (uploads.uploads.length)
+                              )}
                             </span>
                           </ListGroup.Item>
                           <ListGroup.Item active={path === 'bookmarks'} onClick={makeNavigator('bookmarks')}><i className="fas fa-bookmark" aria-hidden={true}/> Bookmarks</ListGroup.Item>
@@ -203,8 +220,8 @@ export default function PageProfile(props: PageProfileProps) {
                       <div className="h-full">
                         {uploads.uploads && uploads.uploads.length ? (
                           <>
-                            {uploadsError ? (
-                              <p className="text-red-500 whitespace-pre-wrap">{uploadsError}</p>
+                            {uploadsErrored ? (
+                              <p className="text-red-500 whitespace-pre-wrap">Failed to fetch uploads. Please try again later.</p>
                             ) : null}
                             <AutoSizer>
                               {({width, height}: Size) => (
@@ -213,8 +230,8 @@ export default function PageProfile(props: PageProfileProps) {
                             </AutoSizer>
                           </>
                         ) : (
-                          uploadsError ? (
-                            <p className="text-red-500 whitespace-pre-wrap">{uploadsError}</p>
+                          uploadsErrored ? (
+                            <p className="text-red-500 whitespace-pre-wrap">Failed to fetch uploads. Please try again later.</p>
                           ) : null
                         )}
                       </div>
