@@ -7,6 +7,7 @@ import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.data.postgres.DBUploadBookmark;
 import com.mtinge.yuugure.data.postgres.DBUploadVote;
+import com.mtinge.yuugure.services.database.UploadFetchParams;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
 import com.mtinge.yuugure.services.http.util.MethodValidator;
@@ -273,7 +274,7 @@ public class UploadResource extends APIResource<DBUpload> {
     var uid = extractInt(exchange, "upload");
 
     if (uid != null) {
-      var upload = App.database().getUploadById(uid, false);
+      var upload = App.database().getUploadById(uid, new UploadFetchParams(false, true));
       if (upload != null) {
         if (States.flagged(upload.state, States.Upload.PRIVATE) && (authed == null || authed.id != upload.owner)) {
           return ResourceResult.unauthorized();

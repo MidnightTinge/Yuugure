@@ -1,5 +1,10 @@
 package com.mtinge.yuugure.services.database;
 
+import com.mtinge.QueryBuilder.QueryBuilder;
+import com.mtinge.QueryBuilder.ops.For.ForType;
+import com.mtinge.QueryBuilder.ops.filter.Filter;
+import com.mtinge.QueryBuilder.ops.join.Join;
+import com.mtinge.QueryBuilder.ops.order.OrderType;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.States;
 import com.mtinge.yuugure.core.TagManager.TagCategory;
@@ -17,7 +22,9 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.Query;
+import org.jdbi.v3.core.statement.Update;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,32 +68,36 @@ public class Database implements IService {
   }
 
   public DBUpload getUploadById(int id) {
-    return getUploadById(id, true);
+    return getUploadById(id, new UploadFetchParams(true, true));
   }
 
   public DBUpload getUploadById(int id, Handle handle) {
-    return getUploadById(id, true, handle);
+    return getUploadById(id, new UploadFetchParams(true, true), handle);
   }
 
-  public DBUpload getUploadById(int id, boolean includeBadFlagged) {
-    return jdbi.withHandle(handle -> getUploadById(id, includeBadFlagged, handle));
+  public DBUpload getUploadById(int id, UploadFetchParams params) {
+    return jdbi.withHandle(handle -> getUploadById(id, params, handle));
   }
 
-  public DBUpload getUploadById(int id, boolean includeBadFlagged, Handle handle) {
-    Query query;
+  public DBUpload getUploadById(int id, UploadFetchParams params, Handle handle) {
+    var builder = QueryBuilder.select("*")
+      .from("upload")
+      .trackBind("id", id);
+    var filter = Filter.of("id", ":id");
 
-    if (includeBadFlagged) {
-      query = handle.createQuery("SELECT * FROM upload WHERE id = :id")
-        .bind("id", id);
-    } else {
-      query = handle.createQuery("SELECT * FROM upload WHERE id = :id AND (state & :state) = 0")
-        .bind("id", id)
-        .bind("state", States.compute(States.Upload.DELETED, States.Upload.DMCA));
+    if (params.includeBadFlagged() || params.includePrivate()) {
+      long state = 0L;
+      state = !params.includeBadFlagged() ? States.compute(state, States.Upload.DELETED, States.Upload.DMCA) : state;
+      state = !params.includePrivate() ? States.compute(state, States.Upload.PRIVATE) : state;
+
+      filter = Filter.and(
+        filter,
+        Filter.of("(state & :state)", 0)
+      );
+      builder.trackBind("state", state);
     }
 
-    return query
-      .map(DBUpload.Mapper)
-      .findFirst().orElse(null);
+    return firstOrNull(builder.where(filter).toQuery(handle), DBUpload.Mapper);
   }
 
   public DBMedia getMediaForUpload(int id) {
@@ -94,10 +105,16 @@ public class Database implements IService {
   }
 
   public DBMedia getMediaForUpload(int id, Handle handle) {
-    return handle.createQuery("SELECT * FROM media WHERE id = (SELECT media FROM upload WHERE id = :id)")
-      .bind("id", id)
-      .map(DBMedia.Mapper)
-      .findFirst().orElse(null);
+    return firstOrNull(
+      QueryBuilder.select("*")
+        .from("media")
+        .where("id", QueryBuilder.select("media")
+          .from("upload")
+          .where("id", ":id")
+        )
+        .trackBind("id", id)
+        .toQuery(handle)
+      , DBMedia.Mapper);
   }
 
   public DBMedia getMediaById(int id) {
@@ -105,10 +122,14 @@ public class Database implements IService {
   }
 
   public DBMedia getMediaById(int id, Handle handle) {
-    return handle.createQuery("SELECT * FROM media WHERE id = :id")
-      .bind("id", id)
-      .map(DBMedia.Mapper)
-      .findFirst().orElse(null);
+    return firstOrNull(
+      QueryBuilder.select("*")
+        .from("media")
+        .where("id", ":id")
+        .trackBind("id", id)
+        .toQuery(handle),
+      DBMedia.Mapper
+    );
   }
 
   public DBMediaMeta getMediaMetaById(int id) {
@@ -116,10 +137,14 @@ public class Database implements IService {
   }
 
   public DBMediaMeta getMediaMetaById(int id, Handle handle) {
-    return handle.createQuery("SELECT * FROM media_meta WHERE id = :id")
-      .bind("id", id)
-      .map(DBMediaMeta.Mapper)
-      .findFirst().orElse(null);
+    return firstOrNull(
+      QueryBuilder.select("*")
+        .from("media_meta")
+        .where("id", ":id")
+        .trackBind("id", id)
+        .toQuery(handle),
+      DBMediaMeta.Mapper
+    );
   }
 
   public DBMediaMeta getMediaMetaByMedia(int media) {
@@ -127,10 +152,14 @@ public class Database implements IService {
   }
 
   public DBMediaMeta getMediaMetaByMedia(int media, Handle handle) {
-    return handle.createQuery("SELECT * FROM media_meta WHERE media = :media")
-      .bind("media", media)
-      .map(DBMediaMeta.Mapper)
-      .findFirst().orElse(null);
+    return firstOrNull(
+      QueryBuilder.select("*")
+        .from("media_meta")
+        .where("media", ":media")
+        .trackBind("media", media)
+        .toQuery(handle),
+      DBMediaMeta.Mapper
+    );
   }
 
   public DBReport createReport(DBUpload target, DBAccount reporter, String reason) {
@@ -154,24 +183,43 @@ public class Database implements IService {
   }
 
   private List<DBReport> _getReports(ReportTargetType targetType, int targetId) {
-    return jdbi.withHandle(handle ->
-      handle.createQuery("SELECT * FROM report WHERE target_type = :target_type AND target_id = :target_id ORDER BY timestamp DESC")
-        .bind("target_type", targetType.colVal())
-        .bind("target_id", targetId)
-        .map(DBReport.Mapper)
-        .collect(Collectors.toList())
+    return jdbi.withHandle(handle -> _getReports(targetType, targetId, handle));
+  }
+
+  private List<DBReport> _getReports(ReportTargetType targetType, int targetId, Handle handle) {
+    return toList(
+      QueryBuilder.select("*")
+        .from("report")
+        .where(
+          Filter.and(
+            Filter.of("target_type", ":type"),
+            Filter.of("target_id", ":id")
+          )
+        )
+        .order("timestamp", OrderType.DESC)
+        .trackBind("type", targetType.colVal())
+        .trackBind("id", targetId)
+        .toQuery(handle),
+      DBReport.Mapper
     );
   }
 
   private DBReport _report(ReportTargetType targetType, int targetId, int reporter, String reason) {
-    return jdbi.withHandle(handle ->
-      handle.createQuery("INSERT INTO report (account, target_type, target_id, content) VALUES (:reporter, :target_type, :target_id, :reason) RETURNING *")
-        .bind("target_type", targetType.colVal())
-        .bind("reporter", reporter)
-        .bind("target_id", targetId)
-        .bind("reason", reason)
-        .map(DBReport.Mapper)
-        .findFirst().orElse(null)
+    return jdbi.withHandle(handle -> _report(targetType, targetId, reporter, reason, handle));
+  }
+
+  private DBReport _report(ReportTargetType targetType, int targetId, int reporter, String reason, Handle handle) {
+    return firstOrNull(
+      QueryBuilder.insert("report")
+        .columns("account", "target_type", "target_id", "content")
+        .values(":reporter", ":type", ":id", ":reason")
+        .returning("*")
+        .trackBind("reporter", reporter)
+        .trackBind("type", targetType.colVal())
+        .trackBind("id", targetId)
+        .trackBind("reason", reason)
+        .toQuery(handle),
+      DBReport.Mapper
     );
   }
 
@@ -180,10 +228,14 @@ public class Database implements IService {
   }
 
   public DBAccount getAccountById(int id, Handle handle) {
-    return handle.createQuery("SELECT * FROM account WHERE id = :id")
-      .bind("id", id)
-      .map(DBAccount.Mapper)
-      .findFirst().orElse(null);
+    return firstOrNull(
+      QueryBuilder.select("*")
+        .from("account")
+        .where("id", ":id")
+        .trackBind("id", id)
+        .toQuery(handle),
+      DBAccount.Mapper
+    );
   }
 
   public DBAccount getAccountById(int id, boolean includeBadFlagged) {
@@ -191,20 +243,18 @@ public class Database implements IService {
   }
 
   public DBAccount getAccountById(int id, boolean includeBadFlagged, Handle handle) {
-    Query query;
-
-    if (includeBadFlagged) {
-      query = handle.createQuery("SELECT * FROM account WHERE id = :id")
-        .bind("id", id);
-    } else {
-      query = handle.createQuery("SELECT * FROM account WHERE id = :id AND (state & :state) = 0")
-        .bind("id", id)
-        .bind("state", States.compute(States.Account.DELETED, States.Account.BANNED, States.Account.DEACTIVATED));
+    var builder = QueryBuilder.select("*")
+      .from("account")
+      .trackBind("id", id);
+    var filter = Filter.of("id", ":id");
+    if (!includeBadFlagged) {
+      filter = Filter.and(
+        filter,
+        Filter.of("(state & :state)", 0)
+      );
+      builder.trackBind("state", States.compute(States.Account.DELETED, States.Account.BANNED, States.Account.DEACTIVATED));
     }
-
-    return query
-      .map(DBAccount.Mapper)
-      .findFirst().orElse(null);
+    return firstOrNull(builder.where(filter).toQuery(handle), DBAccount.Mapper);
   }
 
   public RenderableUpload makeUploadRenderable(DBUpload upload, @Nullable DBAccount accountContext) {
@@ -288,33 +338,36 @@ public class Database implements IService {
   }
 
   private Query _uploadsForAccount(int accountId, UploadFetchParams params, Handle handle) {
-    Query uploadFetch;
-    if (params.includeBadFlagged() && params.includePrivate()) {
-      // we want to fetch everything
-      uploadFetch = handle.createQuery("SELECT * FROM upload WHERE owner = :owner ORDER BY upload_date DESC")
-        .bind("owner", accountId);
-    } else {
-      // we want to do some state filtering
-      long stateFilter = 0L;
-      if (!params.includeBadFlagged()) {
-        stateFilter = States.addFlag(stateFilter, States.compute(States.Upload.DMCA, States.Upload.DELETED));
-      }
-      if (!params.includePrivate()) {
-        stateFilter = States.addFlag(stateFilter, States.Upload.PRIVATE);
-      }
-      uploadFetch = handle.createQuery("SELECT * FROM upload WHERE owner = :owner AND (state & :state) = 0")
-        .bind("owner", accountId)
-        .bind("state", stateFilter);
+    var builder = QueryBuilder.select("*")
+      .from("upload")
+      .order("upload_date", OrderType.DESC)
+      .trackBind("owner", accountId);
+    var filter = Filter.of("owner", ":owner");
+
+    if (!params.includePrivate() || !params.includeBadFlagged()) {
+      long state = 0L;
+
+      state = params.includeBadFlagged() ? state : States.addFlag(state, States.Upload.DMCA, States.Upload.DELETED);
+      state = params.includePrivate() ? state : States.addFlag(state, States.Upload.PRIVATE);
+
+      filter = Filter.and(
+        filter,
+        Filter.of("(state & :state)", 0)
+      );
+      builder.trackBind("state", state);
     }
 
-    return uploadFetch;
+    return builder.where(filter).toQuery(handle);
   }
 
   public List<DBUpload> getUploadsForAccount(int accountId, UploadFetchParams params) {
-    return jdbi.withHandle(handle ->
-      _uploadsForAccount(accountId, params, handle)
-        .map(DBUpload.Mapper)
-        .collect(Collectors.toList())
+    return jdbi.withHandle(handle -> getUploadsForAccount(accountId, params, handle));
+  }
+
+  public List<DBUpload> getUploadsForAccount(int accountId, UploadFetchParams params, Handle handle) {
+    return toList(
+      _uploadsForAccount(accountId, params, handle),
+      DBUpload.Mapper
     );
   }
 
@@ -329,42 +382,36 @@ public class Database implements IService {
   }
 
   public BulkRenderableUpload getRenderableBookmarksForAccount(int accountId, @Nullable DBAccount accountContext) {
-    return jdbi.withHandle(handle -> {
-      boolean ctxIsRequested = accountContext != null && accountContext.id == accountId;
+    return jdbi.withHandle(handle -> getRenderableBookmarksForAccount(accountId, accountContext, handle));
+  }
 
-      long generalState = States.compute(States.Upload.DELETED, States.Upload.DMCA);
-      long privState = States.compute(generalState, States.Upload.PRIVATE);
+  public BulkRenderableUpload getRenderableBookmarksForAccount(int accountId, @Nullable DBAccount context, Handle handle) {
+    var builder = QueryBuilder.select("u.*")
+      .from("upload_bookmark b")
+      .join(Join.inner("upload u", "b.upload = u.id"))
+      .join(Join.inner("account a", "b.account = a.id"))
+      .order("u.upload_date", OrderType.DESC)
+      .trackBind("accountId", accountId);
+    var filter = Filter.and(
+      Filter.of("b.active"),
+      Filter.of("b.account", ":accountId")
+    );
 
-      String uploadFilter = "((u.state & :generalState) = 0 OR (u.owner = :accountId AND (u.state & :privState) = 0))";
-      String sql = "SELECT u.* FROM upload_bookmark b INNER JOIN upload u on b.upload = u.id INNER JOIN account a on b.account = a.id WHERE b.active AND b.account = :accountId";
-      if (!ctxIsRequested) {
-        sql += " AND b.public";
-      }
-      sql += " AND " + uploadFilter + " ORDER BY u.upload_date DESC";
+    if (context == null || context.id != accountId) {
+      // the requested account is not our context account - enforce public bookmarks only.
+      filter.append(Filter.of("b.public"));
+    }
 
-      var uploads = handle.createQuery(sql)
-        .bind("generalState", generalState)
-        .bind("accountId", accountId)
-        .bind("privState", privState)
-        .map(DBUpload.Mapper)
-        .collect(Collectors.toList());
-
-      return makeUploadsRenderable(uploads, accountContext, handle);
-    });
+    var uploads = toList(builder.where(filter).toQuery(handle), DBUpload.Mapper);
+    return makeUploadsRenderable(uploads, context, handle);
   }
 
   public void deleteAccount(int account) {
     jdbi.inTransaction(handle -> {
       // lock objects
-      handle.createQuery("SELECT * FROM upload WHERE owner = :owner FOR UPDATE")
-        .bind("owner", account)
-        .execute((statementSupplier, ctx) -> null);
-      handle.createUpdate("SELECT * FROM sessions WHERE account = :owner FOR UPDATE")
-        .bind("owner", account)
-        .execute();
-      handle.createUpdate("SELECT * FROM account WHERE id = :account FOR UPDATE")
-        .bind("account", account)
-        .execute();
+      handle.execute("SELECT 1 FROM upload WHERE owner = ? FOR UPDATE", account);
+      handle.execute("SELECT 1 FROM sessions WHERE account = ? FOR UPDATE", account);
+      handle.execute("SELECT 1 FROM account WHERE id = ? FOR UPDATE", account);
 
       // set delete states
       handle.createUpdate("UPDATE account SET state = (state | :state) WHERE id = :account")
@@ -387,9 +434,12 @@ public class Database implements IService {
   }
 
   public int updateAccountEmail(int id, String newEmail, Handle handle) {
-    return handle.createUpdate("UPDATE account SET email = lower(:email) WHERE id = :id")
-      .bind("id", id)
-      .bind("email", newEmail)
+    return QueryBuilder.update("account")
+      .set("email", "lower(:email)")
+      .where("id", ":id")
+      .trackBind("email", newEmail)
+      .trackBind("id", id)
+      .toUpdate(handle)
       .execute();
   }
 
@@ -398,9 +448,12 @@ public class Database implements IService {
   }
 
   public int updateAccountPassword(int id, String newPasswordHash, Handle handle) {
-    return handle.createUpdate("UPDATE account SET password = :hash WHERE id = :id")
-      .bind("id", id)
-      .bind("hash", newPasswordHash)
+    return QueryBuilder.update("account")
+      .set("password", ":hash")
+      .where("id", ":id")
+      .trackBind("id", id)
+      .trackBind("hash", newPasswordHash)
+      .toUpdate(handle)
       .execute();
   }
 
@@ -419,15 +472,27 @@ public class Database implements IService {
 
     try {
       // select and lock a row
-      var id = handle.createQuery("SELECT id FROM processing_queue WHERE NOT dequeued ORDER BY queued_at LIMIT 1 FOR UPDATE")
-        .map((r, c) -> r.getInt("id"))
-        .findFirst().orElse(null);
+      var id = firstOrNull(
+        QueryBuilder.select("id")
+          .from("processing_queue")
+          .where(Filter.not("dequeued"))
+          .order("queued_at", OrderType.ASC)
+          .limit(1)
+          .withFor(ForType.UPDATE)
+          .toQuery(handle),
+        (r, c) -> r.getInt("id")
+      );
 
-      if (id != null) {
-        var item = handle.createQuery("UPDATE processing_queue SET dequeued = true WHERE id = :id RETURNING *")
-          .bind("id", id)
-          .map(DBProcessingQueue.Mapper)
-          .first();
+      if (id != null && id > 0) {
+        var item = first(
+          QueryBuilder.update("processing_queue")
+            .set("dequeued", "true")
+            .where("id", ":id")
+            .returning("*")
+            .trackBind("id", id)
+            .toQuery(handle),
+          DBProcessingQueue.Mapper
+        );
         var upload = getUploadById(item.upload, handle);
         var media = getMediaById(upload.media, handle);
         handle.commit();
@@ -456,28 +521,44 @@ public class Database implements IService {
     boolean handled = false;
     try {
       // lock the row
-      var id = handle.createQuery("SELECT id FROM media_meta WHERE media = :media FOR UPDATE")
-        .bind("media", meta.media())
-        .map((r, __) -> r.getInt("id"))
-        .findFirst().orElse(null);
+      var id = firstOrNull(
+        QueryBuilder.select("id")
+          .from("media_meta")
+          .where("media", ":media")
+          .withFor(ForType.UPDATE)
+          .trackBind("media", meta.media())
+          .toQuery(handle),
+        (r, c) -> r.getInt("id")
+      );
 
-      Query query;
-      if (id == null) {
-        query = handle.createQuery("INSERT INTO media_meta (media, width, height, video, video_duration, has_audio) VALUES (:media, :width, :height, :video, :video_duration, :has_audio) RETURNING *")
-          .bind("media", meta.media());
+      QueryBuilder builder;
+      if (id == null || id == 0) {
+        builder = QueryBuilder.insert("media_meta")
+          .columns("media", "width", "height", "video", "video_duration", "has_audio")
+          .values(":media", ":width", ":height", ":video", ":video_duration", ":has_audio")
+          .returning("*")
+          .trackBind("media", meta.media());
       } else {
-        query = handle.createQuery("UPDATE media_meta SET width = :width, height = :height, video = :video, video_duration = :video_duration, has_audio = :has_audio WHERE id = :id RETURNING *")
-          .bind("id", id);
+        builder = QueryBuilder.update("media_meta")
+          .set("width", ":width")
+          .set("height", ":height")
+          .set("video", ":video")
+          .set("video_duration", ":video_duration")
+          .set("has_audio", ":has_audio")
+          .returning("*")
+          .trackBind("id", id);
       }
 
-      var upserted = query
-        .bind("width", meta.width())
-        .bind("height", meta.height())
-        .bind("video", meta.video())
-        .bind("video_duration", meta.videoDuration())
-        .bind("has_audio", meta.hasAudio())
-        .map(DBMediaMeta.Mapper)
-        .findFirst().orElse(null);
+      var upserted = firstOrNull(
+        builder
+          .trackBind("width", meta.width())
+          .trackBind("height", meta.height())
+          .trackBind("video", meta.video())
+          .trackBind("video_duration", meta.videoDuration())
+          .trackBind("has_audio", meta.hasAudio())
+          .toQuery(handle),
+        DBMediaMeta.Mapper
+      );
 
       if (upserted != null && commit) {
         handle.commit();
@@ -505,13 +586,17 @@ public class Database implements IService {
       upsertMediaMeta(result.meta(), handle, false);
 
       // lock the processor_queue row for updates
-      handle.createQuery("SELECT 1 FROM processing_queue WHERE id = :id FOR UPDATE")
-        .bind("id", result.dequeued().queueItem.id);
+      handle.execute("SELECT 1 FROM processing_queue WHERE id = ? FOR UPDATE", result.dequeued().queueItem.id);
 
-      handle.createUpdate("UPDATE processing_queue SET finished = true, errored = :errored, error_text = :error_text WHERE id = :id")
-        .bind("id", result.dequeued().queueItem.id)
-        .bind("errored", !result.success())
-        .bind("error_text", result.message())
+      QueryBuilder.update("processing_queue")
+        .set("finished", "true")
+        .set("errored", ":errored")
+        .set("error_text", ":error_text")
+        .where("id", ":id")
+        .trackBind("id", result.dequeued().queueItem.id)
+        .trackBind("errored", !result.success())
+        .trackBind("error_text", result.message())
+        .toUpdate(handle)
         .execute();
 
       var tds = App.tagManager().ensureAll(result.tags().stream().map(TagDescriptor::parse).collect(Collectors.toList()), false);
@@ -521,16 +606,22 @@ public class Database implements IService {
         addTagsToUpload(result.dequeued().upload.id, tds.tags, handle);
 
         // Get current tags and filter out system tags (we're overriding with processor result)
-        var curTags = handle.createQuery("SELECT t.* FROM upload_tags ut INNER JOIN tag t on ut.tag = t.id WHERE upload = :upload")
-          .bind("upload", result.dequeued().upload.id)
-          .map(DBTag.Mapper)
-          .stream()
+        var curTags = toList(
+          QueryBuilder.select("t.*")
+            .from("upload_tags ut")
+            .join(Join.inner("tag t", "ut.tag = t.id"))
+            .where("upload", ":upload")
+            .trackBind("upload", result.dequeued().upload.id)
+            .toQuery(handle),
+          DBTag.Mapper
+        ).stream()
           .filter(t -> t.category.equalsIgnoreCase(TagCategory.USERLAND.getName()))
           .map(t -> t.id)
           .collect(Collectors.toList());
 
         // Concat the processor result's tags
-        var toSet = Stream.concat(tds.tags.stream().map(t -> t.id), curTags.stream())
+        var toSet = Stream
+          .concat(tds.tags.stream().map(t -> t.id), curTags.stream())
           .collect(Collectors.toList());
 
         // Set tags
@@ -554,17 +645,23 @@ public class Database implements IService {
   }
 
   public DBComment getCommentById(int id, boolean includeBadFlagged, Handle handle) {
-    Query query;
-    if (includeBadFlagged) {
-      query = handle.createQuery("SELECT * FROM comment WHERE id = :id");
-    } else {
-      query = handle.createQuery("SELECT * FROM comment WHERE id = :id AND active");
+    var builder = QueryBuilder.select("*").from("comment");
+    var filter = Filter.of("id", ":id");
+
+    if (!includeBadFlagged) {
+      filter = Filter.and(
+        filter,
+        Filter.of("active")
+      );
     }
 
-    return query
-      .bind("id", id)
-      .map(DBComment.Mapper)
-      .findFirst().orElse(null);
+    return firstOrNull(
+      builder
+        .where(filter)
+        .trackBind("id", id)
+        .toQuery(handle),
+      DBComment.Mapper
+    );
   }
 
   public List<DBComment> getCommentsForUpload(int id, boolean includeBadFlagged) {
@@ -572,17 +669,23 @@ public class Database implements IService {
   }
 
   public List<DBComment> getCommentsForUpload(int id, boolean includeBadFlagged, Handle handle) {
-    Query query;
-    if (includeBadFlagged) {
-      query = handle.createQuery("SELECT * FROM comment WHERE target_type = :type AND target_id = :id ORDER BY timestamp DESC");
-    } else {
-      query = handle.createQuery("SELECT * FROM comment WHERE target_type = :type AND target_id = :id AND active ORDER BY timestamp DESC");
+    var query = QueryBuilder.select("*")
+      .from("comment")
+      .order("timestamp", OrderType.DESC)
+      .trackBind("id", id);
+    var filter = Filter.of("target_id", ":id");
+
+    if (!includeBadFlagged) {
+      filter = Filter.and(
+        filter,
+        Filter.of("active")
+      );
     }
 
-    return query
-      .bind("type", DBComment.TYPE_UPLOAD)
-      .bind("id", id)
-      .map(DBComment.Mapper).collect(Collectors.toList());
+    return toList(
+      query.where(filter).toQuery(handle),
+      DBComment.Mapper
+    );
   }
 
   public DBComment createComment(DBUpload upload, DBAccount account, String raw, String rendered) {
@@ -590,14 +693,19 @@ public class Database implements IService {
   }
 
   public DBComment createComment(DBUpload upload, DBAccount account, String raw, String rendered, Handle handle) {
-    return handle.createQuery("INSERT INTO comment (target_type, target_id, account, content_raw, content_rendered) VALUES (:type, :id, :account, :raw, :rendered) RETURNING *")
-      .bind("type", DBComment.TYPE_UPLOAD)
-      .bind("id", upload.id)
-      .bind("account", account.id)
-      .bind("raw", raw)
-      .bind("rendered", rendered)
-      .map(DBComment.Mapper)
-      .findFirst().orElse(null);
+    return firstOrNull(
+      QueryBuilder.insert("comment")
+        .columns("target_type", "target_id", "account", "content_raw", "content_rendered")
+        .values(":type", ":id", ":account", ":raw", ":rendered")
+        .returning("*")
+        .trackBind("type", DBComment.TYPE_UPLOAD)
+        .trackBind("id", upload.id)
+        .trackBind("account", account.id)
+        .trackBind("raw", raw)
+        .trackBind("rendered", rendered)
+        .toQuery(handle),
+      DBComment.Mapper
+    );
   }
 
   public RenderableComment makeCommentRenderable(DBComment comment) {
@@ -644,19 +752,34 @@ public class Database implements IService {
   }
 
   public BulkRenderableUpload getIndexUploads(@Nullable DBAccount context, Handle handle) {
-    Query uploadsQuery;
+    var builder = QueryBuilder.select("*")
+      .from("upload")
+      .order("upload_date", OrderType.DESC)
+      .limit(50);
+
+    long badState = States.compute(States.Upload.DELETED, States.Upload.DMCA);
+    long generalState = States.addFlag(badState, States.Upload.PRIVATE);
     if (context != null) {
-      long badState = States.compute(States.Upload.DELETED, States.Upload.DMCA);
-      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE (state & :general_state) = 0 OR (owner = :id AND (state & :contextual_state) = 0) ORDER BY upload_date DESC LIMIT 50")
-        .bind("general_state", States.compute(badState, States.Upload.PRIVATE))
-        .bind("contextual_state", badState)
-        .bind("id", context.id);
+      builder
+        .where(
+          Filter.or(
+            Filter.of("(state & :general_state)", 0),
+            Filter.and(
+              Filter.of("owner", ":id"),
+              Filter.of("(state & :contextual_state)", 0)
+            )
+          )
+        )
+        .trackBind("general_state", generalState)
+        .trackBind("contextual_state", badState)
+        .trackBind("id", context.id);
     } else {
-      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE (state & :state) = 0 ORDER BY upload_date DESC LIMIT 50")
-        .bind("state", States.compute(States.Upload.DELETED, States.Upload.DMCA, States.Upload.PRIVATE));
+      builder
+        .where(Filter.of("(state & :state)", 0))
+        .trackBind("state", generalState);
     }
 
-    var uploads = uploadsQuery
+    var uploads = builder.toQuery(handle)
       .map(DBUpload.Mapper)
       .collect(Collectors.toList());
 
@@ -704,12 +827,15 @@ public class Database implements IService {
   }
 
   public DBTag getTagById(int id) {
-    return jdbi.withHandle(handle -> getTagById(id));
+    return jdbi.withHandle(handle -> getTagById(id, handle));
   }
 
   public DBTag getTagById(int id, Handle handle) {
-    return handle.createQuery("SELECT * FROM tag WHERE id = :id")
-      .bind("id", id)
+    return QueryBuilder.select("*")
+      .from("tag")
+      .where("id", ":id")
+      .trackBind("id", id)
+      .toQuery(handle)
       .map(DBTag.Mapper)
       .findFirst().orElse(null);
   }
@@ -719,8 +845,10 @@ public class Database implements IService {
   }
 
   public List<DBTag> getTagsById(List<Integer> ids, Handle handle) {
-    var qstr = ids.stream().map(String::valueOf).collect(Collectors.joining(","));
-    return handle.createQuery("SELECT * FROM tag WHERE id IN (" + qstr + ")")
+    return QueryBuilder.select("*")
+      .from("tag")
+      .where(Filter.in("id", ids.stream().map(String::valueOf).toArray(String[]::new)))
+      .toQuery(handle)
       .map(DBTag.Mapper)
       .collect(Collectors.toList());
   }
@@ -745,20 +873,37 @@ public class Database implements IService {
       return new BulkRenderableUpload(Map.of(), Map.of(), Map.of(), Map.of(), List.of());
     }
 
-    var qstr = ids.stream().map(String::valueOf).collect(Collectors.joining(","));
-    Query uploadsQuery;
-    if (context != null) {
-      long badState = States.compute(States.Upload.DELETED, States.Upload.DMCA);
-      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE ((state & :general_state) = 0 OR (owner = :id AND (state & :contextual_state) = 0)) AND id IN (" + qstr + ") ORDER BY upload_date DESC LIMIT 50")
-        .bind("general_state", States.compute(badState, States.Upload.PRIVATE))
-        .bind("contextual_state", badState)
-        .bind("id", context.id);
-    } else {
-      uploadsQuery = handle.createQuery("SELECT * FROM upload WHERE ((state & :state) = 0) AND id IN (" + qstr + ") ORDER BY upload_date DESC LIMIT 50")
-        .bind("state", States.compute(States.Upload.DELETED, States.Upload.DMCA, States.Upload.PRIVATE));
-    }
+    var builder = QueryBuilder.select("*")
+      .from("upload")
+      .order("upload_date", OrderType.DESC);
+    var filter = Filter.in("id", ids.stream().map(String::valueOf).toArray(String[]::new));
 
-    var uploads = uploadsQuery
+    long authedState = States.compute(States.Upload.DELETED, States.Upload.DMCA);
+    long unauthedState = States.addFlag(authedState, States.Upload.PRIVATE);
+    if (context != null) {
+      filter = Filter.and(
+        Filter.or(
+          Filter.of("(state & :unauthedState)", 0),
+          Filter.and(
+            Filter.of("owner", ":id"),
+            Filter.of("(state & :authedState)", 0)
+          )
+        ),
+        filter
+      );
+      builder
+        .trackBind("unauthedState", unauthedState)
+        .trackBind("authedState", authedState)
+        .trackBind("id", context.id);
+    } else {
+      filter = Filter.and(
+        Filter.of("(state & :state)", 0),
+        filter
+      );
+      builder.trackBind("state", unauthedState);
+    }
+    var uploads = builder.where(filter)
+      .toQuery(handle)
       .map(DBUpload.Mapper)
       .collect(Collectors.toList());
 
@@ -770,16 +915,24 @@ public class Database implements IService {
   }
 
   public List<DBUploadVote> getVotesForUpload(int uploadId, boolean includeInactive, Handle handle) {
-    Query query;
-    if (includeInactive) {
-      query = handle.createQuery("SELECT * FROM upload_vote WHERE upload = :upload")
-        .bind("upload", uploadId);
-    } else {
-      query = handle.createQuery("SELECT * FROM upload_vote WHERE upload = :upload AND active")
-        .bind("upload", uploadId);
+    var builder = QueryBuilder.select("*")
+      .from("upload_vote")
+      .trackBind("upload", uploadId);
+
+    var filter = Filter.of("upload", ":upload");
+
+    if (!includeInactive) {
+      filter = Filter.and(
+        filter,
+        Filter.of("active")
+      );
     }
 
-    return query.map(DBUploadVote.Mapper).collect(Collectors.toList());
+    return builder
+      .where(filter)
+      .toQuery(handle)
+      .map(DBUploadVote.Mapper)
+      .collect(Collectors.toList());
   }
 
   public UploadVoteState getVoteStateForUpload(int uploadId, @Nullable DBAccount accountContext, Handle handle) {
@@ -811,20 +964,22 @@ public class Database implements IService {
   }
 
   public List<DBUploadBookmark> getBookmarksForUpload(int uploadId, BookmarkFetchParams fetchParams, Handle handle) {
-    Query query;
-    String sql;
-    if (fetchParams.includePrivate) {
-      sql = "SELECT * FROM upload_bookmark WHERE upload = :upload";
-    } else {
-      sql = "SELECT * FROM upload_bookmark WHERE upload = :upload AND public";
+    var builder = QueryBuilder.select("*")
+      .from("upload_bookmark")
+      .trackBind("upload", uploadId);
+    var filter = Filter.of("upload", ":upload");
+
+    if (!fetchParams.includePrivate || !fetchParams.includeInactive) {
+      filter = Filter.and(
+        filter,
+        !fetchParams.includePrivate ? Filter.of("public") : null,
+        !fetchParams.includeInactive ? Filter.of("active") : null
+      );
     }
 
-    if (!fetchParams.includeInactive) {
-      sql += " AND active";
-    }
-
-    return handle.createQuery(sql)
-      .bind("upload", uploadId)
+    return builder
+      .where(filter)
+      .toQuery(handle)
       .map(DBUploadBookmark.Mapper)
       .collect(Collectors.toList());
   }
@@ -833,13 +988,38 @@ public class Database implements IService {
     var dbBookmarks = getBookmarksForUpload(uploadId, new BookmarkFetchParams(false, false));
     DBUploadBookmark ourBookmark = null;
     if (accountContext != null) {
-      ourBookmark = handle.createQuery("SELECT * FROM upload_bookmark WHERE upload = :upload AND account = :account AND active")
-        .bind("upload", uploadId)
-        .bind("account", accountContext.id)
+      ourBookmark = QueryBuilder.select("*")
+        .from("upload_bookmark")
+        .where(
+          Filter.and(
+            Filter.of("upload", ":upload"),
+            Filter.of("account", ":account"),
+            Filter.of("active")
+          )
+        )
+        .trackBind("upload", uploadId)
+        .trackBind("account", accountContext.id)
+        .toQuery(handle)
         .map(DBUploadBookmark.Mapper)
         .findFirst().orElse(null);
     }
 
     return new UploadBookmarkState(dbBookmarks.size(), ourBookmark != null, ourBookmark != null && ourBookmark.isPublic);
+  }
+
+  public static <T> T first(Query query, RowMapper<T> mapper) {
+    return query.map(mapper).first();
+  }
+
+  public static <T> T firstOrNull(Query query, RowMapper<T> mapper) {
+    return query.map(mapper).findFirst().orElse(null);
+  }
+
+  public static <T> List<T> toList(Query query, RowMapper<T> mapper) {
+    return query.map(mapper).collect(Collectors.toList());
+  }
+
+  public static boolean updated(Update query) {
+    return query.execute() > 0;
   }
 }
