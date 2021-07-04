@@ -6,6 +6,7 @@ import com.mtinge.yuugure.core.adapters.DurationAdapter;
 import com.mtinge.yuugure.data.postgres.DBTag;
 import com.mtinge.yuugure.scripts.*;
 import com.mtinge.yuugure.services.IService;
+import com.mtinge.yuugure.services.database.UploadFetchParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -328,7 +329,7 @@ public class CLI implements IService {
                 if (args.isEmpty() || !uid.matches("^[0-9]+$")) {
                   System.out.println(usage);
                 } else {
-                  var upload = App.database().getUploadById(Integer.parseInt(uid), true);
+                  var upload = App.database().getUploadById(Integer.parseInt(uid), new UploadFetchParams(true, true));
                   if (upload == null) {
                     System.out.println("Upload doesn't exist.");
                   } else {

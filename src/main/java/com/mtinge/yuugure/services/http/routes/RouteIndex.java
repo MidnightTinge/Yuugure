@@ -3,6 +3,7 @@ package com.mtinge.yuugure.services.http.routes;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.data.postgres.DBMedia;
 import com.mtinge.yuugure.data.postgres.DBUpload;
+import com.mtinge.yuugure.services.database.UploadFetchParams;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.ViewHandler;
 import io.undertow.Handlers;
@@ -76,7 +77,7 @@ public class RouteIndex extends Route {
     if (matches != null) {
       var uploadId = matches.getParameters().get("id");
       if (uploadId != null && uploadId.matches("^[0-9]+$")) {
-        exchange.putAttachment(ATTACH_UPLOAD, App.database().getUploadById(Integer.parseInt(uploadId), false));
+        exchange.putAttachment(ATTACH_UPLOAD, App.database().getUploadById(Integer.parseInt(uploadId), new UploadFetchParams(false, true)));
       }
     }
   }

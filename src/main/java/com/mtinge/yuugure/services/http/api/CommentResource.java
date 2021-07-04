@@ -9,6 +9,7 @@ import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.http.SafeComment;
 import com.mtinge.yuugure.data.postgres.DBComment;
 import com.mtinge.yuugure.data.postgres.DBUpload;
+import com.mtinge.yuugure.services.database.UploadFetchParams;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.util.MethodValidator;
 import com.mtinge.yuugure.services.http.ws.packets.OutgoingPacket;
@@ -173,7 +174,7 @@ public class CommentResource extends APIResource<DBComment> {
     var uid = extractInt(exchange, "upload");
 
     if (uid != null) {
-      var upload = App.database().getUploadById(uid, false);
+      var upload = App.database().getUploadById(uid, new UploadFetchParams(false, true));
       if (upload != null) {
         if (States.flagged(upload.state, States.Upload.PRIVATE) && (authed == null || authed.id != upload.owner)) {
           return ResourceResult.unauthorized();
