@@ -95,14 +95,12 @@ public class MediaProcessor implements IService {
     }
   }
 
-  public static ProcessorResult Process(ProcessableUpload dequeued) {
+  public static ProcessorResult Process(ProcessableUpload dequeued, Path fullPath, Path thumbPath) {
     if (dequeued == null) return null;
 
     logger.debug("Beginning processing of {}", dequeued.media.sha256);
 
     // Harvest metadata
-    var fullPath = Path.of(App.config().upload.finalDir, dequeued.media.sha256 + ".full");
-    var thumbPath = Path.of(App.config().upload.finalDir, dequeued.media.sha256 + ".thumb");
     var result = new ProcessorResult(dequeued);
     var isJpeg = dequeued.media.mime.toLowerCase().endsWith("jpeg");
 
@@ -113,8 +111,8 @@ public class MediaProcessor implements IService {
       // don't, user uploaded an unprocessable file as we can't extract a thumbnail.
       if (streams.video != null) {
         var meta = new MediaMeta(dequeued.media.id)
-          .width(Optional.ofNullable(streams.video.getCodedWidth()).orElse(streams.video.getWidth()))
-          .height(Optional.ofNullable(streams.video.getCodedWidth()).orElse(streams.video.getHeight()))
+          .width(streams.video.getWidth())
+          .height(streams.video.getHeight())
           .video(dequeued.media.mime.toLowerCase().startsWith("video/"))
           .videoDuration(Optional.ofNullable(Optional.ofNullable(streams.video.getDuration()).orElse(streams.format.getDuration())).orElse(0f)) // try to extract from the video stream first, then the format specifier
           .hasAudio(false); // audio detection is handled with an ffmpeg filter later.
@@ -262,7 +260,9 @@ public class MediaProcessor implements IService {
             var parsed = ProcessableUpload.readFrom(new BsonBinaryReader(ByteBuffer.wrap(received)));
             if (parsed != null) {
               logger.info("Received job for upload {}.", parsed.upload.id);
-              var result = MediaProcessor.Process(parsed);
+              var fullPath = Path.of(App.config().upload.finalDir, parsed.media.sha256 + ".full");
+              var thumbPath = Path.of(App.config().upload.finalDir, parsed.media.sha256 + ".thumb");
+              var result = MediaProcessor.Process(parsed, fullPath, thumbPath);
 
               var bob = new BasicOutputBuffer();
               var writer = new BsonBinaryWriter(bob);

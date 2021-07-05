@@ -8,6 +8,7 @@ import com.mtinge.yuugure.services.processor.MediaProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.util.LinkedList;
 
 public class ReprocessSpecificUpload extends RunnableScript {
@@ -74,7 +75,9 @@ public class ReprocessSpecificUpload extends RunnableScript {
     if (toProcess != null) {
       try {
         logger.info("Dequeued upload, starting processor...");
-        var result = MediaProcessor.Process(toProcess);
+        var fullPath = Path.of(App.config().upload.finalDir, toProcess.media.sha256 + ".full");
+        var thumbPath = Path.of(App.config().upload.finalDir, toProcess.media.sha256 + ".thumb");
+        var result = MediaProcessor.Process(toProcess, fullPath, thumbPath);
         App.database().handleProcessorResult(result);
 
         logger.info("Job done. Result:" + MoshiFactory.create().adapter(Object.class).toJson(result));
