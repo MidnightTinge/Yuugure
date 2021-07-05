@@ -4,6 +4,7 @@ import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.MoshiFactory;
 import com.mtinge.yuugure.data.postgres.DBProcessingQueue;
 import com.mtinge.yuugure.data.processor.ProcessableUpload;
+import com.mtinge.yuugure.data.processor.ProcessorResult;
 import com.mtinge.yuugure.services.processor.MediaProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,8 +55,8 @@ public class ReprocessSpecificUpload extends RunnableScript {
             .execute();
 
           // get upload/media for ProcessableUpload constructor
-          var upload = App.database().getUploadById(item.upload, handle);
-          var media = App.database().getMediaById(upload.media, handle);
+          var upload = App.database().uploads.read(item.upload, handle);
+          var media = App.database().media.read(upload.media, handle);
 
           handle.commit();
           handled = true;
@@ -78,9 +79,25 @@ public class ReprocessSpecificUpload extends RunnableScript {
         var fullPath = Path.of(App.config().upload.finalDir, toProcess.media.sha256 + ".full");
         var thumbPath = Path.of(App.config().upload.finalDir, toProcess.media.sha256 + ".thumb");
         var result = MediaProcessor.Process(toProcess, fullPath, thumbPath);
-        App.database().handleProcessorResult(result);
+        final ProcessorResult _res = result;
+        var handleRes = App.database().jdbi().withHandle(handle -> {
+          handle.begin();
 
-        logger.info("Job done. Result:" + MoshiFactory.create().adapter(Object.class).toJson(result));
+          var res = App.database().processors.handleResult(_res, handle);
+          if (res.isSuccess()) {
+            handle.commit();
+          } else {
+            handle.rollback();
+          }
+
+          return res;
+        });
+
+        if (handleRes.isSuccess()) {
+          logger.info("Job done. Result:" + MoshiFactory.create().adapter(Object.class).toJson(result));
+        } else {
+          logger.warn("Job failed. Errors: " + String.join("\n", handleRes.getErrors()));
+        }
       } catch (Exception e) {
         logger.error("Failed to process upload {}.", uploadId, e);
       }

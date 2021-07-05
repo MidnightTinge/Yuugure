@@ -2,18 +2,15 @@ package com.mtinge.yuugure.services.http.routes;
 
 import com.mtinge.EBMLReader.EBMLReader;
 import com.mtinge.yuugure.App;
-import com.mtinge.yuugure.core.PrometheusMetrics;
-import com.mtinge.yuugure.core.States;
+import com.mtinge.yuugure.core.*;
 import com.mtinge.yuugure.core.TagManager.TagCategory;
 import com.mtinge.yuugure.core.TagManager.TagDescriptor;
-import com.mtinge.yuugure.core.ThreadFactories;
-import com.mtinge.yuugure.core.Utils;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.http.UploadResult;
-import com.mtinge.yuugure.data.postgres.DBMedia;
-import com.mtinge.yuugure.data.postgres.DBProcessingQueue;
 import com.mtinge.yuugure.data.postgres.DBTag;
-import com.mtinge.yuugure.data.postgres.DBUpload;
+import com.mtinge.yuugure.services.database.props.MediaProps;
+import com.mtinge.yuugure.services.database.props.ProcessingQueueProps;
+import com.mtinge.yuugure.services.database.props.UploadProps;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.AddressHandler;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
@@ -220,18 +217,9 @@ public class RouteUpload extends Route {
                               boolean handled = false;
 
                               try {
-                                var media = handle.createQuery("SELECT * FROM media WHERE sha256 = :sha256")
-                                  .bind("sha256", sha256)
-                                  .map(DBMedia.Mapper)
-                                  .findFirst().orElse(null);
+                                var media = App.database().media.readBySha(sha256, handle);
                                 if (media == null) {
-                                  media = handle.createQuery("INSERT INTO media (sha256, md5, phash, mime) VALUES (:sha256, :md5, :phash, :mime) RETURNING *")
-                                    .bind("sha256", sha256)
-                                    .bind("md5", md5)
-                                    .bind("phash", "")
-                                    .bind("mime", mime)
-                                    .map(DBMedia.Mapper)
-                                    .findFirst().orElse(null);
+                                  media = App.database().media.create(new MediaProps(sha256, md5, "", mime), handle).getResource();
                                 }
                                 if (media != null) {
                                   var dupedForOwner = handle.createQuery("SELECT EXISTS (SELECT id FROM upload WHERE owner = :owner AND media = :media) AS \"exists\"")
@@ -247,20 +235,12 @@ public class RouteUpload extends Route {
                                       uploadState = States.addFlag(uploadState, States.Upload.PRIVATE);
                                     }
 
-                                    var toRet = handle.createQuery("INSERT INTO upload (media, owner, state, upload_date) VALUES (:media, :owner, :state, now()) RETURNING *")
-                                      .bind("media", media.id)
-                                      .bind("owner", account.id)
-                                      .bind("state", uploadState)
-                                      .map(DBUpload.Mapper)
-                                      .findFirst().orElse(null);
+                                    var toRet = App.database().uploads.create(new UploadProps().media(media.id).owner(account.id).state(uploadState), handle).getResource();
                                     if (toRet != null) {
-                                      var pq = handle.createQuery("INSERT INTO processing_queue (upload) VALUES (:upload) RETURNING *")
-                                        .bind("upload", toRet.id)
-                                        .map(DBProcessingQueue.Mapper)
-                                        .findFirst().orElse(null);
+                                      var pq = App.database().processors.create(new ProcessingQueueProps().upload(toRet.id), handle);
                                       if (pq != null) {
                                         uploadResult.setSuccess(true);
-                                        uploadResult.setUpload(App.database().makeUploadRenderable(toRet, account, handle));
+                                        uploadResult.setUpload(App.database().uploads.makeUploadRenderable(toRet, account, handle));
                                         handle.commit();
                                         handled = true;
 
@@ -272,7 +252,7 @@ public class RouteUpload extends Route {
                                       }
                                       handled = true;
                                     } else {
-                                      uploadResult.addError("An internal server error occurred.");
+                                      uploadResult.addError(Strings.Generic.INTERNAL_SERVER_ERROR);
                                     }
                                   }
                                 } else {
@@ -294,7 +274,7 @@ public class RouteUpload extends Route {
                             if (inserted != null) {
                               // We do tagging/search indexing as a separate transaction to ensure
                               // everything has been committed in the database.
-                              App.database().addTagsToUpload(inserted.id, dbtags);
+                              App.database().jdbi().inTransaction(handle -> App.database().tags.addTagsToUpload(inserted.id, dbtags, handle));
                               App.elastic().newUpload(inserted, dbtags);
                             }
                           }

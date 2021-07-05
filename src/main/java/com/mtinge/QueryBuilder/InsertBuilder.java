@@ -92,8 +92,8 @@ public class InsertBuilder extends QueryBuilder {
   }
 
   @Override
-  public InsertBuilder trackBind(String key, Object value) {
-    super.trackBind(key, value);
+  public InsertBuilder bind(String key, Object value) {
+    super.bind(key, value);
     return this;
   }
 

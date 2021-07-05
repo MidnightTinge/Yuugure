@@ -133,8 +133,8 @@ public class FetchBuilder extends QueryBuilder {
   }
 
   @Override
-  public FetchBuilder trackBind(String key, Object value) {
-    super.trackBind(key, value);
+  public FetchBuilder bind(String key, Object value) {
+    super.bind(key, value);
     return this;
   }
 

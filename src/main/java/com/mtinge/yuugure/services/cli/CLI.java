@@ -329,7 +329,8 @@ public class CLI implements IService {
                 if (args.isEmpty() || !uid.matches("^[0-9]+$")) {
                   System.out.println(usage);
                 } else {
-                  var upload = App.database().getUploadById(Integer.parseInt(uid), new UploadFetchParams(true, true));
+                  var upload = App.database().jdbi().withHandle(handle -> App.database().uploads.read(Integer.parseInt(uid), new UploadFetchParams(true, true), handle));
+
                   if (upload == null) {
                     System.out.println("Upload doesn't exist.");
                   } else {
@@ -356,7 +357,8 @@ public class CLI implements IService {
                           if (tags.isEmpty()) {
                             System.out.println("Skipping upload " + uid + " due to empty tag list.");
                           } else {
-                            if (App.database().addTagsToUpload(upload.id, tags)) {
+                            var updated = App.database().jdbi().inTransaction(handle -> App.database().tags.addTagsToUpload(upload.id, tags, handle));
+                            if (updated) {
                               System.out.println("Tags updated.");
                             } else {
                               System.out.println("Failed to add tags, Database returned false.");
@@ -385,7 +387,8 @@ public class CLI implements IService {
                           if (tags.isEmpty()) {
                             System.out.println("Skipping upload " + uid + " due to empty tag list.");
                           } else {
-                            if (App.database().removeTagsFromUpload(upload.id, tags)) {
+                            var updated = App.database().jdbi().inTransaction(handle -> App.database().tags.removeTagsFromUpload(upload.id, tags, handle));
+                            if (updated) {
                               System.out.println("Tags updated.");
                             } else {
                               System.out.println("Failed to add tags, Database returned false.");

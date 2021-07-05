@@ -2,6 +2,7 @@ package com.mtinge.yuugure.services.http.api;
 
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.States;
+import com.mtinge.yuugure.core.Strings;
 import com.mtinge.yuugure.core.comments.Renderer;
 import com.mtinge.yuugure.data.http.CommentResponse;
 import com.mtinge.yuugure.data.http.ReportResponse;
@@ -56,9 +57,9 @@ public class CommentResource extends APIResource<DBComment> {
             var frmReason = body.getFirst("reason");
             if (frmReason != null && !frmReason.isFileItem()) {
               if (checkRatelimit(exchange, App.webServer().limiters().reportLimiter())) {
-                var report = App.database().createReport(resource.resource, authed, frmReason.getValue());
-                if (report != null) {
-                  res.json(Response.good(ReportResponse.fromDb(report)));
+                var report = App.database().jdbi().inTransaction(handle -> App.database().reports.create(resource.resource, authed, frmReason.getValue(), handle));
+                if (report.isSuccess()) {
+                  res.json(Response.good(ReportResponse.fromDb(report.getResource())));
                 } else {
                   res.internalServerError();
                   logger.error("Report returned from database on comment {} from user {} was null.", resource.resource.id, resource.resource.id);
@@ -93,13 +94,9 @@ public class CommentResource extends APIResource<DBComment> {
           if (authed == null || authed.id != comment.resource.account) {
             res.status(StatusCodes.UNAUTHORIZED).json(Response.fromCode(StatusCodes.UNAUTHORIZED));
           } else {
-            var updated = App.database().jdbi().withHandle(handle ->
-              handle.createUpdate("UPDATE comment SET active = false WHERE id = :id")
-                .bind("id", comment.resource.id)
-                .execute()
-            );
+            var deleted = App.database().jdbi().withHandle(handle -> App.database().comments.delete(comment.resource.id, handle));
 
-            var code = updated > 0 ? StatusCodes.OK : StatusCodes.INTERNAL_SERVER_ERROR;
+            var code = deleted.isSuccess() ? StatusCodes.OK : StatusCodes.INTERNAL_SERVER_ERROR;
             res.status(code).json(Response.fromCode(code));
           }
         }
@@ -118,7 +115,8 @@ public class CommentResource extends APIResource<DBComment> {
         var method = exchange.getRequestMethod();
         if (method.equals(Methods.GET)) {
           // Fetch comments
-          res.json(Response.good(App.database().getRenderableCommentsForUpload(upload.resource.id, false)));
+          var comments = App.database().jdbi().inTransaction(handle -> App.database().comments.makeRenderable(App.database().comments.readForUpload(upload.resource, false, handle), handle));
+          res.json(Response.good(comments));
         } else {
           // Comment actions - delete, report, edit, etc.
           var authed = getAuthed(exchange);
@@ -136,13 +134,18 @@ public class CommentResource extends APIResource<DBComment> {
                 } else {
                   if (checkRatelimit(exchange, App.webServer().limiters().commentLimiter())) {
                     var rendered = Renderer.render(body);
-                    var comment = App.database().createComment(upload.resource, authed, body, rendered);
+                    var comment = App.database().jdbi().withHandle(handle -> {
+                      var _new = App.database().comments.create(upload.resource, authed, body, rendered, handle);
+                      if (_new.isSuccess()) {
+                        return App.database().comments.makeRenderable(_new.getResource(), handle);
+                      }
+                      return null;
+                    });
                     if (comment != null) {
-                      var renderable = App.database().makeCommentRenderable(comment);
-                      response.setComment(renderable);
-                      App.webServer().wsListener().getLobby().in("upload:" + upload.resource.id).broadcast(OutgoingPacket.prepare("comment").addData("comment", renderable));
+                      response.setComment(comment);
+                      App.webServer().wsListener().getLobby().in("upload:" + upload.resource.id).broadcast(OutgoingPacket.prepare("comment").addData("comment", comment));
                     } else {
-                      response.addError("An internal server error occurred. Please try again later.");
+                      response.addError(Strings.Generic.INTERNAL_SERVER_ERROR);
                       code = StatusCodes.INTERNAL_SERVER_ERROR;
                     }
                   }
@@ -174,7 +177,7 @@ public class CommentResource extends APIResource<DBComment> {
     var uid = extractInt(exchange, "upload");
 
     if (uid != null) {
-      var upload = App.database().getUploadById(uid, new UploadFetchParams(false, true));
+      var upload = App.database().jdbi().withHandle(handle -> App.database().uploads.read(uid, new UploadFetchParams(false, true), handle));
       if (upload != null) {
         if (States.flagged(upload.state, States.Upload.PRIVATE) && (authed == null || authed.id != upload.owner)) {
           return ResourceResult.unauthorized();
@@ -190,7 +193,7 @@ public class CommentResource extends APIResource<DBComment> {
   protected ResourceResult<DBComment> fetchResource(HttpServerExchange exchange) {
     var id = extractInt(exchange, "comment");
     if (id != null) {
-      var comment = App.database().getCommentById(id, false);
+      var comment = App.database().jdbi().withHandle(handle -> App.database().comments.read(id, handle));
       if (comment != null && comment.active) {
         return ResourceResult.OK(comment);
       }

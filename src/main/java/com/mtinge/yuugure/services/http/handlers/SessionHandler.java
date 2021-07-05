@@ -102,18 +102,13 @@ public class SessionHandler implements HttpHandler {
 
   public static DBAccount tokenToAccount(String token, boolean purgeIfExpired) {
     return App.database().jdbi().withHandle(handle -> {
-      var session = handle.createQuery("SELECT * FROM sessions WHERE token = :token")
-        .bind("token", token)
-        .map(DBSession.Mapper)
-        .findFirst().orElse(null);
+      var session = App.database().sessions.read(token, handle);
 
       if (session != null) {
         if (Instant.now().isAfter(session.expires.toInstant())) {
           if (purgeIfExpired) {
             try {
-              handle.createUpdate("DELETE FROM sessions WHERE token = :token")
-                .bind("token", token)
-                .execute();
+              App.database().sessions.delete(token, handle);
             } catch (Exception e) {
               logger.error("Failed to kill session " + session.id, e);
             }
@@ -121,10 +116,7 @@ public class SessionHandler implements HttpHandler {
 
           return null;
         } else {
-          return handle.createQuery("SELECT * FROM account WHERE id = :id")
-            .bind("id", session.account)
-            .map(DBAccount.Mapper)
-            .first();
+          return App.database().accounts.read(session.account, handle);
         }
       }
 

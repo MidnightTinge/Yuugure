@@ -86,7 +86,7 @@ public class Elastic implements IService {
       if (response.isExists()) {
         var upload = EUpload.fromFields(response.getFields());
         if (upload != null && !upload.tags.isEmpty()) {
-          return App.database().getTagsById(upload.tags);
+          return App.database().jdbi().withHandle(handle -> App.database().tags.read(upload.tags, handle));
         }
       }
     } catch (IOException ioe) {

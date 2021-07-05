@@ -50,7 +50,7 @@ public abstract class QueryBuilder implements IBuilder {
     return this;
   }
 
-  public QueryBuilder trackBind(String key, Object value) {
+  public QueryBuilder bind(String key, Object value) {
     trackedBinds.put(key, value);
     return this;
   }

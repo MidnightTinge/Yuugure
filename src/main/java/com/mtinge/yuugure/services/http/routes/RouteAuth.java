@@ -3,11 +3,16 @@ package com.mtinge.yuugure.services.http.routes;
 import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.States;
+import com.mtinge.yuugure.core.Strings;
 import com.mtinge.yuugure.core.Utils;
 import com.mtinge.yuugure.core.Validators;
 import com.mtinge.yuugure.data.http.*;
 import com.mtinge.yuugure.data.postgres.DBAccount;
 import com.mtinge.yuugure.data.postgres.DBSession;
+import com.mtinge.yuugure.services.database.props.AccountProps;
+import com.mtinge.yuugure.services.database.props.SessionProps;
+import com.mtinge.yuugure.services.database.providers.AccountProvider;
+import com.mtinge.yuugure.services.database.providers.Provider;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
 import io.undertow.Handlers;
@@ -112,83 +117,39 @@ public class RouteAuth extends Route {
               mtxEmail.acquire();
               mtxUsername.acquire();
 
-              String finalPassword = password;
-              String finalUsername = username;
-              String finalEmail = email;
+              var accountProps = new AccountProps(email, username, password, 0L);
               App.database().jdbi().useHandle(handle -> {
-                var errored = false; // tracks rollback for our finally{} txn.commit
-                var txn = handle.begin();
+                handle.begin();
 
-                try {
-                  // we're splitting so the user can know which conflicts
-                  var emailExists = txn.createQuery("SELECT EXISTS (SELECT id FROM account WHERE lower(email) = lower(:email)) AS \"exists\"")
-                    .bind("email", finalEmail)
-                    .map((r, __, ___) -> r.getBoolean("exists"))
-                    .findFirst().orElse(null);
-                  var usernameExists = txn.createQuery("SELECT EXISTS (SELECT id FROM account WHERE lower(username) = lower(:username)) AS \"exists\"")
-                    .bind("username", finalUsername)
-                    .map((r, __, ___) -> r.getBoolean("exists"))
-                    .findFirst().orElse(null);
+                var result = App.database().accounts.create(accountProps, handle);
+                if (result.isSuccess() && result.getResource() != null) {
+                  var sessionProps = new SessionProps(Utils.token(16), Instant.now().plus(App.config().http.auth.sessionExpires), result.getResource().id);
+                  var session = App.database().sessions.create(sessionProps, handle);
 
-                  if (emailExists == null || usernameExists == null) {
-                    // an error occurred, we should never see this, but just in case it happens we
-                    // don't want the default behavior to be confusing to the end-user (e.g. we
-                    // shouldn't say the username is taken/unavailable)
-                    authRes.addError("An internal server error occurred while interacting with the database. Please try again later.");
-                    logger.error("Registration failed.", new Error("The database did not return a valid boolean during registration preflights."));
-                    errored = true;
-                    txn.rollback();
-                  } else if (emailExists || usernameExists) {
-                    if (emailExists) {
-                      authRes.addInputError("email", "This email is already in use by another account.");
-                    }
-                    if (usernameExists) {
-                      authRes.addInputError("username", "This username is already in use by another account.");
+                  if (session.isSuccess() && session.getResource() != null) {
+                    res.cookie(SessionHandler.makeSessionCookie(session.getResource().token, session.getResource().expires.toInstant()));
+                    authRes.setAuthed(true);
+                  } else {
+                    authRes.setAuthed(false);
+                    authRes.addError("Your account was created but we failed to log you in automatically. Please try logging in manually.");
+                  }
+
+                  // Session failing to insert is not a reason to rollback an account creation. If
+                  // we're to this point, all the user's data is inserted and valid, they should be
+                  // able to auth manually.
+                  handle.commit();
+                } else {
+                  handle.rollback();
+                  authRes.setAuthed(false);
+
+                  if (result.getFailCode() != null) {
+                    switch (result.getFailCode()) {
+                      case Provider.FAIL_SQL, Provider.FAIL_UNKNOWN -> result.getErrors().forEach(authRes::addError);
+                      case AccountProvider.FAIL_EXISTING_EMAIL -> authRes.addInputError("email", "This email is already in use by another account.");
+                      case AccountProvider.FAIL_EXISTING_USERNAME -> authRes.addInputError("username", "This username is already in use by another account.");
                     }
                   } else {
-                    var hash = BCrypt.withDefaults().hashToString(12, finalPassword.toCharArray());
-
-                    var account = txn.createQuery("INSERT INTO account (username, email, password) VALUES (:username, :email, :hash) RETURNING *")
-                      .bind("username", finalUsername)
-                      .bind("email", finalEmail)
-                      .bind("hash", hash)
-                      .map(DBAccount.Mapper)
-                      .findFirst().orElse(null);
-
-                    if (account == null) {
-                      txn.rollback();
-                      errored = true;
-                      authRes.addError("An internal server occurred while creating the user. Please try again later.");
-                      logger.error("Registration failed.", new Error("The database did not return a valid account after insertion."));
-                    } else {
-                      // TODO set cookie
-                      var token = Utils.token(16);
-                      var expires = Instant.now().plus(App.config().http.auth.sessionExpires);
-                      var session = handle.createQuery("INSERT INTO sessions (token, account, expires) VALUES (:token, :account, :expires) RETURNING *")
-                        .bind("token", token)
-                        .bind("account", account.id)
-                        .bind("expires", Timestamp.from(expires))
-                        .map(DBSession.Mapper)
-                        .findFirst().orElse(null);
-
-                      if (session != null) {
-                        authRes.authed = true;
-                        res.cookie(SessionHandler.makeSessionCookie(token, expires));
-                      } else {
-                        authRes.authed = false;
-                        authRes.addError("Your account was created, but automatic login failed. Please try to login manually.");
-                        logger.error("Failed to create session for user {}, query returned a null value.", account.id);
-                      }
-                    }
-                  }
-                } catch (Exception e) {
-                  errored = true;
-                  txn.rollback();
-                  logger.error("Registration failed (txn catch).", e);
-                  authRes.addError("An internal server occurred while creating the user. Please try again later.");
-                } finally {
-                  if (!errored) {
-                    txn.commit();
+                    authRes.addError(Strings.Generic.INTERNAL_SERVER_ERROR);
                   }
                 }
               });
@@ -260,7 +221,7 @@ public class RouteAuth extends Route {
                   res.cookie(SessionHandler.makeSessionCookie(token, expires));
                 } else {
                   authRes.authed = false;
-                  authRes.addError("An internal server error occurred while logging you in. Please try again.");
+                  authRes.addError(Strings.Generic.INTERNAL_SERVER_ERROR_RELOAD);
                   logger.error("Failed to create session for user {}, query returned a null value.", user.id);
                 }
               } else {
