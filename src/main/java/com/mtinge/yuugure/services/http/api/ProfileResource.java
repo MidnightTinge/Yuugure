@@ -1,7 +1,6 @@
 package com.mtinge.yuugure.services.http.api;
 
 import com.mtinge.yuugure.App;
-import com.mtinge.yuugure.core.States;
 import com.mtinge.yuugure.data.http.ProfileResponse;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.http.SafeAccount;
@@ -52,8 +51,13 @@ public class ProfileResource extends APIResource<DBAccount> {
       if (action.equalsIgnoreCase("uploads")) {
         if (MethodValidator.handleMethodValidation(exchange, Methods.GET, Methods.DELETE)) {
           if (exchange.getRequestMethod().equals(Methods.GET)) {
-            res.json(Response.good(App.database().getRenderableUploadsForAccount(resource.resource.id, new UploadFetchParams(false, authed != null && authed.id == resource.resource.id), authed)));
+            // Fetch all uploads for the requested account.
+
+            var uploads = App.database().jdbi().withHandle(handle -> App.database().uploads.readRenderableForAccount(resource.resource.id, new UploadFetchParams(false, authed != null && authed.id == resource.resource.id), authed, handle));
+            res.json(Response.good(uploads));
           } else if (exchange.getRequestMethod().equals(Methods.DELETE)) {
+            // Delete all uploads for the requested account.
+
             if (authed.id != resource.resource.id) {
               res.json(Response.fromCode(StatusCodes.FORBIDDEN));
             } else {
@@ -61,13 +65,12 @@ public class ProfileResource extends APIResource<DBAccount> {
               if (token != null) {
                 if (App.redis().confirmToken(token, authed, true)) {
                   try {
-                    var updated = App.database().jdbi().inTransaction(handle ->
-                      handle.createUpdate("UPDATE upload SET state = (state | :delete_state) WHERE owner = :owner AND (state & :delete_state) = 0")
-                        .bind("owner", authed.id)
-                        .bind("delete_state", States.Upload.DELETED)
-                        .execute()
-                    );
-                    res.json(Response.good().addMessage("Deleted " + updated + " uploads."));
+                    var updated = App.database().jdbi().inTransaction(handle -> App.database().uploads.deleteForAccount(authed.id, handle));
+                    if (updated.isSuccess()) {
+                      res.json(Response.good().addMessage("Deleted " + updated.getResource() + " uploads."));
+                    } else {
+                      res.json(Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR));
+                    }
                   } catch (Exception e) {
                     logger.error("Failed to delete uploads for account {}.", authed.id, e);
                     res.json(Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR));
@@ -83,7 +86,10 @@ public class ProfileResource extends APIResource<DBAccount> {
         }
       } else if (action.equalsIgnoreCase("bookmarks")) {
         if (MethodValidator.handleMethodValidation(exchange, Methods.GET)) {
-          res.json(Response.good(App.database().getRenderableBookmarksForAccount(resource.resource.id, authed)));
+          // Get all bookmarks for the requested account.
+
+          var bookmarks = App.database().jdbi().withHandle(handle -> App.database().bookmarks.getRenderableBookmarksForAccount(resource.resource.id, authed, handle));
+          res.json(Response.good(bookmarks));
         }
       }
     } else {

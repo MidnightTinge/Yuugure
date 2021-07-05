@@ -7,6 +7,7 @@ import com.mtinge.yuugure.data.processor.ProcessorResult;
 import com.mtinge.yuugure.services.IService;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import org.apache.logging.log4j.util.Strings;
 import org.bson.BsonBinaryReader;
 import org.bson.BsonBinaryWriter;
 import org.bson.io.BasicOutputBuffer;
@@ -71,14 +72,14 @@ public class Messaging implements IService {
           switch (request[0]) {
             case DEQUEUE_REQUEST -> {
               synchronized (dqMonitor) {
-                var dequeued = App.database().dequeueUploadForProcessing();
-                if (dequeued == null) {
+                var dequeued = App.database().jdbi().withHandle(App.database().processors::dequeue);
+                if (!dequeued.isSuccess() || dequeued.getResource() == null) {
                   internalSocket.send(new byte[]{NO_WORK});
                 } else {
                   try {
                     var bob = new BasicOutputBuffer();
                     var writer = new BsonBinaryWriter(bob);
-                    dequeued.writeTo(writer);
+                    dequeued.getResource().writeTo(writer);
 
                     try (var bos = new ByteArrayOutputStream()) {
                       bob.pipe(bos);
@@ -120,8 +121,26 @@ public class Messaging implements IService {
             if (result != null) {
               PrometheusMetrics.MP_JOBS_ALIVE.set(jobsAlive.decrementAndGet());
               PrometheusMetrics.MP_JOBS_FINISHED.inc();
-              App.database().handleProcessorResult(result);
-              logger.debug("Marked dequeued item {} complete.", result.dequeued().queueItem.id);
+
+              final ProcessorResult _res = result;
+              var handleRes = App.database().jdbi().withHandle(handle -> {
+                handle.begin();
+
+                var res = App.database().processors.handleResult(_res, handle);
+                if (res.isSuccess()) {
+                  handle.commit();
+                } else {
+                  handle.rollback();
+                }
+
+                return res;
+              });
+
+              if (handleRes.isSuccess()) {
+                logger.info("Marked dequeued item {} complete.", result.dequeued().queueItem.id);
+              } else {
+                logger.warn("Failed to handle result for item {}. Errors:\n{}", result.dequeued().queueItem.id, Strings.join(handleRes.getErrors(), '\n'));
+              }
             }
           }
         }

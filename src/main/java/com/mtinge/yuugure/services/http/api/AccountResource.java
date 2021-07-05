@@ -3,12 +3,14 @@ package com.mtinge.yuugure.services.http.api;
 import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.States;
+import com.mtinge.yuugure.core.Strings;
 import com.mtinge.yuugure.core.Validators;
 import com.mtinge.yuugure.data.http.AccountUpdateResponse;
 import com.mtinge.yuugure.data.http.ReportResponse;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.http.SafeAccount;
 import com.mtinge.yuugure.data.postgres.DBAccount;
+import com.mtinge.yuugure.services.database.props.AccountProps;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
 import com.mtinge.yuugure.services.http.util.MethodValidator;
@@ -53,8 +55,28 @@ public class AccountResource extends APIResource<DBAccount> {
             if (token != null) {
               if (App.redis().confirmToken(token, authed, true)) {
                 try {
-                  App.database().deleteAccount(authed.id);
-                  res.json(Response.good());
+                  var success = App.database().jdbi().withHandle(handle -> {
+                    handle.begin();
+
+                    try {
+                      var delres = App.database().accounts.delete(authed.id, handle);
+                      if (delres.isSuccess()) {
+                        handle.commit();
+                        return true;
+                      } else {
+                        logger.error("Failed to delete account, delres was false.");
+                        handle.rollback();
+                        return false;
+                      }
+                    } catch (Exception e) {
+                      logger.error("Failed to delete account, caught sql error.", e);
+                      handle.rollback();
+                      return false;
+                    }
+                  });
+
+                  int code = success ? StatusCodes.OK : StatusCodes.INTERNAL_SERVER_ERROR;
+                  res.status(code).json(Response.fromCode(code).addMessage(success ? "Account deleted." : Strings.Generic.INTERNAL_SERVER_ERROR));
                 } catch (Exception e) {
                   logger.error("Failed to handle account deletion for ID {}.", authed.id, e);
                   res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR));
@@ -95,9 +117,9 @@ public class AccountResource extends APIResource<DBAccount> {
             if (body != null) {
               var frmReason = body.getFirst("reason");
               if (frmReason != null && !frmReason.isFileItem()) {
-                var report = App.database().createReport(resource.resource, authed, frmReason.getValue());
-                if (report != null) {
-                  res.json(Response.good().addData(ReportResponse.fromDb(report)));
+                var report = App.database().jdbi().inTransaction(handle -> App.database().reports.create(resource.resource, authed, frmReason.getValue(), handle));
+                if (report.isSuccess()) {
+                  res.json(Response.good(ReportResponse.fromDb(report.getResource())));
                 } else {
                   res.internalServerError();
                   logger.error("Report returned from database on account {} from user {} was null.", resource.resource.id, resource.resource.id);
@@ -134,10 +156,33 @@ public class AccountResource extends APIResource<DBAccount> {
                 if (!verified) {
                   resp.addInputError("password", "Incorrect password.");
                 } else {
-                  var updated = App.database().updateAccountEmail(resource.resource.id, email);
-                  if (!updated) {
-                    logger.error("updateAccountEmail returned false");
-                    resp.addError("An internal server error occurred.");
+                  var mtx = App.redis().getMutex("reg:em:" + email);
+                  try {
+                    mtx.acquire();
+
+                    var _updated = App.database().jdbi().withHandle(handle -> {
+                      handle.begin();
+                      try {
+                        var updRes = App.database().accounts.update(resource.resource.id, new AccountProps().email(email), handle);
+                        if (updRes.isSuccess()) {
+                          handle.commit();
+                          return updRes.getResource();
+                        } else {
+                          logger.error("Failed to update email for account {}, update job returned null.", resource.resource.id);
+                          handle.rollback();
+                          return null;
+                        }
+                      } catch (Exception e) {
+                        logger.error("Failed to update email for account {}, caught sql error.", resource.resource.id, e);
+                        handle.rollback();
+                        return null;
+                      }
+                    });
+                    if (_updated == null) {
+                      resp.addError(Strings.Generic.INTERNAL_SERVER_ERROR);
+                    }
+                  } finally {
+                    mtx.release();
                   }
                 }
               }
@@ -180,11 +225,26 @@ public class AccountResource extends APIResource<DBAccount> {
                 if (!verified) {
                   resp.addInputError("current", "Incorrect password.");
                 } else {
-                  var newHash = BCrypt.withDefaults().hash(12, newPassword.getBytes(StandardCharsets.UTF_8));
-                  var updated = App.database().updateAccountPassword(resource.resource.id, new String(newHash));
-                  if (!updated) {
-                    logger.error("updateAccountPassword returned false");
-                    resp.addError("An internal server error occurred.");
+                  var _updated = App.database().jdbi().withHandle(handle -> {
+                    handle.begin();
+                    try {
+                      var updRes = App.database().accounts.update(resource.resource.id, new AccountProps().password(newPassword), handle);
+                      if (updRes.isSuccess()) {
+                        handle.commit();
+                        return updRes.getResource();
+                      } else {
+                        logger.error("Failed to update password for account {}, update job returned null.", resource.resource.id);
+                        handle.rollback();
+                        return null;
+                      }
+                    } catch (Exception e) {
+                      logger.error("Failed to update password for account {}, caught sql error.", resource.resource.id, e);
+                      handle.rollback();
+                      return null;
+                    }
+                  });
+                  if (_updated == null) {
+                    resp.addError(Strings.Generic.INTERNAL_SERVER_ERROR);
                   }
                 }
               }
@@ -222,16 +282,18 @@ public class AccountResource extends APIResource<DBAccount> {
           }
         } else if (isNumeric) {
           // requested someone else
-          var account = App.database().getAccountById(Integer.parseInt(aId), false);
-          if (account != null) {
-            if (States.flagged(account.state, States.Account.PRIVATE) && (authed == null || authed.id != account.id)) {
-              return ResourceResult.unauthorized();
+          return App.database().jdbi().withHandle(handle -> {
+            var account = App.database().accounts.read(Integer.parseInt(aId), false, handle);
+            if (account != null) {
+              if (States.flagged(account.state, States.Account.PRIVATE) && (authed == null || authed.id != account.id)) {
+                return ResourceResult.unauthorized();
+              } else {
+                return ResourceResult.OK(account);
+              }
             } else {
-              return ResourceResult.OK(account);
+              return ResourceResult.notFound();
             }
-          } else {
-            return ResourceResult.notFound();
-          }
+          });
         } else {
           return ResourceResult.notFound();
         }

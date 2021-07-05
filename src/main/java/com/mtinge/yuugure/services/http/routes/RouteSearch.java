@@ -43,7 +43,9 @@ public class RouteSearch extends Route {
           PrometheusMetrics.SEARCH_TOTAL.labels(String.valueOf(exchange.getAttachment(SessionHandler.ATTACHMENT_KEY) != null)).inc(); // label: authed
           var searchResult = App.elastic().search(q, page);
           if (searchResult != null) {
-            var uploads = App.database().getUploadsForSearch(searchResult.hits, exchange.getAttachment(SessionHandler.ATTACHMENT_KEY));
+            var authed = exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
+            var uploads = App.database().jdbi().withHandle(handle -> App.database().uploads.getUploadsForSearch(searchResult.hits, authed, handle));
+
             res.json(Response.good().addData(new SearchResult(new SearchPagination(searchResult.pageCurrent, searchResult.pageMax), uploads)));
           } else {
             res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR));

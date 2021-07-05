@@ -1,7 +1,6 @@
 package com.mtinge.yuugure.services.http.routes;
 
 import com.mtinge.yuugure.App;
-import com.mtinge.yuugure.data.postgres.DBMedia;
 import com.mtinge.yuugure.data.postgres.DBUpload;
 import com.mtinge.yuugure.services.database.UploadFetchParams;
 import com.mtinge.yuugure.services.http.Responder;
@@ -77,7 +76,8 @@ public class RouteIndex extends Route {
     if (matches != null) {
       var uploadId = matches.getParameters().get("id");
       if (uploadId != null && uploadId.matches("^[0-9]+$")) {
-        exchange.putAttachment(ATTACH_UPLOAD, App.database().getUploadById(Integer.parseInt(uploadId), new UploadFetchParams(false, true)));
+        var upload = App.database().jdbi().withHandle(handle -> App.database().uploads.read(Integer.parseInt(uploadId), new UploadFetchParams(false, true), handle));
+        exchange.putAttachment(ATTACH_UPLOAD, upload);
       }
     }
   }
@@ -86,7 +86,7 @@ public class RouteIndex extends Route {
     _attachUpload(exchange);
     var upload = exchange.getAttachment(ATTACH_UPLOAD);
     if (upload != null) {
-      var media = App.database().getMediaById(upload.media);
+      var media = App.database().jdbi().withHandle(handle -> App.database().media.read(upload.media, handle));
       if (media != null) {
         _serveFromUploadsDir(exchange, media.sha256 + ".full", media.mime);
       }
@@ -102,7 +102,7 @@ public class RouteIndex extends Route {
     _attachUpload(exchange);
     var upload = exchange.getAttachment(ATTACH_UPLOAD);
     if (upload != null) {
-      var media = App.database().getMediaById(upload.media);
+      var media = App.database().jdbi().withHandle(handle -> App.database().media.read(upload.media, handle));
       if (media != null) {
         var path = Path.of(App.config().upload.finalDir, media.sha256 + ".thumb");
         if (path.toFile().exists()) {
@@ -150,31 +150,25 @@ public class RouteIndex extends Route {
 
       var match = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
       if (match != null && match.getParameters().get("id") != null && match.getParameters().get("id").matches("^[0-9]+$")) {
-        var upload = App.database().jdbi().withHandle(handle ->
-          handle.createQuery("SELECT * FROM upload WHERE id = CAST(:id AS INT)")
-            .bind("id", match.getParameters().get("id"))
-            .map(DBUpload.Mapper)
-            .findFirst().orElse(null)
-        );
-        if (upload != null) {
-          var meta = App.database().jdbi().withHandle(handle ->
-            handle.createQuery("SELECT * FROM media WHERE id = :id")
-              .bind("id", upload.media)
-              .map(DBMedia.Mapper)
-              .first()
-          );
+        Map<String, Object> model = App.database().jdbi().withHandle(handle -> {
+          var upload = App.database().uploads.read(Integer.parseInt(match.getParameters().get("id")), handle);
+          if (upload != null) {
+            var media = App.database().media.read(upload.media, handle);
+            if (media != null) {
+              return Map.of(
+                "meta", Map.of(
+                  "og:title", "Upload",
+                  "og:type", media.mime.startsWith("image/") ? "picture" : "video",
+                  "og:image", "/thumb/" + upload.id,
+                  "og:url", "/view/" + upload.id
+                )
+              );
+            }
+          }
 
-          res.view("app", Map.of(
-            "meta", Map.of(
-              "og:title", "Upload",
-              "og:type", meta.mime.startsWith("image/") ? "picture" : "video",
-              "og:image", "/thumb/" + upload.id,
-              "og:url", "/view/" + upload.id
-            )
-          ));
-        } else {
-          res.view("app");
-        }
+          return null;
+        });
+        res.view("app", model);
       } else {
         res.view("app");
       }
