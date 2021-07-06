@@ -29,7 +29,6 @@ export type NavProps = {
 
 export default function Nav(props: NavProps) {
   const [loggingOut, setLoggingOut] = useState(false);
-  const history = useHistory();
 
   const {state: authState, reloadAuth} = useContext(AuthStateContext);
 
@@ -61,7 +60,7 @@ export default function Nav(props: NavProps) {
           <NavItem href="/search" active={props.active === 'search'}>Search</NavItem>
           {authState.authed ? (
             <>
-              <NavItem href="/profile" active={props.active === 'profile'}>Profile</NavItem>
+              <NavItem href={`/user/${authState.account.id}?settings`}>Profile</NavItem>
               {loggingOut ? (
                 <li className={`p-2 mr-1`}>
                   <span className="text-gray-300 cursor-not-allowed select-none"><Spinner/> Logging out...</span>
