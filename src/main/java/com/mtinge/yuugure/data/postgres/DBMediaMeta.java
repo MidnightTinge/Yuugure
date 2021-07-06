@@ -10,7 +10,7 @@ public class DBMediaMeta {
   public final int width;
   public final int height;
   public final boolean video;
-  public final long videoDuration;
+  public final double videoDuration;
   public final boolean hasAudio;
 
   public static final RowMapper<DBMediaMeta> Mapper = (r, ctx) -> new DBMediaMeta(
@@ -19,7 +19,7 @@ public class DBMediaMeta {
     r.getInt("width"),
     r.getInt("height"),
     r.getBoolean("video"),
-    r.getLong("video_duration"),
+    r.getDouble("video_duration"),
     r.getBoolean("has_audio")
   );
 }
