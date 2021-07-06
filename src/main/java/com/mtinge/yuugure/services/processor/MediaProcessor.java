@@ -142,7 +142,7 @@ public class MediaProcessor implements IService {
           }
 
           //  Filesize
-          var fs = FileSize.get(streams.format.getSize().intValue());
+          var fs = FileSize.get(streams.format.getSize().intValue(), meta.video());
           if (fs != null) {
             tags.add(TagCategory.FILESIZE.getName() + ":" + fs);
           }
