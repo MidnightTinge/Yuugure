@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import java.sql.Timestamp;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -28,4 +30,9 @@ public class BookmarkProps {
    * The account that created this bookmark.
    */
   private Integer account = null;
+  /**
+   * The time when this bookmark was activated. This field is externally mutable - every time active
+   * flips to true this should update.
+   */
+  private Timestamp timestamp = null;
 }

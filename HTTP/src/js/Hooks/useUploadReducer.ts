@@ -1,5 +1,7 @@
 import {Dispatch, useReducer} from 'react';
 
+export type UploadReducerHook = [UploadState, Dispatch<ReducerAction>, UploadActions];
+
 type UploadState = {
   uploads: RenderableUpload[];
 };
@@ -64,7 +66,7 @@ function _makeActions(dispatch: Dispatch<ReducerAction>): UploadActions {
   };
 }
 
-export default function useUploadReducer(): [UploadState, Dispatch<ReducerAction>, UploadActions] {
+export default function useUploadReducer(): UploadReducerHook {
   const [reducer, dispatch] = useReducer(UploadReducer, {uploads: []}, () => ({uploads: []}));
 
   return [reducer, dispatch, _makeActions(dispatch)];

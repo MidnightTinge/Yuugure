@@ -1,5 +1,6 @@
 package com.mtinge.yuugure.services.database.providers;
 
+import com.mtinge.QueryBuilder.FetchBuilder;
 import com.mtinge.QueryBuilder.QueryBuilder;
 import com.mtinge.QueryBuilder.ops.filter.Filter;
 import com.mtinge.QueryBuilder.ops.order.OrderType;
@@ -15,7 +16,7 @@ import com.mtinge.yuugure.services.database.UploadFetchParams;
 import com.mtinge.yuugure.services.database.props.UploadProps;
 import com.mtinge.yuugure.services.database.results.Result;
 import org.jdbi.v3.core.Handle;
-import org.jdbi.v3.core.statement.Query;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,8 +84,16 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
 
   public List<DBUpload> readForAccount(int id, UploadFetchParams params, Handle handle) {
     return Database.toList(
-      _uploadsForAccount(id, params, handle),
+      _uploadsForAccount(id, params).toQuery(handle),
       DBUpload.Mapper
+    );
+  }
+
+  public Integer countForAccount(int id, UploadFetchParams params, Handle handle) {
+    var sql = _uploadsForAccount(id, true, params).build();
+    return Database.first(
+      _uploadsForAccount(id, true, params).toQuery(handle),
+      Database.intMapper("count")
     );
   }
 
@@ -92,12 +101,27 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
     return makeUploadsRenderable(readForAccount(id, params, handle), context, handle);
   }
 
-  private Query _uploadsForAccount(int accountId, UploadFetchParams params, Handle handle) {
-    var builder = QueryBuilder.select("*")
+  public BulkRenderableUpload readRenderableForAccount(int id, Integer before, UploadFetchParams params, @Nullable DBAccount context, Handle handle) {
+    var uploads = Database.toList(
+      _uploadsForAccount(id, before, params).toQuery(handle),
+      DBUpload.Mapper
+    );
+    return makeUploadsRenderable(uploads, context, handle);
+  }
+
+  private FetchBuilder _uploadsForAccount(int accountId, UploadFetchParams params) {
+    return _uploadsForAccount(accountId, false, params);
+  }
+
+  private FetchBuilder _uploadsForAccount(int accountId, boolean countOnly, UploadFetchParams params) {
+    var builder = QueryBuilder.select(countOnly ? "count(id) as \"count\"" : "*")
       .from("upload")
-      .order("upload_date", OrderType.DESC)
       .bind("owner", accountId);
     var filter = Filter.of("owner", ":owner");
+
+    if (!countOnly) {
+      builder.order("upload_date", OrderType.DESC);
+    }
 
     if (!params.includePrivate() || !params.includeBadFlagged()) {
       long state = 0L;
@@ -112,7 +136,25 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
       builder.bind("state", state);
     }
 
-    return builder.where(filter).toQuery(handle);
+    return builder.where(filter);
+  }
+
+  private FetchBuilder _uploadsForAccount(int accountId, @Nullable Integer before, @NotNull UploadFetchParams params) {
+    var builder = _uploadsForAccount(accountId, params)
+      .limit(100);
+
+    if (before != null) {
+      builder
+        .where(
+          Filter.and(
+            builder.getFilter(),
+            Filter.of("id < :before")
+          )
+        )
+        .bind("before", before);
+    }
+
+    return builder;
   }
 
   @Override

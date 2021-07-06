@@ -147,3 +147,8 @@ type SearchResult = {
   page: SearchPagination;
   result: BulkRenderableUpload;
 }
+
+type BulkPaginatedResponse = {
+  uploads: BulkRenderableUpload;
+  max: number;
+};

@@ -190,13 +190,15 @@ table upload_tags {
 }
 
 table upload_bookmark {
-  active  boolean [not null, default: `false`]
-  public  boolean [not null]
-  upload  int     [not null, ref:> upload.id]
-  account int     [not null, ref:> account.id]
+  active    boolean     [not null, default: `false`]
+  timestamp timestamptz [not null, default: `now()`]
+  public    boolean     [not null]
+  upload    int         [not null, ref:> upload.id]
+  account   int         [not null, ref:> account.id]
 
   indexes {
     (upload, account) [pk]
+    timestamp
     upload
     account
     (upload, account) [unique, name: "bookmark_account_upload_pair_unique"]

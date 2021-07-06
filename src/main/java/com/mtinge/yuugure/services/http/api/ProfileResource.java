@@ -1,6 +1,7 @@
 package com.mtinge.yuugure.services.http.api;
 
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.data.http.BulkPaginatedResponse;
 import com.mtinge.yuugure.data.http.ProfileResponse;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.http.SafeAccount;
@@ -8,6 +9,7 @@ import com.mtinge.yuugure.data.postgres.DBAccount;
 import com.mtinge.yuugure.services.database.UploadFetchParams;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.util.MethodValidator;
+import com.mtinge.yuugure.services.http.util.QueryHelper;
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
@@ -52,8 +54,24 @@ public class ProfileResource extends APIResource<DBAccount> {
         if (MethodValidator.handleMethodValidation(exchange, Methods.GET, Methods.DELETE)) {
           if (exchange.getRequestMethod().equals(Methods.GET)) {
             // Fetch all uploads for the requested account.
+            var pagination = QueryHelper.first(exchange.getQueryParameters(), "before");
+            if (pagination.isBlank() || !pagination.matches("^[0-9]+$")) {
+              pagination = null;
+            }
+            Integer before = pagination == null ? null : Integer.parseInt(pagination);
 
-            var uploads = App.database().jdbi().withHandle(handle -> App.database().uploads.readRenderableForAccount(resource.resource.id, new UploadFetchParams(false, authed != null && authed.id == resource.resource.id), authed, handle));
+            var uploads = App.database().jdbi().withHandle(handle -> {
+              try {
+                handle.begin();
+                var params = new UploadFetchParams(false, authed != null && authed.id == resource.resource.id);
+                var items = App.database().uploads.readRenderableForAccount(resource.resource.id, before, params, authed, handle);
+                var max = App.database().uploads.countForAccount(resource.resource.id, params, handle);
+
+                return new BulkPaginatedResponse(items, max);
+              } finally {
+                handle.commit();
+              }
+            });
             res.json(Response.good(uploads));
           } else if (exchange.getRequestMethod().equals(Methods.DELETE)) {
             // Delete all uploads for the requested account.
@@ -87,8 +105,19 @@ public class ProfileResource extends APIResource<DBAccount> {
       } else if (action.equalsIgnoreCase("bookmarks")) {
         if (MethodValidator.handleMethodValidation(exchange, Methods.GET)) {
           // Get all bookmarks for the requested account.
+          var pagination = QueryHelper.first(exchange.getQueryParameters(), "before");
+          if (pagination.isBlank() || !pagination.matches("^[0-9]+$")) {
+            pagination = null;
+          }
+          Integer before = pagination == null ? null : Integer.parseInt(pagination);
 
-          var bookmarks = App.database().jdbi().withHandle(handle -> App.database().bookmarks.getRenderableBookmarksForAccount(resource.resource.id, authed, handle));
+          var bookmarks = App.database().jdbi().withHandle(handle -> {
+            var uploads = App.database().bookmarks.getRenderableBookmarksForAccount(resource.resource.id, before, authed, handle);
+            var max = App.database().bookmarks.countForAccount(resource.resource.id, authed, handle);
+
+            return new BulkPaginatedResponse(uploads, max);
+          });
+
           res.json(Response.good(bookmarks));
         }
       }

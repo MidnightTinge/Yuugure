@@ -1,5 +1,6 @@
 package com.mtinge.yuugure.services.database.providers;
 
+import com.mtinge.QueryBuilder.FetchBuilder;
 import com.mtinge.QueryBuilder.QueryBuilder;
 import com.mtinge.QueryBuilder.ops.filter.Filter;
 import com.mtinge.QueryBuilder.ops.join.Join;
@@ -29,12 +30,13 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
     return Result.fromValue(
       Database.firstOrNull(
         QueryBuilder.insert("upload_bookmark")
-          .columns("account", "upload", "active", "public")
-          .values(":account", ":upload", ":active", ":public")
+          .columns("account", "upload", "active", "public", "timestamp")
+          .values(":account", ":upload", ":active", ":public", ":timestamp")
           .bind("account", requireNonNull(props.account()))
           .bind("upload", requireNonNull(props.upload()))
           .bind("active", requireNonNull(props.active()))
           .bind("public", requireNonNull(props.isPublic()))
+          .bind("timestamp", requireNonNull(props.timestamp()))
           .returning("*")
           .toQuery(handle),
         DBUploadBookmark.Mapper
@@ -108,6 +110,9 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
     if (updated.account() != null) {
       query.set("account", ":account").bind("account", updated.account());
     }
+    if (updated.timestamp() != null) {
+      query.set("timestamp", ":timestamp").bind("timestamp", updated.timestamp());
+    }
 
     return Result.fromValue(
       Database.firstOrNull(
@@ -153,11 +158,12 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
       .findFirst().orElse(null);
 
     // Create or update an existing bookmark
-    var affected = handle.createUpdate("INSERT INTO upload_bookmark (account, upload, active, public) VALUES (:account, :upload, :active, :public) ON CONFLICT ON CONSTRAINT upload_bookmark_pkey DO UPDATE SET account = :account, upload = :upload, active = :active, public = :public")
+    var affected = handle.createUpdate("INSERT INTO upload_bookmark (account, upload, active, public, timestamp) VALUES (:account, :upload, :active, :public, :timestamp) ON CONFLICT ON CONSTRAINT upload_bookmark_pkey DO UPDATE SET account = :account, upload = :upload, active = :active, public = :public, timestamp = :timestamp")
       .bind("account", account.id)
       .bind("upload", upload.id)
       .bind("public", props.isPublic())
       .bind("active", props.active())
+      .bind("timestamp", props.timestamp())
       .execute();
 
     // Job is done at this point - calculate contextual bools for websocket state updates and
@@ -171,28 +177,67 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
     return new BookmarkResult(affected > 0, isPublic, wasPublic, isActive, wasActive);
   }
 
+  public Integer countForAccount(int accountId, @Nullable DBAccount context, Handle handle) {
+    return Database.firstOrNull(
+      _bookmarksForAccount(accountId, context != null && context.id == accountId, true).toQuery(handle),
+      Database.intMapper("count")
+    );
+  }
+
   public BulkRenderableUpload getRenderableBookmarksForAccount(int accountId, @Nullable DBAccount context, Handle handle) {
-    var builder = QueryBuilder.select("u.*")
+    var uploads = Database.toList(
+      _bookmarksForAccount(accountId, context != null && context.id == accountId, false).toQuery(handle),
+      DBUpload.Mapper
+    );
+    return App.database().uploads.makeUploadsRenderable(uploads, context, handle);
+  }
+
+  public BulkRenderableUpload getRenderableBookmarksForAccount(int accountId, @Nullable Integer before, @Nullable DBAccount context, Handle handle) {
+    var uploads = Database.toList(
+      _bookmarksForAccount(accountId, before, context != null && context.id == accountId).toQuery(handle),
+      DBUpload.Mapper
+    );
+    return App.database().uploads.makeUploadsRenderable(uploads, context, handle);
+  }
+
+  private FetchBuilder _bookmarksForAccount(int accountId, boolean includePrivate, boolean countOnly) {
+    var builder = QueryBuilder.select(countOnly ? "count(u.id) as \"count\"" : "u.*")
       .from("upload_bookmark b")
       .join(Join.inner("upload u", "b.upload = u.id"))
       .join(Join.inner("account a", "b.account = a.id"))
-      .order("u.upload_date", OrderType.DESC)
       .bind("accountId", accountId);
+
+    if (!countOnly) {
+      builder.order("u.upload_date", OrderType.DESC);
+    }
+
     var filter = Filter.and(
       Filter.of("b.active"),
       Filter.of("b.account", ":accountId")
     );
 
-    if (context == null || context.id != accountId) {
+    if (!includePrivate) {
       // the requested account is not our context account - enforce public bookmarks only.
       filter.append(Filter.of("b.public"));
     }
 
-    var uploads = Database.toList(
-      builder.where(filter).toQuery(handle),
-      DBUpload.Mapper
-    );
-    return App.database().uploads.makeUploadsRenderable(uploads, context, handle);
+    return builder.where(filter);
+  }
+
+  private FetchBuilder _bookmarksForAccount(int accountId, @Nullable Integer before, boolean includePrivate) {
+    var builder = _bookmarksForAccount(accountId, includePrivate, false)
+      .limit(100);
+
+    if (before != null) {
+      builder.where(
+        Filter.and(
+          builder.getFilter(),
+          Filter.of("u.id < :before")
+        )
+      ).bind("before", before);
+    }
+
+    return builder;
   }
 
   public UploadBookmarkState getBookmarkStateForUpload(int uploadId, @Nullable DBAccount accountContext, Handle handle) {

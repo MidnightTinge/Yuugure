@@ -42,10 +42,6 @@ public abstract class QueryBuilder implements IBuilder {
   }
 
   public QueryBuilder where(Filter filter) {
-    if (this.filter != null) {
-      throw new IllegalStateException("Cannot set filter more than once.");
-    }
-
     this.filter = filter;
     return this;
   }
@@ -95,6 +91,10 @@ public abstract class QueryBuilder implements IBuilder {
     }
 
     return ret;
+  }
+
+  public Filter getFilter() {
+    return filter;
   }
 
   public static FetchBuilder select(String toSelect) {

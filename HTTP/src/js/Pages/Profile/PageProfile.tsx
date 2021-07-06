@@ -1,11 +1,7 @@
 import * as React from 'react';
-import {useContext, useEffect, useMemo, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {useParams} from 'react-router';
-
-import {ListRowProps} from 'react-virtualized';
-import Util from '../../classes/Util';
 import {XHR} from '../../classes/XHR';
-import {AlertType} from '../../Components/Alerts/Alert/Alert';
 import {useAlertContext} from '../../Components/Alerts/AlertsProvider';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
@@ -15,7 +11,6 @@ import InternalSwitch from '../../Components/InternalNav/InternalSwitch';
 import useInternalNavigator from '../../Components/InternalNav/useInternalNavigator';
 import ListGroup from '../../Components/ListGroup/ListGroup';
 import LoadingPing from '../../Components/LoadingPing';
-import MediaPreviewBlock from '../../Components/MediaPreview/MediaPreviewBlock';
 import {CloseSource} from '../../Components/Modal/Modal';
 import ReportModal from '../../Components/modals/ReportModal';
 import Spinner from '../../Components/Spinner';
@@ -24,7 +19,7 @@ import {WebSocketContext} from '../../Context/WebSocketProvider';
 import useUploadReducer from '../../Hooks/useUploadReducer';
 import NotFound from '../404/NotFound';
 import AccountSettings from './AccountSettings';
-import UploadsRenderer from './UploadsRenderer';
+import BulkPaginatedRenderer from './BulkPaginatedRenderer';
 
 export type PageProfileProps = {
   self?: boolean;
@@ -51,14 +46,19 @@ export default function PageProfile(props: PageProfileProps) {
   const [bookmarksErrored, setBookmarksErrored] = useState(false);
 
   const [profile, setProfile] = useState<ProfileResponse>(null);
-  const [uploads, uploadsDispatch, uploadActions] = useUploadReducer();
-  const [bookmarks, bDispatch, bActions] = useUploadReducer();
+
+  const uploadsReducer = useUploadReducer();
+  const bookmarksReducer = useUploadReducer();
+  const [/* not used */, /* not used */, uploadActions] = uploadsReducer;
+
+  const [totalUploads, setTotalUploads] = useState<number>(null);
+  const [totalBookmarks, setTotalBookmarks] = useState<number>(null);
 
   const [showReport, setShowReport] = useState(false);
 
   const [lastAccountId, setLastAccountId] = useState<string>(null);
 
-  const accountId = useMemo(() => (props.self || (authState.authed && params.accountId && Number(params.accountId) === authState.account.id)) ? '@me' : params.accountId, [params, authState]);
+  const accountId = params.accountId;
 
   // note: It's possible for our authState to not be initialized yet, in which case this can flag
   //       as `false` incorrectly. the back-end corrects for this automatically on the profile API
@@ -120,69 +120,11 @@ export default function PageProfile(props: PageProfileProps) {
     };
   }, [accountId]);
 
-  useEffect(() => {
+  useEffect(function profileEffect() {
     if (accountId === lastAccountId) return;
+    if (profile == null) return;
     setLastAccountId(accountId);
-
-    reloadUploads();
-    reloadBookmarks();
-  }, [profile]);
-
-  function reloadUploads() {
-    uploadActions.set([]);
-    setFetchingUploads(true);
-    XHR.for(`/api/profile/${accountId}/uploads`).get().getRouterResponse<BulkRenderableUpload>().then(consumed => {
-      if (consumed.success) {
-        uploadActions.set([...Util.mapBulkUploads(consumed.data[0])]);
-        setUploadsErrored(false);
-      } else {
-        setUploadsErrored(true);
-        alerts.add({
-          type: AlertType.ERROR,
-          header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Uploads Error</>),
-          body: `Failed to fetch uploads.\n${consumed.message}`,
-        });
-      }
-    }).catch(err => {
-      console.error('Failed to fetch uploads.', err);
-      alerts.add({
-        type: AlertType.ERROR,
-        header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Uploads Error</>),
-        body: `Failed to fetch uploads.\n${err ? err.toString() : 'An internal server error occurred, please try again later.'}`,
-      });
-      setUploadsErrored(true);
-    }).then(() => {
-      setFetchingUploads(false);
-    });
-  }
-
-  function reloadBookmarks() {
-    bActions.set([]);
-    setFetchingBookmarks(true);
-    XHR.for(`/api/profile/${accountId}/bookmarks`).get().getRouterResponse<BulkRenderableUpload>().then(consumed => {
-      if (consumed.success) {
-        bActions.set([...Util.mapBulkUploads(consumed.data[0])]);
-        setBookmarksErrored(false);
-      } else {
-        setBookmarksErrored(true);
-        alerts.add({
-          type: AlertType.ERROR,
-          header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Bookmarks Error</>),
-          body: `Failed to fetch bookmarks.\n${consumed.message}`,
-        });
-      }
-    }).catch(err => {
-      console.error('Failed to fetch bookmarks.', err);
-      alerts.add({
-        type: AlertType.ERROR,
-        header: (<><i className="fas fa-exclamation-triangle text-red-500" aria-hidden={true}/> Bookmarks Error</>),
-        body: `Failed to fetch bookmarks.\n${err ? err.toString() : 'An internal server error occurred, please try again later.'}`,
-      });
-      setUploadsErrored(true);
-    }).then(() => {
-      setFetchingBookmarks(false);
-    });
-  }
+  }, [profile?.account]);
 
   function makeNavigator(to: string) {
     return (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -203,14 +145,6 @@ export default function PageProfile(props: PageProfileProps) {
 
   function handleReportClick() {
     setShowReport(true);
-  }
-
-  function rowRenderer({key, index, style}: ListRowProps): React.ReactNode {
-    return (
-      <div key={key} style={style}>
-        <MediaPreviewBlock upload={uploads.uploads[index]}/>
-      </div>
-    );
   }
 
   return (
@@ -235,19 +169,23 @@ export default function PageProfile(props: PageProfileProps) {
                           <ListGroup.Item active={path === 'details'} onClick={makeNavigator('details')}><i className="fas fa-address-card" aria-hidden={true}/> Details</ListGroup.Item>
                           <ListGroup.Item active={path === 'uploads'} onClick={makeNavigator('uploads')}>
                             <i className="fas fa-folder-open" aria-hidden={true}/> Uploads
-                            <span className={`inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg border ${!uploadsErrored ? 'bg-blue-100 border-blue-200 text-blue-400' : 'bg-red-100 border-red-200 text-red-400'} opacity-95 shadow`}>
-                              {fetchingUploads ? (<Spinner/>) : (
-                                uploadsErrored ? (<i className="fas fa-exclamation-triangle text-xs"/>) : (uploads.uploads.length)
-                              )}
-                            </span>
+                            {fetchingUploads || uploadsErrored ? (
+                              <span className={`inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg border ${!uploadsErrored ? 'bg-blue-100 border-blue-200 text-blue-400' : 'bg-red-100 border-red-200 text-red-400'} opacity-95 shadow`}>
+                                {fetchingUploads ? (<Spinner/>) : (
+                                  uploadsErrored ? (<i className="fas fa-exclamation-triangle text-xs"/>) : null
+                                )}
+                              </span>
+                            ) : null}
                           </ListGroup.Item>
                           <ListGroup.Item active={path === 'bookmarks'} onClick={makeNavigator('bookmarks')}>
                             <i className="fas fa-bookmark" aria-hidden={true}/> Bookmarks
-                            <span className={`inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg border ${!bookmarksErrored ? 'bg-blue-100 border-blue-200 text-blue-400' : 'bg-red-100 border-red-200 text-red-400'} opacity-95 shadow`}>
-                              {fetchingBookmarks ? (<Spinner/>) : (
-                                bookmarksErrored ? (<i className="fas fa-exclamation-triangle text-xs"/>) : (bookmarks.uploads.length)
-                              )}
-                            </span>
+                            {fetchingBookmarks || bookmarksErrored ? (
+                              <span className={`inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg border ${!bookmarksErrored ? 'bg-blue-100 border-blue-200 text-blue-400' : 'bg-red-100 border-red-200 text-red-400'} opacity-95 shadow`}>
+                                {fetchingBookmarks ? (<Spinner/>) : (
+                                  bookmarksErrored ? (<i className="fas fa-exclamation-triangle text-xs"/>) : null
+                                )}
+                              </span>
+                            ) : null}
                           </ListGroup.Item>
                           <ListGroup.Item active={path === 'votes'} onClick={makeNavigator('votes')}><i className="fas fa-check-circle" aria-hidden={true}/> Votes</ListGroup.Item>
                           {profile && profile.self ? (
@@ -261,10 +199,10 @@ export default function PageProfile(props: PageProfileProps) {
                 <div className="col-span-8 md:col-span-10">
                   <InternalSwitch>
                     <InternalRoute path="uploads">
-                      <UploadsRenderer uploads={uploads ? uploads.uploads : null} errored={uploadsErrored}/>
+                      <BulkPaginatedRenderer key="uploads" endpoint={`/api/profile/${accountId}/uploads`} reducer={uploadsReducer} setMax={setTotalUploads} onFetchState={fetching => setFetchingUploads(fetching)} onError={err => setUploadsErrored(!!err)}/>
                     </InternalRoute>
                     <InternalRoute path="bookmarks">
-                      <UploadsRenderer uploads={bookmarks ? bookmarks.uploads : null} errored={bookmarksErrored}/>
+                      <BulkPaginatedRenderer key="bookmarks" endpoint={`/api/profile/${accountId}/bookmarks`} reducer={bookmarksReducer} setMax={setTotalBookmarks} onFetchState={fetching => setFetchingBookmarks(fetching)} onError={err => setBookmarksErrored(!!err)}/>
                     </InternalRoute>
                     <InternalRoute path="votes">
                       <p>hello votes</p>
@@ -283,14 +221,18 @@ export default function PageProfile(props: PageProfileProps) {
                                 <th className="text-right pr-2">ID</th>
                                 <td className="text-left">{profile.account.id}</td>
                               </tr>
-                              <tr>
-                                <th className="text-right pr-2">Uploads</th>
-                                <td className="text-left">{uploads.uploads.length}</td>
-                              </tr>
-                              <tr>
-                                <th className="text-right pr-2">Bookmarks</th>
-                                <td className="text-left">{0 /*TODO*/}</td>
-                              </tr>
+                              {totalUploads != null ? (
+                                <tr>
+                                  <th className="text-right pr-2">Uploads</th>
+                                  <td className="text-left">{totalUploads}</td>
+                                </tr>
+                              ) : null}
+                              {totalBookmarks != null ? (
+                                <tr>
+                                  <th className="text-right pr-2">Bookmarks</th>
+                                  <td className="text-left">{totalBookmarks}</td>
+                                </tr>
+                              ) : null}
                             </tbody>
                           </table>
                           <button className="underline text-blue-400 hover:text-blue-500 focus:outline-none" onClick={handleReportClick}>Report</button>
