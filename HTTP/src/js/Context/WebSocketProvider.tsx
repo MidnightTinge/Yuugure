@@ -13,30 +13,68 @@ export type WebSocketProviderState = {
 
 export const WebSocketContext = namedContext<WebSocketProviderState>('WebSocketProviderContext', {ws: null, rooms: null});
 
+function DisconnectBody({remaining}: { remaining: number }) {
+  // format the difference as "s.sss"
+  let fm = remaining >= 1e3 ? `${remaining / 1e3 >> 0}.${remaining % 1e3 >> 0}s` : `0.${remaining}s`;
+
+  return (
+    <p>Lost connection to the server, will attempt to re-connect in {fm}...</p>
+  );
+}
+
 export default function WebSocketProvider({children}: any) {
   const alerts = useAlertContext();
   const ctxMemo = useMemo<WebSocketProviderState>(() => {
     let ws = new WS();
     let rooms = new RoomHelper(ws);
 
+    let intvl: number = null;
     let disconnectAlert: Alert = null;
-    ws.addEventHandler('reconnect', (attempts: number, canceler: CancelHolder) => {
+
+    ws.addEventHandler('timeout', (attempts: number, timeout: number, canceler: CancelHolder) => {
       if (disconnectAlert == null) {
         disconnectAlert = alerts.add({
           type: AlertType.ERROR,
           header: 'Disconnected',
-          body: 'Lost connection to the server, attempting to re-establish...',
-        });
-      } else if (attempts < 20) {
-        alerts.update({
-          ...disconnectAlert,
-          body: `Lost connection to the server, attempting to re-establish (${attempts} attempts)...`,
+          body: (<DisconnectBody remaining={timeout}/>),
         });
       } else {
-        canceler.cancel = true;
         alerts.update({
           ...disconnectAlert,
-          body: `Lost connection to the server and failed 20 reconnection attempts. Automatic retry has been disabled, please reload to retry manually.`,
+          body: (<DisconnectBody remaining={timeout}/>),
+        });
+      }
+
+      if (intvl != null) {
+        clearInterval(intvl);
+        intvl = null;
+      }
+
+      if (timeout > 1) {
+        let target = Date.now() + timeout;
+        intvl = setInterval(() => {
+          if (disconnectAlert != null) {
+            // get the remaining ms between target and now with a minimum of 0ms.
+            let remaining = Math.max(0, target - Date.now());
+            alerts.update({
+              ...disconnectAlert,
+              body: (<DisconnectBody remaining={remaining}/>),
+            });
+          }
+        }, 31);
+      }
+    });
+    ws.addEventHandler('reconnect', (attempts: number) => {
+      if (intvl != null) {
+        clearInterval(intvl);
+        intvl = null;
+      }
+      if (disconnectAlert != null) {
+        alerts.update({
+          ...disconnectAlert,
+          body: (
+            <p>Attempting to reconnect to the server (attempt #{attempts}...)</p>
+          ),
         });
       }
     });
@@ -44,6 +82,10 @@ export default function WebSocketProvider({children}: any) {
       if (disconnectAlert != null) {
         alerts.close(disconnectAlert.id);
         disconnectAlert = null;
+      }
+      if (intvl != null) {
+        clearInterval(intvl);
+        intvl = null;
       }
     });
 
@@ -87,4 +129,3 @@ export default function WebSocketProvider({children}: any) {
     </WebSocketContext.Provider>
   );
 }
-

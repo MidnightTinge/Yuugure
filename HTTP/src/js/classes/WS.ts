@@ -90,7 +90,7 @@ export class WS extends EventableBase {
       };
 
       let timeout = (((this.#connectionAttempts ** 1.5) / 2 >> 0) * 1000 + (Math.random() * 500)) >> 0;
-      this.invoke('reconnect', this.#connectionAttempts, timeout, cancelMaybe);
+      this.invoke('timeout', this.#connectionAttempts, timeout, cancelMaybe);
 
       if (cancelMaybe.cancel === true) {
         console.warn('[WebSocket] A `reconnect` listener flagged `cancel`, no further automatic reconnection attempts will be made.');
@@ -100,7 +100,10 @@ export class WS extends EventableBase {
 
       this.#connectionAttempts++;
       // Slight exponential backoff with random jitter between [0ms, 500ms)
-      setTimeout(this.connect.bind(this), timeout);
+      setTimeout(() => {
+        this.invoke('reconnect', this.#connectionAttempts);
+        this.connect();
+      }, timeout);
     }
   }
 
