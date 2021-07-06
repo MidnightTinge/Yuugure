@@ -1,5 +1,10 @@
 .MediaViewer {
-  height: calc(100vh - 2.5em - theme('gap.2') - theme('gap.2'));
+  /*
+    2.5em:  nav
+    2rem: actions bar
+    gap:    grid gaps
+   */
+  height: calc(100vh - 2.5em - 2rem - theme('gap.2'));
 
   .MediaObject {
     text-align: center;

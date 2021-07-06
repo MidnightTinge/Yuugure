@@ -287,6 +287,12 @@ export default function PageView(props: PageViewProps) {
     return ret;
   }, [upload?.bookmarks, upload?.votes]);
 
+  useEffect(() => {
+    if (upload && upload.state) {
+      setCensored(upload.state.MODERATION_QUEUED);
+    }
+  }, [upload?.state]);
+
   function handleReport() {
     setShowReport(true);
   }
@@ -297,6 +303,10 @@ export default function PageView(props: PageViewProps) {
 
   function handleToggleResize() {
     setConstrain(!constrain);
+  }
+
+  function handleToggleCensor() {
+    setCensored(!censored);
   }
 
   function makeInternalNavigator(to: string) {
@@ -396,8 +406,15 @@ export default function PageView(props: PageViewProps) {
                       </div>
                     ) : null}
                     <div>
-                      <a href={`/full/${upload.upload.id}`} target="_blank" className="underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none">Direct Link</a>
-                      <button className="ml-1 underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none" onClick={handleToggleResize}>Toggle Resize</button>
+                      <a href={`/full/${upload.upload.id}`} target="_blank" className="underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none">Direct Link<i className="ml-1 fas fa-external-link-square-alt" aria-hidden={true}/></a>
+                      <div className="block md:hidden">
+                        <div>
+                          <button className="ml-1 underline text-sm text-yellow-400 hover:text-yellow-500 focus:outline-none" onClick={handleToggleCensor}>Toggle Blur</button>
+                        </div>
+                        <div>
+                          <button className="ml-1 underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none" onClick={handleToggleResize}>Toggle Resize</button>
+                        </div>
+                      </div>
                     </div>
                   </section>
                   <section className="mt-2">
@@ -442,6 +459,12 @@ export default function PageView(props: PageViewProps) {
                       <p>hello actions</p>
                     </InternalRoute>
                     <InternalRoute path="*">
+                      <div className="h-8 text-center hidden md:block">
+                        {upload?.state?.MODERATION_QUEUED ? (
+                          <button className="inline-block px-4 rounded-md border border-yellow-200 bg-yellow-100 shadow mr-1" onClick={handleToggleCensor}>Toggle Blur</button>
+                        ) : null}
+                        <button className="inline-block px-4 rounded-md border border-gray-200 bg-gray-100 shadow" onClick={handleToggleResize}>Toggle Resize</button>
+                      </div>
                       <UploadViewer upload={upload.upload} media={upload.media} censored={censored} constrained={constrain}/>
                     </InternalRoute>
                   </InternalSwitch>

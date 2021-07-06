@@ -3,5 +3,13 @@
 }
 
 .censored {
-  filter: blur(10px) grayscale(1) contrast(.25);
+  filter: blur(10px) grayscale(0.5) contrast(.3);
+
+  &.hover-clear {
+    transition: filter ease-in-out 150ms;
+
+    &:hover {
+      filter: none;
+    }
+  }
 }

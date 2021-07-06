@@ -1,24 +1,28 @@
 import * as React from 'react';
+import Util from '../../classes/Util';
 import useLS from '../../Hooks/useLS';
 import LS_KEYS from '../../LS_KEYS';
 
 export type UploadMediaProps = {
   upload: DBUpload;
   media: DBMedia;
+  censored?: boolean;
 };
 
-const UploadMedia = React.forwardRef(({upload, media}: UploadMediaProps, ref: React.ForwardedRef<HTMLElement>) => {
+const UploadMedia = React.forwardRef(({upload, media, censored = false}: UploadMediaProps, ref: React.ForwardedRef<HTMLElement>) => {
   const [defaultMuted] = useLS(LS_KEYS.DEFAULT_MUTED, true);
   const [defaultAutoplay] = useLS(LS_KEYS.DEFAULT_AUTOPLAY, true);
   const [defaultLoop] = useLS(LS_KEYS.DEFAULT_LOOP, true);
 
   const fullSrc = `/full/${upload.id}`;
+  const censoredClass = censored ? 'censored' : null;
+  const modqueued = (BigInt(upload.state) & (1n << 5n)) != 0n;
 
   return (
     (/^image\//i.test(media.mime) ? (
-      <img ref={ref as any} src={fullSrc} alt="Rendered Upload"/>
+      <img className={censoredClass} ref={ref as any} src={fullSrc} alt="Rendered Upload"/>
     ) : (
-      <video ref={ref as any} className="max-h-full mx-auto object-contain" loop={defaultLoop} muted={defaultMuted} autoPlay={defaultAutoplay} controls={true}>
+      <video ref={ref as any} className={Util.joinedClassName('max-h-full mx-auto object-contain', censoredClass)} loop={defaultLoop} muted={defaultMuted} autoPlay={!modqueued && defaultAutoplay} controls={true}>
         <source src={fullSrc}/>
       </video>
     ))

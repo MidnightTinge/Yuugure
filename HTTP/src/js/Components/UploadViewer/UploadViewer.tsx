@@ -10,9 +10,9 @@ export type UploadViewerProps = {
 
 export default function UploadViewer({upload, media, constrained = true, censored = false}: UploadViewerProps) {
   return (
-    <div className={`MediaViewer ${constrained ? 'constrained' : ''} ${censored ? 'censored' : ''}`.trim()}>
+    <div className={`MediaViewer ${constrained ? 'constrained' : ''}`.trim()}>
       <div className="MediaObject">
-        <UploadMedia upload={upload} media={media}/>
+        <UploadMedia upload={upload} media={media} censored={censored}/>
       </div>
     </div>
   );
