@@ -418,9 +418,11 @@ export default function PageView(props: PageViewProps) {
                     </InternalNavContext.Consumer>
                   </section>
                   {/* the box-shadow on the internal navigation makes the spacing here a bit wonky */}
-                  <section className="mt-1.5">
-                    <BookmarkFavBar resourceType="upload" bookmarkState={bookmarkState} onAction={handleBookmarkBarAction} resourceId={upload.upload.id}/>
-                  </section>
+                  {authState.authed ? (
+                    <section className="mt-1.5">
+                      <BookmarkFavBar resourceType="upload" bookmarkState={bookmarkState} onAction={handleBookmarkBarAction} resourceId={upload.upload.id}/>
+                    </section>
+                  ) : null}
                   <section className="mt-1">
                     <ViewerDetails/>
                   </section>
