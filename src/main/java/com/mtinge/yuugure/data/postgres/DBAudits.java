@@ -16,19 +16,19 @@ public class DBAudits {
   public final String targetId;
   @ColumnName("action")
   public final String action;
-  @ColumnName("tstamp")
-  public final Timestamp tstamp;
+  @ColumnName("timestamp")
+  public final Timestamp timestamp;
   @ColumnName("details")
   public final String details;
 
-  @ConstructorProperties({"id", "account", "target_type", "target_id", "action", "tstamp", "details"})
-  public DBAudits(int id, int account, String targetType, String targetId, String action, Timestamp tstamp, String details) {
+  @ConstructorProperties({"id", "account", "target_type", "target_id", "action", "timestamp", "details"})
+  public DBAudits(int id, int account, String targetType, String targetId, String action, Timestamp timestamp, String details) {
     this.id = id;
     this.account = account;
     this.targetType = targetType;
     this.targetId = targetId;
     this.action = action;
-    this.tstamp = tstamp;
+    this.timestamp = timestamp;
     this.details = details;
   }
 }

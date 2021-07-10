@@ -103,7 +103,7 @@ table audits {
   target_type text        [not null]
   target_id   text        [not null]
   action      text        [not null]
-  tstamp      timestamptz [not null, default: `now()`]
+  timestamp   timestamptz [not null, default: `now()`]
   details     text        [not null, default: ""]
 
   indexes {
@@ -112,7 +112,7 @@ table audits {
     action
     (account, action)
     (account, action, target_type)
-    tstamp
+    timestamp
   }
 }
 
