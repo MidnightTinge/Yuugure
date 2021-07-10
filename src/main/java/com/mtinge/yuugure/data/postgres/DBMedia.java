@@ -1,24 +1,35 @@
 package com.mtinge.yuugure.data.postgres;
 
-import lombok.AllArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.bson.BsonReader;
 import org.bson.BsonType;
 import org.bson.BsonWriter;
-import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.mapper.reflect.ColumnName;
 
+import java.beans.ConstructorProperties;
 import java.util.Objects;
 
-@AllArgsConstructor
-@ToString
 public class DBMedia {
+  @ColumnName("id")
   public final int id;
+  @ColumnName("sha256")
   public final String sha256;
+  @ColumnName("md5")
   public final String md5;
+  @ColumnName("phash")
   public final String phash;
+  @ColumnName("mime")
   public final String mime;
+
+  @ConstructorProperties({"id", "sha256", "md5", "phash", "mime"})
+  public DBMedia(int id, String sha256, String md5, String phash, String mime) {
+    this.id = id;
+    this.sha256 = sha256;
+    this.md5 = md5;
+    this.phash = phash;
+    this.mime = mime;
+  }
 
   @Override
   public boolean equals(Object o) {
@@ -37,15 +48,6 @@ public class DBMedia {
   public int hashCode() {
     return Objects.hash(id, sha256, md5, phash, mime);
   }
-
-  public static RowMapper<DBMedia> Mapper = (r, c) ->
-    new DBMedia(
-      r.getInt("id"),
-      r.getString("sha256"),
-      r.getString("md5"),
-      r.getString("phash"),
-      r.getString("mime")
-    );
 
   public static DBMedia readFrom(BsonReader reader) {
     var builder = new Builder();

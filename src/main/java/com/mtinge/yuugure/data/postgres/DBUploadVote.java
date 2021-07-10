@@ -1,19 +1,24 @@
 package com.mtinge.yuugure.data.postgres;
 
-import lombok.AllArgsConstructor;
-import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.mapper.reflect.ColumnName;
 
-@AllArgsConstructor
+import java.beans.ConstructorProperties;
+
 public final class DBUploadVote {
+  @ColumnName("active")
   public final boolean active;
+  @ColumnName("is_up")
   public final boolean isUp;
+  @ColumnName("upload")
   public final int upload;
+  @ColumnName("account")
   public final int account;
 
-  public static final RowMapper<DBUploadVote> Mapper = (r, ctx) -> new DBUploadVote(
-    r.getBoolean("active"),
-    r.getBoolean("is_up"),
-    r.getInt("upload"),
-    r.getInt("account")
-  );
+  @ConstructorProperties({"active", "is_up", "upload", "account"})
+  public DBUploadVote(boolean active, boolean isUp, int upload, int account) {
+    this.active = active;
+    this.isUp = isUp;
+    this.upload = upload;
+    this.account = account;
+  }
 }

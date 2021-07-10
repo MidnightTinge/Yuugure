@@ -1,6 +1,7 @@
 package com.mtinge.yuugure.services.database;
 
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.data.postgres.*;
 import com.mtinge.yuugure.services.IService;
 import com.mtinge.yuugure.services.database.providers.*;
 import com.zaxxer.hikari.HikariConfig;
@@ -10,6 +11,8 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.mapper.RowMappers;
+import org.jdbi.v3.core.mapper.reflect.ConstructorMapper;
 import org.jdbi.v3.core.statement.Query;
 import org.jdbi.v3.core.statement.Update;
 import org.slf4j.Logger;
@@ -58,6 +61,24 @@ public class Database implements IService {
   public void start() throws Exception {
     this.dataSource = new HikariDataSource(this.hikariConfig);
     this.jdbi = Jdbi.create(this.dataSource);
+
+    jdbi.configure(RowMappers.class, c -> c
+      .register(ConstructorMapper.factory(DBAccount.class))
+      .register(ConstructorMapper.factory(DBAudits.class))
+      .register(ConstructorMapper.factory(DBComment.class))
+      .register(ConstructorMapper.factory(DBMedia.class))
+      .register(ConstructorMapper.factory(DBMediaMeta.class))
+      .register(ConstructorMapper.factory(DBPanicConnection.class))
+      .register(ConstructorMapper.factory(DBProcessingQueue.class))
+      .register(ConstructorMapper.factory(DBReport.class))
+      .register(ConstructorMapper.factory(DBSession.class))
+      .register(ConstructorMapper.factory(DBTag.class))
+      .register(ConstructorMapper.factory(DBUpload.class))
+      .register(ConstructorMapper.factory(DBUploadBookmark.class))
+      .register(ConstructorMapper.factory(DBUploadTags.class))
+      .register(ConstructorMapper.factory(DBUploadVote.class))
+    );
+
     logger.info("Postgres started");
   }
 
@@ -65,12 +86,24 @@ public class Database implements IService {
     return query.map(mapper).first();
   }
 
+  public static <T> T first(Query query, Class<T> type) {
+    return query.mapTo(type).first();
+  }
+
   public static <T> T firstOrNull(Query query, RowMapper<T> mapper) {
     return query.map(mapper).findFirst().orElse(null);
   }
 
+  public static <T> T firstOrNull(Query query, Class<T> type) {
+    return query.mapTo(type).findFirst().orElse(null);
+  }
+
   public static <T> List<T> toList(Query query, RowMapper<T> mapper) {
     return query.map(mapper).collect(Collectors.toList());
+  }
+
+  public static <T> List<T> toList(Query query, Class<T> type) {
+    return query.mapTo(type).collect(Collectors.toList());
   }
 
   public static boolean updated(Update query) {

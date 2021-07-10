@@ -19,5 +19,4 @@ public class MutableTag {
   public static MutableTag fromDb(DBTag tag) {
     return new MutableTag(tag.id, tag.parent, tag.category, tag.name, tag.assocType, tag.assocId);
   }
-
 }

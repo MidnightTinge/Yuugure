@@ -41,7 +41,7 @@ public class RenderAllComments extends RunnableScript {
         canProcess.set(true);
         var executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), ThreadFactories.prefixed("RenderAll/"));
         var jobs = handle.createQuery("SELECT * FROM comment WHERE true FOR UPDATE")
-          .map(DBComment.Mapper)
+          .mapTo(DBComment.class)
           .collect(Collectors.toList());
         for (var job : jobs) {
           executor.submit(new Worker(job, handle, comment -> logger.info("[producer] Comment {} finished.", comment.id)));
@@ -83,7 +83,7 @@ public class RenderAllComments extends RunnableScript {
         var mutated = handle.createQuery("UPDATE comment SET content_rendered = :content WHERE id = :id RETURNING *")
           .bind("content", Renderer.render(comment.contentRaw))
           .bind("id", comment.id)
-          .map(DBComment.Mapper)
+          .mapTo(DBComment.class)
           .first();
         onComplete.accept(mutated);
       }

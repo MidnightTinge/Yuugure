@@ -1,15 +1,18 @@
 package com.mtinge.yuugure.data.postgres;
 
-import lombok.AllArgsConstructor;
-import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.mapper.reflect.ColumnName;
 
-@AllArgsConstructor
+import java.beans.ConstructorProperties;
+
 public final class DBUploadTags {
+  @ColumnName("upload")
   public final int upload;
+  @ColumnName("tag")
   public final int tag;
 
-  public static final RowMapper<DBUploadTags> Mapper = (r, ctx) -> new DBUploadTags(
-    r.getInt("upload"),
-    r.getInt("tag")
-  );
+  @ConstructorProperties({"upload", "tag"})
+  public DBUploadTags(int upload, int tag) {
+    this.upload = upload;
+    this.tag = tag;
+  }
 }

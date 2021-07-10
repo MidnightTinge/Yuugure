@@ -28,7 +28,7 @@ public class SessionProvider extends Provider<DBSession, SessionProps> {
           .bind("expires", props.expires())
           .bind("account", props.account())
           .toQuery(handle),
-        DBSession.Mapper
+        DBSession.class
       )
     );
   }
@@ -41,7 +41,7 @@ public class SessionProvider extends Provider<DBSession, SessionProps> {
         .where("id", ":id")
         .bind("id", id)
         .toQuery(handle),
-      DBSession.Mapper
+      DBSession.class
     );
   }
 
@@ -52,7 +52,7 @@ public class SessionProvider extends Provider<DBSession, SessionProps> {
         .where("token", ":token")
         .bind("token", token)
         .toQuery(handle),
-      DBSession.Mapper
+      DBSession.class
     );
   }
 

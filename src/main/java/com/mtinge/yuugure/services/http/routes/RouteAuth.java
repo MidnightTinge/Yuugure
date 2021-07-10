@@ -197,7 +197,7 @@ public class RouteAuth extends Route {
               handle.createQuery("SELECT * FROM account WHERE lower(email) = lower(:email) AND (state & :bad_state) = 0")
                 .bind("email", frmEmail.getValue().trim()) // email is never null at this point.
                 .bind("bad_state", States.compute(States.Account.DELETED, States.Account.DEACTIVATED))
-                .map(DBAccount.Mapper)
+                .mapTo(DBAccount.class)
                 .findFirst().orElse(null)
             );
             if (user != null) {
@@ -212,7 +212,7 @@ public class RouteAuth extends Route {
                     .bind("token", token)
                     .bind("account", user.id)
                     .bind("expires", Timestamp.from(expires))
-                    .map(DBSession.Mapper)
+                    .mapTo(DBSession.class)
                     .findFirst().orElse(null)
                 );
 

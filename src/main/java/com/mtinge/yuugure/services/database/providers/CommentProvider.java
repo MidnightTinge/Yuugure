@@ -44,7 +44,7 @@ public class CommentProvider extends Provider<DBComment, CommentProps> {
           .bind("raw", requireNonNull(props.contentRaw()))
           .bind("rendered", requireNonNull(props.contentRendered()))
           .toQuery(handle),
-        DBComment.Mapper
+        DBComment.class
       )
     );
   }
@@ -61,7 +61,7 @@ public class CommentProvider extends Provider<DBComment, CommentProps> {
         .where("id", ":id")
         .bind("id", id)
         .toQuery(handle),
-      DBComment.Mapper
+      DBComment.class
     );
   }
 
@@ -83,7 +83,7 @@ public class CommentProvider extends Provider<DBComment, CommentProps> {
 
     return Database.toList(
       query.where(filter).toQuery(handle),
-      DBComment.Mapper
+      DBComment.class
     );
   }
 
@@ -126,7 +126,7 @@ public class CommentProvider extends Provider<DBComment, CommentProps> {
     return Result.fromValue(
       Database.firstOrNull(
         query.toQuery(handle),
-        DBComment.Mapper
+        DBComment.class
       )
     );
   }
@@ -142,7 +142,7 @@ public class CommentProvider extends Provider<DBComment, CommentProps> {
           .bind("id", id)
           .bind("active", false)
           .toQuery(handle),
-        DBComment.Mapper
+        DBComment.class
       )
     );
   }

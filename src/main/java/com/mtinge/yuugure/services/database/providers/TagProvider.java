@@ -28,7 +28,7 @@ public class TagProvider extends Provider<DBTag, TagProps> {
           .bind("assocType", props.assocType())
           .bind("assocId", props.assocId())
           .toQuery(handle),
-        DBTag.Mapper
+        DBTag.class
       )
     );
   }
@@ -41,7 +41,7 @@ public class TagProvider extends Provider<DBTag, TagProps> {
         .where("id", ":id")
         .bind("id", id)
         .toQuery(handle),
-      DBTag.Mapper
+      DBTag.class
     );
   }
 
@@ -51,7 +51,7 @@ public class TagProvider extends Provider<DBTag, TagProps> {
         .from("tag")
         .where(Filter.in("id", ids.stream().map(String::valueOf).toArray(String[]::new)))
         .toQuery(handle),
-      DBTag.Mapper
+      DBTag.class
     );
   }
 
@@ -63,7 +63,7 @@ public class TagProvider extends Provider<DBTag, TagProps> {
         .where("ut.upload", ":id")
         .bind("id", id)
         .toQuery(handle),
-      DBTag.Mapper
+      DBTag.class
     );
   }
 
@@ -92,7 +92,7 @@ public class TagProvider extends Provider<DBTag, TagProps> {
     return Result.fromValue(
       Database.firstOrNull(
         query.toQuery(handle),
-        DBTag.Mapper
+        DBTag.class
       )
     );
   }

@@ -61,7 +61,7 @@ public class AccountProvider extends Provider<DBAccount, AccountProps> {
             .bind("email", props.email())
             .bind("hash", hash)
             .toQuery(handle),
-          DBAccount.Mapper
+          DBAccount.class
         )
       );
     }
@@ -75,7 +75,7 @@ public class AccountProvider extends Provider<DBAccount, AccountProps> {
         .where("id", ":id")
         .bind("id", id)
         .toQuery(handle),
-      DBAccount.Mapper
+      DBAccount.class
     );
   }
 
@@ -95,7 +95,7 @@ public class AccountProvider extends Provider<DBAccount, AccountProps> {
           .bind("id", id)
           .bind("badState", States.compute(States.Account.PRIVATE, States.Account.DELETED, States.Account.DEACTIVATED))
           .toQuery(handle),
-        DBAccount.Mapper
+        DBAccount.class
       );
     }
   }
@@ -134,7 +134,7 @@ public class AccountProvider extends Provider<DBAccount, AccountProps> {
 
       var altered = Database.first(
         update.toQuery(handle),
-        DBAccount.Mapper
+        DBAccount.class
       );
       if (altered != null) {
         return Result.success(altered);

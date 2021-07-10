@@ -1,29 +1,32 @@
 package com.mtinge.yuugure.data.postgres;
 
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.mapper.reflect.ColumnName;
 
+import java.beans.ConstructorProperties;
 import java.net.InetAddress;
 import java.sql.Timestamp;
 
-@AllArgsConstructor
 public class DBPanicConnection {
+  @ColumnName("addr")
   public final byte[] addr;
+  @ColumnName("hits")
   public final int hits;
+  @ColumnName("timestamp")
   public final Timestamp timestamp;
+  @ColumnName("expires")
   public final Timestamp expires;
 
-  @SneakyThrows
-  public InetAddress getInet() {
-    return InetAddress.getByAddress(addr);
+  @ConstructorProperties({"addr", "hits", "timestamp", "expires"})
+  public DBPanicConnection(byte[] addr, int hits, Timestamp timestamp, Timestamp expires) {
+    this.addr = addr;
+    this.hits = hits;
+    this.timestamp = timestamp;
+    this.expires = expires;
   }
 
-  public static final RowMapper<DBPanicConnection> Mapper = (r, c) -> new DBPanicConnection(
-    r.getBytes("addr"),
-    r.getInt("hits"),
-    r.getTimestamp("timestamp"),
-    r.getTimestamp("expires")
-  );
-
+  @SneakyThrows
+  public InetAddress addrAsInet() {
+    return InetAddress.getByAddress(addr);
+  }
 }

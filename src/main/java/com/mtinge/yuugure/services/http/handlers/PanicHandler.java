@@ -62,7 +62,7 @@ public class PanicHandler implements HttpHandler {
             handle.execute("LOCK TABLE panic_connection IN ACCESS EXCLUSIVE MODE");
             var existingConnection = handle.createQuery("SELECT * FROM panic_connection WHERE addr = :addr")
               .bind("addr", addr.getAddress())
-              .map(DBPanicConnection.Mapper)
+              .mapTo(DBPanicConnection.class)
               .findFirst().orElse(null);
             if (existingConnection == null) {
               handle.createUpdate("INSERT INTO panic_connection (addr, timestamp, expires) VALUES (:addr, :timestamp, :expires)")
@@ -75,7 +75,7 @@ public class PanicHandler implements HttpHandler {
                 .bind("addr", addr.getAddress())
                 .bind("timestamp", Timestamp.from(now))
                 .bind("expires", Timestamp.from(expires))
-                .map(DBPanicConnection.Mapper)
+                .mapTo(DBPanicConnection.class)
                 .findFirst().orElse(null);
 
               if (updatedCon != null) {
@@ -192,12 +192,12 @@ public class PanicHandler implements HttpHandler {
         handle.execute("LOCK TABLE panic_connection IN ACCESS EXCLUSIVE MODE");
         logger.info("Reload started");
         var panics = handle.createQuery("SELECT * FROM panic_connection WHERE expires > now()")
-          .map(DBPanicConnection.Mapper)
+          .mapTo(DBPanicConnection.class)
           .list();
 
         var toSet = new ConcurrentRadixTree<Long>(new DefaultByteArrayNodeFactory());
         for (var panic : panics) {
-          toSet.put(panic.getInet().getHostAddress(), panic.expires.toInstant().toEpochMilli());
+          toSet.put(panic.addrAsInet().getHostAddress(), panic.expires.toInstant().toEpochMilli());
         }
         this.blocks = toSet; // only swap the memory once we know we completed successfully
 

@@ -25,7 +25,7 @@ public class MediaMetaProvider extends Provider<DBMediaMeta, MediaMeta> {
           .bind("video_duration", props.videoDuration())
           .bind("has_audio", props.hasAudio())
           .toQuery(handle),
-        DBMediaMeta.Mapper
+        DBMediaMeta.class
       )
     );
   }
@@ -73,7 +73,7 @@ public class MediaMetaProvider extends Provider<DBMediaMeta, MediaMeta> {
           .bind("video_duration", props.videoDuration())
           .bind("has_audio", props.hasAudio())
           .toQuery(handle),
-        DBMediaMeta.Mapper
+        DBMediaMeta.class
       )
     );
   }
@@ -86,7 +86,7 @@ public class MediaMetaProvider extends Provider<DBMediaMeta, MediaMeta> {
         .where("id", ":id")
         .bind("id", id)
         .toQuery(handle),
-      DBMediaMeta.Mapper
+      DBMediaMeta.class
     );
   }
 
@@ -97,7 +97,7 @@ public class MediaMetaProvider extends Provider<DBMediaMeta, MediaMeta> {
         .where("media", ":media")
         .bind("media", media)
         .toQuery(handle),
-      DBMediaMeta.Mapper
+      DBMediaMeta.class
     );
   }
 

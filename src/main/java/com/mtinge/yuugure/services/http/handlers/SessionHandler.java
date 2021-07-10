@@ -58,7 +58,7 @@ public class SessionHandler implements HttpHandler {
                 handle.createQuery("UPDATE sessions SET expires = :expires WHERE token = :token RETURNING *")
                   .bind("token", sessCookie.getValue())
                   .bind("expires", expires)
-                  .map(DBSession.Mapper)
+                  .mapTo(DBSession.class)
                   .findFirst().orElse(null)
               );
 

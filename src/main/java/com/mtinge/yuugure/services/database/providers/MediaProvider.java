@@ -24,7 +24,7 @@ public class MediaProvider extends Provider<DBMedia, MediaProps> {
           .bind("phash", props.phash())
           .bind("mime", props.mime())
           .toQuery(handle),
-        DBMedia.Mapper
+        DBMedia.class
       )
     );
   }
@@ -37,7 +37,7 @@ public class MediaProvider extends Provider<DBMedia, MediaProps> {
         .where("id", ":id")
         .bind("id", id)
         .toQuery(handle),
-      DBMedia.Mapper
+      DBMedia.class
     );
   }
 
@@ -48,7 +48,7 @@ public class MediaProvider extends Provider<DBMedia, MediaProps> {
         .where("sha256", ":sha256")
         .bind("sha256", sha256)
         .toQuery(handle),
-      DBMedia.Mapper
+      DBMedia.class
     );
   }
 
@@ -61,7 +61,7 @@ public class MediaProvider extends Provider<DBMedia, MediaProps> {
         .where("u.id", ":id")
         .bind("id", uploadId)
         .toQuery(handle),
-      DBMedia.Mapper
+      DBMedia.class
     );
   }
 
@@ -96,7 +96,7 @@ public class MediaProvider extends Provider<DBMedia, MediaProps> {
     return Result.fromValue(
       Database.firstOrNull(
         query.toQuery(handle),
-        DBMedia.Mapper
+        DBMedia.class
       )
     );
   }

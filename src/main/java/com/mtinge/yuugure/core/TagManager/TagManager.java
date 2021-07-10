@@ -49,7 +49,7 @@ public class TagManager {
         handle.execute("LOCK TABLE tag IN ACCESS EXCLUSIVE MODE");
 
         handle.createQuery("SELECT * FROM tag WHERE true")
-          .map(DBTag.Mapper)
+          .mapTo(DBTag.class)
           .stream()
           .forEach(tag -> addOrAppend(toSet, tag));
 
@@ -104,7 +104,7 @@ public class TagManager {
       var tag = handle.createQuery("INSERT INTO tag (category, name) VALUES (:category, :name) RETURNING *")
         .bind("category", descriptor.category.getName())
         .bind("name", descriptor.name)
-        .map(DBTag.Mapper).first();
+        .mapTo(DBTag.class).first();
 
       addOrAppend(tag);
       return TagCreationResult.forTags(List.of(tag));
@@ -194,7 +194,7 @@ public class TagManager {
             existing = handle.createQuery("INSERT INTO tag (category, name) VALUES (:category, :name) RETURNING *")
               .bind("category", descriptor.category.name)
               .bind("name", descriptor.name.toLowerCase().trim())
-              .map(DBTag.Mapper)
+              .mapTo(DBTag.class)
               .first();
             created.add(existing);
           }
@@ -287,7 +287,7 @@ public class TagManager {
           try {
             var fromDb = handle.createQuery("SELECT * FROM tag WHERE id = :tid FOR UPDATE")
               .bind("tid", existing.id)
-              .map(DBTag.Mapper)
+              .mapTo(DBTag.class)
               .findFirst().orElse(null);
             if (fromDb != null) {
               handle.createQuery("SELECT 1 FROM upload_tags WHERE tag = :tid FOR UPDATE")
@@ -478,7 +478,7 @@ public class TagManager {
       return false;
     }
 
-    if (child.parent == parent.id) {
+    if (child.parent != null && (child.parent == parent.id)) {
       return false;
     }
 
@@ -550,8 +550,7 @@ public class TagManager {
   }
 
   private void _injectAs(BoolQueryBuilder builder, MutableTag tag, TermModifier as) {
-    // JDBI sets parent to 0 when null in the database to avoid errors for the primitive.
-    if (tag.parent > 0) {
+    if (tag.parent != null && tag.parent > 0) {
       if (as.equals(TermModifier.NOT)) {
         builder.mustNot(QueryBuilders.termQuery("tags", tag.id));
         builder.mustNot(QueryBuilders.termQuery("tags", tag.parent));

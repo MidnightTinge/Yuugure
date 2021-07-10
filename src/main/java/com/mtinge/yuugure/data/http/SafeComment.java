@@ -9,7 +9,7 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 public class SafeComment {
   public final int id;
-  public final int parent;
+  public final Integer parent;
   public final int account;
   public final Timestamp timestamp;
 
@@ -21,5 +21,4 @@ public class SafeComment {
   public static SafeComment fromDb(DBComment comment) {
     return new SafeComment(comment.id, comment.parent, comment.account, comment.timestamp, comment.contentRaw, comment.contentRendered);
   }
-
 }

@@ -1,23 +1,30 @@
 package com.mtinge.yuugure.data.postgres;
 
-import lombok.AllArgsConstructor;
-import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.mapper.reflect.ColumnName;
 
-@AllArgsConstructor
+import java.beans.ConstructorProperties;
+
 public final class DBTag {
+  @ColumnName("id")
   public final int id;
+  @ColumnName("parent")
   public final Integer parent;
+  @ColumnName("category")
   public final String category;
+  @ColumnName("name")
   public final String name;
+  @ColumnName("assoc_type")
   public final String assocType;
+  @ColumnName("assoc_id")
   public final Integer assocId;
 
-  public static final RowMapper<DBTag> Mapper = (r, ctx) -> new DBTag(
-    r.getInt("id"),
-    r.getInt("parent"),
-    r.getString("category"),
-    r.getString("name"),
-    r.getString("assoc_type"),
-    r.getInt("assoc_id")
-  );
+  @ConstructorProperties({"id", "parent", "category", "name", "assoc_type", "assoc_id"})
+  public DBTag(int id, Integer parent, String category, String name, String assocType, Integer assocId) {
+    this.id = id;
+    this.parent = parent;
+    this.category = category;
+    this.name = name;
+    this.assocType = assocType;
+    this.assocId = assocId;
+  }
 }

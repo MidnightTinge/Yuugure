@@ -36,7 +36,7 @@ public class ReportProvider extends Provider<DBReport, ReportProps> {
           .bind("content", props.content())
           .returning("*")
           .toQuery(handle),
-        DBReport.Mapper
+        DBReport.class
       )
     );
   }
@@ -61,7 +61,7 @@ public class ReportProvider extends Provider<DBReport, ReportProps> {
         .where("id", ":id")
         .bind("id", id)
         .toQuery(handle),
-      DBReport.Mapper
+      DBReport.class
     );
   }
 
@@ -79,7 +79,7 @@ public class ReportProvider extends Provider<DBReport, ReportProps> {
         .bind("type", type.colVal())
         .bind("target", target)
         .toQuery(handle),
-      DBReport.Mapper
+      DBReport.class
     );
   }
 
@@ -131,7 +131,7 @@ public class ReportProvider extends Provider<DBReport, ReportProps> {
     return Result.fromValue(
       Database.firstOrNull(
         query.returning("*").toQuery(handle),
-        DBReport.Mapper
+        DBReport.class
       )
     );
   }

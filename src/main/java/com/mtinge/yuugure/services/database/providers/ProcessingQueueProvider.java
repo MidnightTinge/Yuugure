@@ -38,7 +38,7 @@ public class ProcessingQueueProvider extends Provider<DBProcessingQueue, Process
           .returning("*")
           .bind("upload", props.upload())
           .toQuery(handle),
-        DBProcessingQueue.Mapper
+        DBProcessingQueue.class
       )
     );
   }
@@ -51,7 +51,7 @@ public class ProcessingQueueProvider extends Provider<DBProcessingQueue, Process
         .where("id", ":id")
         .bind("id", id)
         .toQuery(handle),
-      DBProcessingQueue.Mapper
+      DBProcessingQueue.class
     );
   }
 
@@ -62,7 +62,7 @@ public class ProcessingQueueProvider extends Provider<DBProcessingQueue, Process
         .where("upload", ":upload")
         .bind("upload", uploadId)
         .toQuery(handle),
-      DBProcessingQueue.Mapper
+      DBProcessingQueue.class
     );
   }
 
@@ -82,7 +82,7 @@ public class ProcessingQueueProvider extends Provider<DBProcessingQueue, Process
           )
         )
         .toQuery(handle),
-      DBProcessingQueue.Mapper
+      DBProcessingQueue.class
     );
   }
 
@@ -123,7 +123,7 @@ public class ProcessingQueueProvider extends Provider<DBProcessingQueue, Process
     return Result.fromValue(
       Database.firstOrNull(
         builder.toQuery(handle),
-        DBProcessingQueue.Mapper
+        DBProcessingQueue.class
       )
     );
   }
@@ -159,7 +159,7 @@ public class ProcessingQueueProvider extends Provider<DBProcessingQueue, Process
             .returning("*")
             .bind("id", id)
             .toQuery(handle),
-          DBProcessingQueue.Mapper
+          DBProcessingQueue.class
         );
         var upload = App.database().uploads.read(item.upload, handle);
         var media = App.database().media.read(upload.media, handle);
@@ -213,7 +213,7 @@ public class ProcessingQueueProvider extends Provider<DBProcessingQueue, Process
           .where("upload", ":upload")
           .bind("upload", result.dequeued().upload.id)
           .toQuery(handle),
-        DBTag.Mapper
+        DBTag.class
       ).stream()
         .filter(t -> t.category.equalsIgnoreCase(TagCategory.USERLAND.getName()))
         .map(t -> t.id)

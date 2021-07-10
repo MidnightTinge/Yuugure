@@ -40,7 +40,7 @@ public class VoteProvider extends Provider<DBUploadVote, VoteProps> {
         .bind("account", account)
         .bind("upload", upload)
         .toQuery(handle),
-      DBUploadVote.Mapper
+      DBUploadVote.class
     );
   }
 
@@ -61,7 +61,7 @@ public class VoteProvider extends Provider<DBUploadVote, VoteProps> {
     return builder
       .where(filter)
       .toQuery(handle)
-      .map(DBUploadVote.Mapper)
+      .mapTo(DBUploadVote.class)
       .collect(Collectors.toList());
   }
 
@@ -99,7 +99,7 @@ public class VoteProvider extends Provider<DBUploadVote, VoteProps> {
     return Result.fromValue(
       Database.firstOrNull(
         query.toQuery(handle),
-        DBUploadVote.Mapper
+        DBUploadVote.class
       )
     );
   }
@@ -123,7 +123,7 @@ public class VoteProvider extends Provider<DBUploadVote, VoteProps> {
           .bind("upload", upload)
           .returning("*")
           .toQuery(handle),
-        DBUploadVote.Mapper
+        DBUploadVote.class
       )
     );
   }
@@ -136,7 +136,7 @@ public class VoteProvider extends Provider<DBUploadVote, VoteProps> {
     var existing = handle.createQuery("SELECT * FROM upload_vote WHERE account = :account AND upload = :upload FOR UPDATE")
       .bind("account", account.id)
       .bind("upload", upload.id)
-      .map(DBUploadVote.Mapper)
+      .mapTo(DBUploadVote.class)
       .findFirst().orElse(null);
 
     // Create or update an existing vote

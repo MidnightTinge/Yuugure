@@ -1,23 +1,28 @@
 package com.mtinge.yuugure.data.postgres;
 
-import lombok.AllArgsConstructor;
-import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.mapper.reflect.ColumnName;
 
+import java.beans.ConstructorProperties;
 import java.sql.Timestamp;
 
-@AllArgsConstructor
 public final class DBUploadBookmark {
+  @ColumnName("active")
   public final boolean active;
+  @ColumnName("timestamp")
   public final Timestamp timestamp;
+  @ColumnName("public")
   public final boolean isPublic;
+  @ColumnName("upload")
   public final int upload;
+  @ColumnName("account")
   public final int account;
 
-  public static final RowMapper<DBUploadBookmark> Mapper = (r, ctx) -> new DBUploadBookmark(
-    r.getBoolean("active"),
-    r.getTimestamp("timestamp"),
-    r.getBoolean("public"),
-    r.getInt("upload"),
-    r.getInt("account")
-  );
+  @ConstructorProperties({"active", "timestamp", "public", "upload", "account"})
+  public DBUploadBookmark(boolean active, Timestamp timestamp, boolean isPublic, int upload, int account) {
+    this.active = active;
+    this.timestamp = timestamp;
+    this.isPublic = isPublic;
+    this.upload = upload;
+    this.account = account;
+  }
 }

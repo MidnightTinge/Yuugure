@@ -1,28 +1,43 @@
 package com.mtinge.yuugure.data.postgres;
 
-import lombok.AllArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.bson.BsonReader;
 import org.bson.BsonType;
 import org.bson.BsonWriter;
-import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.mapper.reflect.ColumnName;
 
+import java.beans.ConstructorProperties;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Objects;
 
-@AllArgsConstructor
-@ToString
 public class DBProcessingQueue {
+  @ColumnName("id")
   public final int id;
+  @ColumnName("upload")
   public final int upload;
+  @ColumnName("queued_at")
   public final Timestamp queuedAt;
+  @ColumnName("dequeued")
   public final boolean dequeued;
+  @ColumnName("errored")
   public final boolean errored;
+  @ColumnName("error_text")
   public final String errorText;
+  @ColumnName("finished")
   public final boolean finished;
+
+  @ConstructorProperties({"id", "upload", "queued_at", "dequeued", "errored", "error_text", "finished"})
+  public DBProcessingQueue(int id, int upload, Timestamp queuedAt, boolean dequeued, boolean errored, String errorText, boolean finished) {
+    this.id = id;
+    this.upload = upload;
+    this.queuedAt = queuedAt;
+    this.dequeued = dequeued;
+    this.errored = errored;
+    this.errorText = errorText;
+    this.finished = finished;
+  }
 
   @Override
   public boolean equals(Object o) {
@@ -43,16 +58,6 @@ public class DBProcessingQueue {
   public int hashCode() {
     return Objects.hash(id, upload, queuedAt, dequeued, errored, errorText, finished);
   }
-
-  public static final RowMapper<DBProcessingQueue> Mapper = (r, ctx) -> new DBProcessingQueue(
-    r.getInt("id"),
-    r.getInt("upload"),
-    r.getTimestamp("queued_at"),
-    r.getBoolean("dequeued"),
-    r.getBoolean("errored"),
-    r.getString("error_text"),
-    r.getBoolean("finished")
-  );
 
   public static DBProcessingQueue readFrom(BsonReader reader) {
     var builder = new Builder();

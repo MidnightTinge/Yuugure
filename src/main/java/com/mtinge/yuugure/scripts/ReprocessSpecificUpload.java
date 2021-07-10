@@ -46,7 +46,7 @@ public class ReprocessSpecificUpload extends RunnableScript {
       try {
         var item = handle.createQuery("SELECT * FROM processing_queue WHERE upload = :id AND NOT (dequeued AND NOT (finished OR errored)) FOR UPDATE")
           .bind("id", uploadId)
-          .map(DBProcessingQueue.Mapper)
+          .mapTo(DBProcessingQueue.class)
           .findFirst().orElse(null);
         if (item != null) {
           // mark as dequeued

@@ -44,7 +44,7 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
           .bind("owner", props.owner())
           .bind("state", props.state())
           .toQuery(handle),
-        DBUpload.Mapper
+        DBUpload.class
       )
     );
   }
@@ -57,7 +57,7 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
         .where("id", ":id")
         .bind("id", id)
         .toQuery(handle),
-      DBUpload.Mapper
+      DBUpload.class
     );
   }
 
@@ -78,14 +78,14 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
         .bind("id", id)
         .bind("filter", params.getFilter())
         .toQuery(handle),
-      DBUpload.Mapper
+      DBUpload.class
     );
   }
 
   public List<DBUpload> readForAccount(int id, UploadFetchParams params, Handle handle) {
     return Database.toList(
       _uploadsForAccount(id, params).toQuery(handle),
-      DBUpload.Mapper
+      DBUpload.class
     );
   }
 
@@ -104,7 +104,7 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
   public BulkRenderableUpload readRenderableForAccount(int id, Integer before, UploadFetchParams params, @Nullable DBAccount context, Handle handle) {
     var uploads = Database.toList(
       _uploadsForAccount(id, before, params).toQuery(handle),
-      DBUpload.Mapper
+      DBUpload.class
     );
     return makeUploadsRenderable(uploads, context, handle);
   }
@@ -189,7 +189,7 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
     return Result.fromValue(
       Database.firstOrNull(
         query.toQuery(handle),
-        DBUpload.Mapper
+        DBUpload.class
       )
     );
   }
@@ -204,7 +204,7 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
           .returning("*")
           .bind("state", States.Upload.DELETED)
           .toQuery(handle),
-        DBUpload.Mapper
+        DBUpload.class
       )
     );
   }
@@ -336,7 +336,7 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
     }
 
     var uploads = builder.toQuery(handle)
-      .map(DBUpload.Mapper)
+      .mapTo(DBUpload.class)
       .collect(Collectors.toList());
 
     return App.database().uploads.makeUploadsRenderable(uploads, context, handle);
@@ -378,7 +378,7 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
     }
     var uploads = builder.where(filter)
       .toQuery(handle)
-      .map(DBUpload.Mapper)
+      .mapTo(DBUpload.class)
       .collect(Collectors.toList());
 
     return makeUploadsRenderable(uploads, context, handle);

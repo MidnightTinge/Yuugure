@@ -39,7 +39,7 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
           .bind("timestamp", requireNonNull(props.timestamp()))
           .returning("*")
           .toQuery(handle),
-        DBUploadBookmark.Mapper
+        DBUploadBookmark.class
       )
     );
   }
@@ -60,7 +60,7 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
         .bind("owner", owner)
         .bind("upload", upload)
         .toQuery(handle),
-      DBUploadBookmark.Mapper
+      DBUploadBookmark.class
     );
   }
 
@@ -81,7 +81,7 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
     return builder
       .where(filter)
       .toQuery(handle)
-      .map(DBUploadBookmark.Mapper)
+      .mapTo(DBUploadBookmark.class)
       .collect(Collectors.toList());
   }
 
@@ -117,7 +117,7 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
     return Result.fromValue(
       Database.firstOrNull(
         query.toQuery(handle),
-        DBUploadBookmark.Mapper
+        DBUploadBookmark.class
       )
     );
   }
@@ -141,7 +141,7 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
           .bind("upload", upload)
           .bind("account", account)
           .toQuery(handle),
-        DBUploadBookmark.Mapper
+        DBUploadBookmark.class
       )
     );
   }
@@ -154,7 +154,7 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
     var existing = handle.createQuery("SELECT * FROM upload_bookmark WHERE account = :account AND upload = :upload FOR UPDATE")
       .bind("account", account.id)
       .bind("upload", upload.id)
-      .map(DBUploadBookmark.Mapper)
+      .mapTo(DBUploadBookmark.class)
       .findFirst().orElse(null);
 
     // Create or update an existing bookmark
@@ -187,7 +187,7 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
   public BulkRenderableUpload getRenderableBookmarksForAccount(int accountId, @Nullable DBAccount context, Handle handle) {
     var uploads = Database.toList(
       _bookmarksForAccount(accountId, context != null && context.id == accountId, false).toQuery(handle),
-      DBUpload.Mapper
+      DBUpload.class
     );
     return App.database().uploads.makeUploadsRenderable(uploads, context, handle);
   }
@@ -195,7 +195,7 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
   public BulkRenderableUpload getRenderableBookmarksForAccount(int accountId, @Nullable Integer before, @Nullable DBAccount context, Handle handle) {
     var uploads = Database.toList(
       _bookmarksForAccount(accountId, before, context != null && context.id == accountId).toQuery(handle),
-      DBUpload.Mapper
+      DBUpload.class
     );
     return App.database().uploads.makeUploadsRenderable(uploads, context, handle);
   }
@@ -256,7 +256,7 @@ public class BookmarkProvider extends Provider<DBUploadBookmark, BookmarkProps> 
         .bind("upload", uploadId)
         .bind("account", accountContext.id)
         .toQuery(handle)
-        .map(DBUploadBookmark.Mapper)
+        .mapTo(DBUploadBookmark.class)
         .findFirst().orElse(null);
     }
 

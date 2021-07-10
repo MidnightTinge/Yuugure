@@ -1,27 +1,41 @@
 package com.mtinge.yuugure.data.postgres;
 
-import lombok.AllArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.bson.BsonReader;
 import org.bson.BsonType;
 import org.bson.BsonWriter;
 import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.mapper.reflect.ColumnName;
 
+import java.beans.ConstructorProperties;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Objects;
 
-@AllArgsConstructor
-@ToString
 public class DBUpload {
+  @ColumnName("id")
   public final int id;
+  @ColumnName("media")
   public final int media;
+  @ColumnName("parent")
   public final int parent;
+  @ColumnName("owner")
   public final int owner;
+  @ColumnName("upload_date")
   public final Timestamp uploadDate;
+  @ColumnName("state")
   public final long state;
+
+  @ConstructorProperties({"id", "media", "parent", "owner", "upload_date", "state"})
+  public DBUpload(int id, int media, int parent, int owner, Timestamp uploadDate, long state) {
+    this.id = id;
+    this.media = media;
+    this.parent = parent;
+    this.owner = owner;
+    this.uploadDate = uploadDate;
+    this.state = state;
+  }
 
   @Override
   public boolean equals(Object o) {
@@ -41,15 +55,6 @@ public class DBUpload {
   public int hashCode() {
     return Objects.hash(id, media, parent, owner, uploadDate, state);
   }
-
-  public static final RowMapper<DBUpload> Mapper = (r, c) -> new DBUpload(
-    r.getInt("id"),
-    r.getInt("media"),
-    r.getInt("parent"),
-    r.getInt("owner"),
-    r.getTimestamp("upload_date"),
-    r.getLong("state")
-  );
 
   public static DBUpload readFrom(BsonReader reader) {
     var builder = new Builder();

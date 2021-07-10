@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class SafeTag {
   public final int id;
-  public final int parent;
+  public final Integer parent;
   public final String category;
   public final String name;
 
