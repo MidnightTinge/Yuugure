@@ -1,9 +1,10 @@
-import KY from '../../classes/KY';
 import * as React from 'react';
 import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
 import {useParams} from 'react-router';
+import KY from '../../classes/KY';
 import namedContext from '../../classes/NamedContext';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
+import Util from '../../classes/Util';
 
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 
@@ -239,9 +240,9 @@ export default function PageView(props: PageViewProps) {
 
       commentsDispatch({type: 'fetch/fetching', payload: true});
       KY.get(`/api/comment/upload/${params.uploadId}`).json<RouterResponse>().then(data => {
-        const consumed = RouterResponseConsumer<RenderableComment>(data);
+        const consumed = RouterResponseConsumer<BulkRenderableComment>(data);
         if (consumed.success) {
-          commentsDispatch({type: 'comments/set', payload: [...consumed.data]});
+          commentsDispatch({type: 'comments/set', payload: [...Util.mapBulkComments(consumed.data[0])]});
         } else {
           commentsDispatch({type: 'fetch/error', payload: consumed.message});
         }

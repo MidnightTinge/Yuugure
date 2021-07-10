@@ -4,8 +4,10 @@ import com.mtinge.QueryBuilder.QueryBuilder;
 import com.mtinge.QueryBuilder.ops.filter.Filter;
 import com.mtinge.QueryBuilder.ops.order.OrderType;
 import com.mtinge.yuugure.App;
+import com.mtinge.yuugure.data.http.BulkRenderableComment;
 import com.mtinge.yuugure.data.http.RenderableComment;
 import com.mtinge.yuugure.data.http.SafeAccount;
+import com.mtinge.yuugure.data.http.SafeComment;
 import com.mtinge.yuugure.data.postgres.DBAccount;
 import com.mtinge.yuugure.data.postgres.DBComment;
 import com.mtinge.yuugure.data.postgres.DBUpload;
@@ -146,25 +148,25 @@ public class CommentProvider extends Provider<DBComment, CommentProps> {
   }
 
   public RenderableComment makeRenderable(DBComment comment, Handle handle) {
-    var renderable = makeRenderable(List.of(comment), handle);
+    var account = SafeAccount.fromDb(App.database().accounts.read(comment.account, handle));
 
-    return renderable != null ? renderable.get(0) : null;
+    return new RenderableComment(comment.id, comment.timestamp, account, comment.contentRaw, comment.contentRendered);
   }
 
-  public List<RenderableComment> makeRenderable(List<DBComment> comments, Handle handle) {
+  public BulkRenderableComment makeRenderable(List<DBComment> toRender, Handle handle) {
     var accountCache = new HashMap<Integer, SafeAccount>();
 
-    var ret = new LinkedList<RenderableComment>();
-    for (var comment : comments) {
+    var comments = new LinkedList<SafeComment>();
+    for (var comment : toRender) {
       var account = accountCache.get(comment.account);
       if (account == null) {
         account = SafeAccount.fromDb(App.database().accounts.read(comment.account, handle));
         accountCache.put(comment.account, account);
       }
 
-      ret.add(new RenderableComment(comment.id, comment.timestamp, account, comment.contentRaw, comment.contentRendered));
+      comments.add(SafeComment.fromDb(comment));
     }
 
-    return ret;
+    return new BulkRenderableComment(accountCache, comments);
   }
 }

@@ -24,6 +24,20 @@ export default class Util {
     return ret;
   }
 
+  static mapBulkComments(bulk: BulkRenderableComment): RenderableComment[] {
+    let ret: RenderableComment[] = [];
+
+    for (let i = 0; i < bulk.comments.length; i++) {
+      let comment = bulk.comments[i];
+      ret.push({
+        ...comment,
+        account: bulk.accounts[comment.account],
+      });
+    }
+
+    return ret;
+  }
+
   static formatUrlEncodedBody(body: Record<string, any>) {
     const params = new URLSearchParams();
     for (let x of Object.entries(body)) {

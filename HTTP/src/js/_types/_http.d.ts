@@ -138,6 +138,11 @@ type BulkRenderableUpload = {
   uploads: ExtendedUpload[];
 }
 
+type BulkRenderableComment = {
+  accounts: Record<number, SafeAccount>;
+  comments: SafeComment[];
+}
+
 type SearchPagination = {
   current: number;
   max: number;
