@@ -19,9 +19,11 @@ public class DBMediaMeta {
   public final double videoDuration;
   @ColumnName("has_audio")
   public final boolean hasAudio;
+  @ColumnName("filesize")
+  public final long filesize;
 
-  @ConstructorProperties({"id", "media", "width", "height", "video", "video_duration", "has_audio"})
-  public DBMediaMeta(int id, int media, int width, int height, boolean video, double videoDuration, boolean hasAudio) {
+  @ConstructorProperties({"id", "media", "width", "height", "video", "video_duration", "has_audio", "filesize"})
+  public DBMediaMeta(int id, int media, int width, int height, boolean video, double videoDuration, boolean hasAudio, long filesize) {
     this.id = id;
     this.media = media;
     this.width = width;
@@ -29,5 +31,6 @@ public class DBMediaMeta {
     this.video = video;
     this.videoDuration = videoDuration;
     this.hasAudio = hasAudio;
+    this.filesize = filesize;
   }
 }

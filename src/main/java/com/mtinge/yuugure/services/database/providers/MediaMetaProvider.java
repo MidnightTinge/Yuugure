@@ -48,8 +48,8 @@ public class MediaMetaProvider extends Provider<DBMediaMeta, MediaMeta> {
     if (id == null || id == 0) {
       // the meta doesn't exist so we'll insert
       builder = QueryBuilder.insert("media_meta")
-        .columns("media", "width", "height", "video", "video_duration", "has_audio")
-        .values(":media", ":width", ":height", ":video", ":video_duration", ":has_audio")
+        .columns("media", "width", "height", "video", "video_duration", "has_audio", "filesize")
+        .values(":media", ":width", ":height", ":video", ":video_duration", ":has_audio", ":filesize")
         .returning("*")
         .bind("media", props.media());
     } else {
@@ -60,7 +60,9 @@ public class MediaMetaProvider extends Provider<DBMediaMeta, MediaMeta> {
         .set("video", ":video")
         .set("video_duration", ":video_duration")
         .set("has_audio", ":has_audio")
+        .set("filesize", ":filesize")
         .returning("*")
+        .where("id", ":id")
         .bind("id", id);
     }
 
@@ -72,6 +74,7 @@ public class MediaMetaProvider extends Provider<DBMediaMeta, MediaMeta> {
           .bind("video", props.video())
           .bind("video_duration", props.videoDuration())
           .bind("has_audio", props.hasAudio())
+          .bind("filesize", props.fileSize())
           .toQuery(handle),
         DBMediaMeta.class
       )

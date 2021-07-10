@@ -115,7 +115,8 @@ public class MediaProcessor implements IService {
           .height(streams.video.getHeight())
           .video(dequeued.media.mime.toLowerCase().startsWith("video/"))
           .videoDuration(Optional.ofNullable(Optional.ofNullable(streams.video.getDuration()).orElse(streams.format.getDuration())).orElse(0f)) // try to extract from the video stream first, then the format specifier
-          .hasAudio(false); // audio detection is handled with an ffmpeg filter later.
+          .hasAudio(false) // audio detection is handled with an ffmpeg filter later.
+          .fileSize(streams.format.getSize());
 
         if (streams.audio != null) {
           var volumeData = VolumeData.detect(fullPath);

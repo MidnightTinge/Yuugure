@@ -21,6 +21,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @DisplayName("MediaProcessor BSON Converters")
 public class BsonConversionTests {
   @Test
@@ -81,7 +83,8 @@ public class BsonConversionTests {
       .height(1080)
       .video(false)
       .hasAudio(false)
-      .videoDuration(0)
+      .videoDuration(0D)
+      .fileSize(1049384L)
       .build();
     var result = new ProcessorResult.Builder()
       .dequeued(processable)
@@ -105,18 +108,19 @@ public class BsonConversionTests {
     var reader = new BsonBinaryReader(ByteBuffer.wrap(bytes));
     var deserialized = ProcessorResult.readFrom(reader);
 
-    Assertions.assertNotNull(deserialized);
-    Assertions.assertNotNull(deserialized.meta());
-    Assertions.assertNotNull(deserialized.dequeued());
-    Assertions.assertNotNull(deserialized.message());
-    Assertions.assertNotNull(deserialized.tags());
+    assertThat(deserialized).isNotNull();
+    assertThat(deserialized.meta()).isNotNull();
+    assertThat(deserialized.dequeued()).isNotNull();
+    assertThat(deserialized.message()).isNotNull();
+    assertThat(deserialized.tags()).isNotNull();
 
-    Assertions.assertFalse(deserialized.tags().isEmpty());
-    Assertions.assertEquals(3, deserialized.tags().size());
-    Assertions.assertEquals("one", deserialized.tags().remove(0));
-    Assertions.assertEquals("two", deserialized.tags().remove(0));
-    Assertions.assertEquals("three", deserialized.tags().remove(0));
+    assertThat(deserialized.tags()).isNotEmpty();
+    assertThat(deserialized.tags()).hasSize(3);
+    assertThat(deserialized.tags()).hasSameElementsAs(List.of("one", "two", "three"));
 
-    Assertions.assertEquals(deserialized, result);
+    // everything has a .equals() and .hashCode() implementation that will ensure things like
+    // filesize are equal. only thing we don't check is tag elements which is why there are specific
+    // assertions above.
+    assertThat(deserialized).isEqualTo(result);
   }
 }

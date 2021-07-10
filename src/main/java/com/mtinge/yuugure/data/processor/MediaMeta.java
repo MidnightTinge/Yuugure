@@ -11,6 +11,8 @@ import org.bson.BsonWriter;
 
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 @Getter
 @Setter
 @Accessors(fluent = true, chain = true)
@@ -23,6 +25,7 @@ public class MediaMeta {
   private boolean video = false;
   private double videoDuration = 0;
   private boolean hasAudio = false;
+  private long fileSize = 0;
 
   @Override
   public boolean equals(Object o) {
@@ -35,12 +38,13 @@ public class MediaMeta {
       && height == mediaMeta.height
       && video == mediaMeta.video
       && Double.compare(mediaMeta.videoDuration, videoDuration) == 0
-      && hasAudio == mediaMeta.hasAudio;
+      && hasAudio == mediaMeta.hasAudio
+      && fileSize == mediaMeta.fileSize;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(media, width, height, video, videoDuration, hasAudio);
+    return Objects.hash(media, width, height, video, videoDuration, hasAudio, fileSize);
   }
 
   public MediaMeta(int media) {
@@ -60,6 +64,7 @@ public class MediaMeta {
         case "video" -> builder.video(reader.readBoolean());
         case "videoDuration" -> builder.videoDuration(reader.readDouble());
         case "hasAudio" -> builder.hasAudio(reader.readBoolean());
+        case "filesize" -> builder.fileSize(reader.readInt64());
         default -> System.err.println("Unknown name in MediaMeta document: " + name);
       }
     }
@@ -94,6 +99,9 @@ public class MediaMeta {
     writer.writeName("hasAudio");
     writer.writeBoolean(meta.hasAudio);
 
+    writer.writeName("filesize");
+    writer.writeInt64(meta.fileSize);
+
 
     writer.writeEndDocument();
   }
@@ -101,20 +109,22 @@ public class MediaMeta {
   @Setter
   @Accessors(fluent = true, chain = true)
   public static final class Builder {
-    private int media;
-    private int width = 0;
-    private int height = 0;
-    private boolean video = false;
-    private double videoDuration = 0;
-    private boolean hasAudio = false;
+    private Integer media = null;
+    private Integer width = null;
+    private Integer height = null;
+    private Boolean video = null;
+    private Boolean hasAudio = null;
+    private Double videoDuration = null;
+    private Long fileSize = null;
 
     public MediaMeta build() {
-      return new MediaMeta(media)
-        .width(width)
-        .height(height)
-        .video(video)
-        .videoDuration(videoDuration)
-        .hasAudio(hasAudio);
+      return new MediaMeta(requireNonNull(media))
+        .width(requireNonNull(width))
+        .height(requireNonNull(height))
+        .video(requireNonNull(video))
+        .videoDuration(requireNonNull(videoDuration))
+        .hasAudio(requireNonNull(hasAudio))
+        .fileSize(fileSize);
     }
   }
 }

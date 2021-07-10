@@ -142,13 +142,13 @@ public class InsertBuilder extends QueryBuilder {
       if (update == null) {
         throw new IllegalStateException("Attempted to construct an UPDATE query with no updates.");
       }
+      if (filter == null) {
+        throw new IllegalStateException("Refused to construct an UPDATE query with no filter. If you were doing this on purpose, use `.where(Filter.of(\"true\"))` to explicitly enable it.");
+      }
 
       // UPDATE <table>...
       sb.append(" ").append(table).append(" SET ").append(update.build().build());
-
-      if (filter != null) {
-        sb.append(" WHERE ").append(filter.buildAssertion());
-      }
+      sb.append(" WHERE ").append(filter.buildAssertion());
     } else {
       throw new IllegalStateException("Unhandled mode token: " + mode.getToken());
     }

@@ -13,6 +13,8 @@ import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.time.Instant;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class MediaProcessorTest {
   @AfterEach
   void killThumb() {
@@ -37,19 +39,20 @@ public class MediaProcessorTest {
     var processable = new ProcessableUpload(_queue, _upload, _media);
 
     var result = MediaProcessor.Process(processable, fullPath, thumbPath);
-    Assertions.assertNotNull(result);
-    Assertions.assertTrue(result.success());
+    assertThat(result).isNotNull();
+    assertThat(result.success()).isTrue();
 
-    Assertions.assertTrue(thumbPath.toFile().exists());
+    assertThat(thumbPath.toFile()).exists();
 
-    Assertions.assertNotNull(result.meta());
+    assertThat(result.meta()).isNotNull();
+
     var meta = result.meta();
-
-    Assertions.assertFalse(meta.video());
-    Assertions.assertEquals(0L, meta.videoDuration());
-    Assertions.assertEquals(512, meta.width());
-    Assertions.assertEquals(328, meta.height());
-    Assertions.assertFalse(meta.hasAudio());
+    assertThat(meta.video()).isFalse();
+    assertThat(meta.hasAudio()).isFalse();
+    assertThat(meta.videoDuration()).isEqualTo(0D);
+    assertThat(meta.width()).isEqualTo(512);
+    assertThat(meta.height()).isEqualTo(328);
+    assertThat(meta.fileSize()).isEqualTo(3655);
   }
 
   @Test
@@ -67,19 +70,20 @@ public class MediaProcessorTest {
     var processable = new ProcessableUpload(_queue, _upload, _media);
 
     var result = MediaProcessor.Process(processable, fullPath, thumbPath);
-    Assertions.assertNotNull(result);
-    Assertions.assertTrue(result.success());
+    assertThat(result).isNotNull();
+    assertThat(result.success()).isTrue();
 
-    Assertions.assertTrue(thumbPath.toFile().exists());
+    assertThat(thumbPath.toFile()).exists();
 
-    Assertions.assertNotNull(result.meta());
+    assertThat(result.meta()).isNotNull();
+
     var meta = result.meta();
-
-    Assertions.assertTrue(meta.video());
-    Assertions.assertEquals(5L, meta.videoDuration());
-    Assertions.assertEquals(240, meta.width());
-    Assertions.assertEquals(120, meta.height());
-    Assertions.assertFalse(meta.hasAudio());
+    assertThat(meta.video()).isTrue();
+    assertThat(meta.hasAudio()).isFalse();
+    assertThat(meta.videoDuration()).isEqualTo(5D);
+    assertThat(meta.width()).isEqualTo(240);
+    assertThat(meta.height()).isEqualTo(120);
+    assertThat(meta.fileSize()).isEqualTo(3283);
   }
 
   @Test
@@ -97,18 +101,19 @@ public class MediaProcessorTest {
     var processable = new ProcessableUpload(_queue, _upload, _media);
 
     var result = MediaProcessor.Process(processable, fullPath, thumbPath);
-    Assertions.assertNotNull(result);
-    Assertions.assertTrue(result.success());
+    assertThat(result).isNotNull();
+    assertThat(result.success()).isTrue();
 
-    Assertions.assertTrue(thumbPath.toFile().exists());
+    assertThat(thumbPath.toFile()).exists();
 
-    Assertions.assertNotNull(result.meta());
+    assertThat(result.meta()).isNotNull();
+
     var meta = result.meta();
-
-    Assertions.assertTrue(meta.video());
-    Assertions.assertTrue(meta.hasAudio());
-    Assertions.assertEquals(5L, meta.videoDuration());
-    Assertions.assertEquals(240, meta.width());
-    Assertions.assertEquals(120, meta.height());
+    assertThat(meta.video()).isTrue();
+    assertThat(meta.hasAudio()).isTrue();
+    assertThat(meta.videoDuration()).isEqualTo(5D);
+    assertThat(meta.width()).isEqualTo(240);
+    assertThat(meta.height()).isEqualTo(120);
+    assertThat(meta.fileSize()).isEqualTo(72142);
   }
 }
