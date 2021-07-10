@@ -1,6 +1,6 @@
-import KY from '../../classes/KY';
 import * as React from 'react';
 import {useMemo, useState} from 'react';
+import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
 import Modal, {CloseSource} from '../Modal/Modal';
@@ -33,6 +33,7 @@ export default function ReportModal(props: ReportModalProps) {
       const consumed = RouterResponseConsumer<ReportResponse>(data);
       if (consumed.success) {
         let [report] = consumed.data;
+        setError(null);
         setReported(true);
         if (typeof props.onReportSent === 'function') {
           props.onReportSent(report);
