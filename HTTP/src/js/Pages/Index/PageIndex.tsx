@@ -1,8 +1,10 @@
+import KY from '../../classes/KY';
 import * as React from 'react';
 import {useContext, useEffect, useReducer} from 'react';
 import {useHistory} from 'react-router-dom';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
-import {XHR} from '../../classes/XHR';
+
 import LoadingPing from '../../Components/LoadingPing';
 import MediaPreview from '../../Components/MediaPreview/MediaPreview';
 import {AuthStateContext} from '../../Context/AuthStateProvider';
@@ -41,7 +43,8 @@ export default function PageIndex(props: PageIndexProps) {
 
   useEffect(() => {
     indexStateD({type: 'setPartial', payload: {fetching: true, error: null}});
-    XHR.for(`/api/upload/index`).get().getRouterResponse<BulkRenderableUpload>().then(consumed => {
+    KY.get('/api/upload/index').json<RouterResponse>().then(data => {
+      const consumed = RouterResponseConsumer<BulkRenderableUpload>(data);
       indexStateD({
         type: 'set',
         payload: {
@@ -51,7 +54,7 @@ export default function PageIndex(props: PageIndexProps) {
         },
       });
     }).catch(err => {
-      indexStateD({type: 'setPartial', payload: {fetching: false, error: err.toString()}});
+      indexStateD({type: 'setPartial', payload: {fetching: false, error: err?.toString() ?? 'An internal server error occurred.'}});
     });
   }, []);
 

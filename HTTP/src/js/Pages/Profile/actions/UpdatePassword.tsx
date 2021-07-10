@@ -1,6 +1,9 @@
+import KY from '../../../classes/KY';
 import * as React from 'react';
 import {useRef, useState} from 'react';
-import {XHR} from '../../../classes/XHR';
+import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
+import Util from '../../../classes/Util';
+
 import FormBlock from '../../../Components/FormBlock';
 import Modal from '../../../Components/Modal/Modal';
 import Spinner from '../../../Components/Spinner';
@@ -27,11 +30,14 @@ export default function UpdatePassword(props: UpdatePasswordProps) {
     e.preventDefault();
     setPosting(true);
     setPosted(false);
-    XHR.for('/api/account/@me/password').patch(XHR.BODY_TYPE.FORM, {
-      newPassword: txtNewPassword.current.value,
-      repeat: txtRepeat.current.value,
-      currentPassword: txtCurrentPassword.current.value,
-    }).getRouterResponse<InputAwareResponse<any>>().then(consumed => {
+    KY.patch('/api/account/@me/password', {
+      body: Util.formatUrlEncodedBody({
+        newPassword: txtNewPassword.current.value,
+        repeat: txtRepeat.current.value,
+        currentPassword: txtCurrentPassword.current.value,
+      }),
+    }).json<RouterResponse>().then(data => {
+      const consumed = RouterResponseConsumer<InputAwareResponse<any>>(data);
       if (consumed.success) {
         setPosted(true);
       } else {

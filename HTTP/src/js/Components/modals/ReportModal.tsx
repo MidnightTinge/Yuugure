@@ -1,7 +1,8 @@
+import KY from '../../classes/KY';
 import * as React from 'react';
 import {useMemo, useState} from 'react';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
-import {XHR} from '../../classes/XHR';
 import Modal, {CloseSource} from '../Modal/Modal';
 import Spinner from '../Spinner';
 
@@ -24,9 +25,12 @@ export default function ReportModal(props: ReportModalProps) {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPosting(true);
-    XHR.for(`/api/${props.targetType}/${props.targetId}/report`).post(XHR.BODY_TYPE.FORM, {
-      reason: txtReason.current.value,
-    }).getRouterResponse<ReportResponse>().then(consumed => {
+    KY.post(`/api/${props.targetType}/${props.targetId}/report`, {
+      body: Util.formatUrlEncodedBody({
+        reason: txtReason.current.value,
+      }),
+    }).json<RouterResponse>().then(data => {
+      const consumed = RouterResponseConsumer<ReportResponse>(data);
       if (consumed.success) {
         let [report] = consumed.data;
         setReported(true);

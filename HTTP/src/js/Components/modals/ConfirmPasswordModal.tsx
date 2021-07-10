@@ -1,6 +1,8 @@
+import KY from '../../classes/KY';
 import * as React from 'react';
 import {useRef, useState} from 'react';
-import {XHR} from '../../classes/XHR';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
+import Util from '../../classes/Util';
 import FormBlock from '../FormBlock';
 import Modal from '../Modal/Modal';
 import Spinner from '../Spinner';
@@ -21,9 +23,13 @@ export default function ConfirmPasswordModal(props: ConfirmPasswordModalProps) {
     e.preventDefault();
 
     setPosting(true);
-    XHR.for('/auth/confirm').post(XHR.BODY_TYPE.FORM, {
-      password: txtPassword.current.value,
-    }).getRouterResponse<AuthConfirmResponse>().then(consumed => {
+
+    KY.post('/auth/confirm', {
+      body: Util.formatUrlEncodedBody({
+        password: txtPassword.current.value,
+      }),
+    }).json<RouterResponse>().then(data => {
+      const consumed = RouterResponseConsumer<AuthConfirmResponse>(data);
       if (consumed.success) {
         let [authRes] = consumed.data;
         if (!authRes.authenticated) {

@@ -1,10 +1,12 @@
+import KY from '../../classes/KY';
 import * as React from 'react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from 'react-query';
 import {useLocation} from 'react-router';
 import {useHistory} from 'react-router-dom';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
-import {XHR} from '../../classes/XHR';
+
 import LoadingPing from '../../Components/LoadingPing';
 import MediaPreview from '../../Components/MediaPreview/MediaPreview';
 import Pagination from '../../Components/Pagination/Pagination';
@@ -42,7 +44,9 @@ export default function PageSearch(props: PageSearchProps) {
 
   async function runSearch(): Promise<SearchState> {
     if (query != null && query.trim().length > 0) {
-      let {data, success, message} = await XHR.for(`/search?q=${encodeURIComponent(query)}&page=${encodeURIComponent(page)}`).get().getRouterResponse<SearchResult>();
+      const searchRes = await KY.get(`/search?q=${encodeURIComponent(query)}&page=${encodeURIComponent(page)}`).json<RouterResponse>();
+      const {data, success, message} = RouterResponseConsumer<SearchResult>(searchRes);
+
       if (success) {
         const [result] = data;
 

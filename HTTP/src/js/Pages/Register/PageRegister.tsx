@@ -1,6 +1,9 @@
+import KY from '../../classes/KY';
 import * as React from 'react';
 import {FormEvent, useRef, useState} from 'react';
-import {XHR} from '../../classes/XHR';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
+import Util from '../../classes/Util';
+
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FormBlock from '../../Components/FormBlock';
 import Spinner from '../../Components/Spinner';
@@ -33,12 +36,15 @@ export default function PageRegister(props: PageRegisterProps) {
     e.preventDefault();
 
     setPosting(true);
-    XHR.for('/auth/register').post(XHR.BODY_TYPE.FORM, {
-      email: txtEmail.current.value,
-      username: txtUsername.current.value,
-      password: txtPassword.current.value,
-      repeat: txtRepeat.current.value,
-    }).getRouterResponse<AuthResponse>().then(consumed => {
+    KY.post('/auth/register', {
+      body: Util.formatUrlEncodedBody({
+        email: txtEmail.current.value,
+        username: txtUsername.current.value,
+        password: txtPassword.current.value,
+        repeat: txtRepeat.current.value,
+      }),
+    }).json<RouterResponse>().then(data => {
+      const consumed = RouterResponseConsumer<AuthResponse>(data);
       if (consumed.message) {
         setError(consumed.message);
       }

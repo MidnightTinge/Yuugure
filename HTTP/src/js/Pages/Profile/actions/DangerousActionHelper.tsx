@@ -1,8 +1,11 @@
+import KY from '../../../classes/KY';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {create} from 'react-modal-promise';
 import {InstanceProps} from 'react-modal-promise/lib/types';
-import {XHR} from '../../../classes/XHR';
+import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
+import Util from '../../../classes/Util';
+
 import Modal from '../../../Components/Modal/Modal';
 import ConfirmPasswordModal from '../../../Components/modals/ConfirmPasswordModal';
 import DangerousConfirmModal from '../../../Components/modals/DangerousConfirmModal';
@@ -60,7 +63,12 @@ export function ResourceDeletion(props: DeleteStatusProps) {
 
   useEffect(function mounted() {
     setPosting(true);
-    XHR.for(props.endpoint).delete(XHR.BODY_TYPE.FORM, {confirmation_token: props.confirmationToken}).getRouterResponse().then(consumed => {
+    KY.delete(props.endpoint, {
+      body: Util.formatUrlEncodedBody({
+        confirmation_token: props.confirmationToken,
+      }),
+    }).json<RouterResponse>().then(data => {
+      const consumed = RouterResponseConsumer(data);
       if (consumed.success) {
         setError(null);
         setRes(consumed.message);

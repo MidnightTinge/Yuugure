@@ -1,6 +1,9 @@
+import KY from '../../classes/KY';
 import * as React from 'react';
 import {FormEvent, useRef, useState} from 'react';
-import {XHR} from '../../classes/XHR';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
+import Util from '../../classes/Util';
+
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FormBlock from '../../Components/FormBlock';
 import Spinner from '../../Components/Spinner';
@@ -25,10 +28,14 @@ export default function PageLogin(props: LoginProps) {
     e.preventDefault();
 
     setPosting(true);
-    XHR.for('/auth/login').post(XHR.BODY_TYPE.FORM, {
-      email: txtEmail.current.value,
-      password: txtPassword.current.value,
-    }).getRouterResponse<AuthResponse>().then(consumed => {
+    KY.post('/auth/login', {
+      body: Util.formatUrlEncodedBody({
+        email: txtEmail.current.value,
+        password: txtPassword.current.value,
+      }),
+      throwHttpErrors: false,
+    }).json<RouterResponse>().then(data => {
+      const consumed = RouterResponseConsumer<AuthResponse>(data);
       if (consumed.success) {
         let [authRes] = consumed.data;
         if (authRes.authed) {

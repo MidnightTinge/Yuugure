@@ -27,4 +27,23 @@ export default class Util {
 
     return ret;
   }
+
+  static formatUrlEncodedBody(body: Record<string, any>) {
+    const params = new URLSearchParams();
+    for (let x of Object.entries(body)) {
+      params.set(x[0], x[1]);
+    }
+
+    return params;
+  }
+
+  static formatFormData(body: Record<string, any>) {
+    const fd = new FormData();
+    for (let x of Object.entries(body)) {
+      fd.append(x[0], x[1]);
+    }
+
+    return fd;
+  }
+
 }

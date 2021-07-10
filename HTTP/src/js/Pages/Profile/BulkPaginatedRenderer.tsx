@@ -1,8 +1,10 @@
+import KY from '../../classes/KY';
 import * as React from 'react';
 import {useState} from 'react';
 import {AutoSizer, IndexRange, InfiniteLoader, InfiniteLoaderChildProps, List, ListRowProps, Size} from 'react-virtualized';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
-import {XHR} from '../../classes/XHR';
+
 import MediaPreviewBlock from '../../Components/MediaPreview/MediaPreviewBlock';
 import Spinner from '../../Components/Spinner';
 import {UploadReducerHook} from '../../Hooks/useUploadReducer';
@@ -41,7 +43,9 @@ export default function BulkPaginatedRenderer({endpoint, reducer, onError: _onEr
     }
 
     try {
-      let res = await XHR.for(url).get().getRouterResponse<BulkPaginatedResponse>();
+      const data = await KY.get(url).json<RouterResponse>();
+      const res = RouterResponseConsumer<BulkPaginatedResponse>(data);
+
       if (res.success) {
         onError(null);
         const [data] = res.data;

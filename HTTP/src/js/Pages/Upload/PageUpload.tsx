@@ -1,8 +1,10 @@
+import KY from '../../classes/KY';
 import * as React from 'react';
 import {useMemo, useRef, useState} from 'react';
 import {useHistory} from 'react-router-dom';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
-import {XHR} from '../../classes/XHR';
+
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FileInput from '../../Components/FileInput';
 import Spinner from '../../Components/Spinner';
@@ -30,11 +32,15 @@ export default function PageUpload(props: PageUploadProps) {
 
   function handleClick() {
     setUploading(true);
-    const fd = new FormData();
-    fd.append('private', String(cbPrivate.current.checked));
-    fd.append('file', files[0]);
-    fd.append('tags', tags);
-    XHR.for('/upload').post(XHR.BODY_TYPE.FORM_DATA, fd).getRouterResponse<UploadResult>().then(consumed => {
+
+    KY.post('/upload', {
+      body: Util.formatFormData({
+        private: String(cbPrivate.current.checked),
+        file: files[0],
+        tags,
+      }),
+    }).json<RouterResponse>().then(data => {
+        const consumed = RouterResponseConsumer<UploadResult>(data);
         if (consumed.success) {
           setError(null);
           setFileErrors(null);

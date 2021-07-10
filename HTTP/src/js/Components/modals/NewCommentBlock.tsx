@@ -1,7 +1,8 @@
+import KY from '../../classes/KY';
 import * as React from 'react';
 import {useMemo, useState} from 'react';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
-import {XHR} from '../../classes/XHR';
 import Spinner from '../Spinner';
 
 export type NewCommentBlockProps = {
@@ -23,9 +24,12 @@ export default function NewCommentBlock(props: NewCommentBlockProps) {
     e.preventDefault();
 
     setPosting(true);
-    XHR.for(`/api/comment/${props.targetType}/${props.targetId}`).post(XHR.BODY_TYPE.FORM, {
-      body: txtComment.current.value,
-    }).getRouterResponse<CommentResponse>().then(consumed => {
+    KY.post(`/api/comment/${props.targetType}/${props.targetId}`, {
+      body: Util.formatUrlEncodedBody({
+        body: txtComment.current.value,
+      }),
+    }).json<RouterResponse>().then(data => {
+      const consumed = RouterResponseConsumer<CommentResponse>(data);
       if (consumed.success) {
         let [commentResponse] = consumed.data;
         txtComment.current.value = '';

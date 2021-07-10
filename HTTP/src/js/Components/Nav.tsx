@@ -1,7 +1,7 @@
+import KY from '../classes/KY';
 import * as React from 'react';
 import {useContext, useState} from 'react';
-import {Link, useHistory} from 'react-router-dom';
-import {XHR} from '../classes/XHR';
+import {Link} from 'react-router-dom';
 import {AuthStateContext} from '../Context/AuthStateProvider';
 import Spinner from './Spinner';
 
@@ -35,7 +35,7 @@ export default function Nav(props: NavProps) {
   function handleLogoutClick(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
     e.preventDefault();
     setLoggingOut(true);
-    XHR.for('/auth/logout').get().getJson().then((data) => {
+    KY.get('/auth/logout').json().then(() => {
       // nothing to do
     }).catch((err) => {
       console.error('[logout]', err);

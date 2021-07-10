@@ -1,7 +1,9 @@
+import KY from '../../classes/KY';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {useParams} from 'react-router';
-import {XHR} from '../../classes/XHR';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
+
 import {useAlertContext} from '../../Components/Alerts/AlertsProvider';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
@@ -95,7 +97,8 @@ export default function PageProfile(props: PageProfileProps) {
     setFetching(true);
     setFetched(false);
 
-    XHR.for(`/api/profile/${accountId}`).get().getRouterResponse<ProfileResponse>().then(consumed => {
+    KY.get(`/api/profile/${accountId}`).json<RouterResponse>().then(data => {
+      const consumed = RouterResponseConsumer<ProfileResponse>(data);
       if (consumed.success) {
         setProfile(consumed.data[0]);
       } else {

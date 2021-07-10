@@ -1,8 +1,10 @@
+import KY from '../../classes/KY';
 import * as React from 'react';
 import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
 import {useParams} from 'react-router';
 import namedContext from '../../classes/NamedContext';
-import {XHR} from '../../classes/XHR';
+import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
+
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
@@ -220,7 +222,8 @@ export default function PageView(props: PageViewProps) {
         rooms.join(`upload:${params.uploadId}`);
       }
 
-      XHR.for(`/api/upload/${params.uploadId}`).get().getRouterResponse<RenderableUpload>().then(consumed => {
+      KY.get(`/api/upload/${params.uploadId}`).json<RouterResponse>().then(data => {
+        const consumed = RouterResponseConsumer<RenderableUpload>(data);
         if (consumed.success) {
           uploadDispatch({type: UploadAction.UPLOAD_SET, payload: consumed.data[0]});
         } else {
@@ -235,7 +238,8 @@ export default function PageView(props: PageViewProps) {
       });
 
       commentsDispatch({type: 'fetch/fetching', payload: true});
-      XHR.for(`/api/comment/upload/${params.uploadId}`).get().getRouterResponse<RenderableComment>().then(consumed => {
+      KY.get(`/api/comment/upload/${params.uploadId}`).json<RouterResponse>().then(data => {
+        const consumed = RouterResponseConsumer<RenderableComment>(data);
         if (consumed.success) {
           commentsDispatch({type: 'comments/set', payload: [...consumed.data]});
         } else {
@@ -336,9 +340,11 @@ export default function PageView(props: PageViewProps) {
       url += `/${action.args.upvote ? 'upvote' : 'downvote'}`;
     }
 
-    (action.args.remove ? XHR.for(url).delete(XHR.BODY_TYPE.NONE) : XHR.for(url).patch(XHR.BODY_TYPE.NONE))
-      .getRouterResponse<boolean>()
-      .then(consumed => {
+    const method = action.args.remove ? 'DELETE' : 'PATCH';
+    KY(url, {
+      method,
+    }).json<RouterResponse>().then(data => {
+        const consumed = RouterResponseConsumer<boolean>(data);
         if (consumed.success) {
           let [updated] = consumed.data;
           if (updated) {

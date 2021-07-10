@@ -68,6 +68,7 @@
     "debounce": "^1.2.0",
     "hyperlist": "^1.0.0",
     "interactjs": "^1.10.3",
+    "ky": "^0.28.5",
     "marked": "^2.0.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
