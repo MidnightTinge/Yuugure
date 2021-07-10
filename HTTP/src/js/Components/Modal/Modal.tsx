@@ -1,9 +1,9 @@
 /*! Animation helpers pulled from https://stackoverflow.com/a/54114180 */
 
+import clsx from 'clsx';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
-import Util from '../../classes/Util';
 import useDelayUnmount from '../../Hooks/useDelayUnmount';
 import ModalBackdrop from './ModalBackdrop';
 import ModalBody, {ModalBodyProps} from './ModalBody';
@@ -82,7 +82,7 @@ const Modal: React.FC<ModalProps> & IModalComposition = (props: ModalProps) => {
     createPortal((
       <ModalContext.Provider value={{closeButton: props.closeButton === true, onCloseRequest: closeRequestHandler}}>
         <ModalBackdrop onBackdropCloseRequest={closeRequestHandler} style={{...style, animation}} onAnimationStart={handleAnimationStart} onAnimationEnd={handleAnimationEnd}>
-          <div className={Util.joinedClassName('Modal', className)} role="dialog" aria-modal="true" {...elProps}>
+          <div className={clsx('Modal', className)} role="dialog" aria-modal="true" {...elProps}>
             {children}
           </div>
         </ModalBackdrop>

@@ -1,5 +1,5 @@
+import clsx from 'clsx';
 import * as React from 'react';
-import Util from '../../classes/Util';
 import useLS from '../../Hooks/useLS';
 import LS_KEYS from '../../LS_KEYS';
 
@@ -22,7 +22,7 @@ const UploadMedia = React.forwardRef(({upload, media, censored = false}: UploadM
     (/^image\//i.test(media.mime) ? (
       <img className={censoredClass} ref={ref as any} src={fullSrc} alt="Rendered Upload"/>
     ) : (
-      <video ref={ref as any} className={Util.joinedClassName('max-h-full mx-auto object-contain', censoredClass)} loop={defaultLoop} muted={defaultMuted} autoPlay={!modqueued && defaultAutoplay} controls={true}>
+      <video ref={ref as any} className={clsx('max-h-full mx-auto object-contain', censoredClass)} loop={defaultLoop} muted={defaultMuted} autoPlay={!modqueued && defaultAutoplay} controls={true}>
         <source src={fullSrc}/>
       </video>
     ))

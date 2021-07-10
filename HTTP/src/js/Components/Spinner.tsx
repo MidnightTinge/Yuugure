@@ -1,5 +1,5 @@
+import clsx from 'clsx';
 import * as React from 'react';
-import Util from '../classes/Util';
 
 export type SpinnerProps = {
   method?: 'spin' | 'pulse';
@@ -9,6 +9,6 @@ export type SpinnerProps = {
 
 export default function Spinner({method = 'pulse', size = 1, className}: SpinnerProps) {
   return (
-    <i className={Util.joinedClassName(`fas fa-spinner fa-${method} fa-${size}x`, className)}/>
+    <i className={clsx(`fas fa-spinner fa-${method} fa-${size}x`, className)}/>
   );
 }

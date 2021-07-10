@@ -1,5 +1,5 @@
+import clsx from 'clsx';
 import * as React from 'react';
-import Util from '../../classes/Util';
 
 export type ListGroupItemProps = React.HTMLAttributes<HTMLButtonElement> & {
   children: React.ReactFragment;
@@ -10,7 +10,7 @@ const ListGroupItem = React.forwardRef((props: ListGroupItemProps, ref: React.Fo
   const {children, active, className, ...btnProps} = props;
 
   return (
-    <button ref={ref} className={`${Util.joinedClassName('ListGroupItem', className)}${active ? ' active' : ''}`} {...btnProps}>
+    <button ref={ref} className={clsx('ListGroupItem', {className, active})} {...btnProps}>
       {children}
     </button>
   );

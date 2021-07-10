@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
@@ -64,7 +65,7 @@ export default function BookmarkPopup(props: BookmarkPopupProps) {
 
   return (
     <>
-      <button type="button" className={Util.joinedClassName('BookmarksPopupTrigger', props.className)} ref={setReferenceElement} onClick={toggleShow}>{props.children}</button>
+      <button type="button" className={clsx('BookmarksPopupTrigger', props.className)} ref={setReferenceElement} onClick={toggleShow}>{props.children}</button>
       {show ? createPortal((
         <div ref={setPopperElement} style={{...styles.popper}} {...attributes.popper} className="BookmarksPopup flex flex-col">
           <button onClick={handlePublicClick} className={`flex-grow px-3 py-1 ${props.bookmarkState.bookmark.active && !props.bookmarkState.bookmark.isPrivate ? 'text-gray-800 font-bold' : ' text-gray-600 font-medium'} bg-blue-200 border border-b-0 border-blue-300 hover:bg-blue-300 rounded-t-md focus:outline-none focus-within:outline-none`}>Publicly</button>

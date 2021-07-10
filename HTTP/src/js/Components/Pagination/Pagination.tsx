@@ -1,6 +1,6 @@
+import clsx from 'clsx';
 import * as React from 'react';
 import {useMemo} from 'react';
-import Util from '../../classes/Util';
 
 export type PaginationProps = {
   current: number;
@@ -54,7 +54,7 @@ export default function Pagination(props: PaginationProps) {
 
     for (let i = stepStart; i <= stepEnd; i++) {
       pages.push(
-        <a href={makePaginationUrl(i)} key={i} className={Util.joinedClassName('Page', curPage === i ? 'active' : null)} onClick={makeNavigator(i)}>{i}</a>,
+        <a href={makePaginationUrl(i)} key={i} className={clsx('Page', curPage === i && 'active')} onClick={makeNavigator(i)}>{i}</a>,
       );
     }
 

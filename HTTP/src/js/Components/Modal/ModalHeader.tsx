@@ -1,5 +1,5 @@
+import clsx from 'clsx';
 import * as React from 'react';
-import Util from '../../classes/Util';
 import {CloseSource} from './Modal';
 import ModalContext from './ModalContext';
 
@@ -12,7 +12,7 @@ export default function ModalHeader(props: ModalHeaderProps) {
 
   return (
     <ModalContext.Consumer>{ctx => (
-      <div className={Util.joinedClassName('ModalHeader', className)} {...elProps}>
+      <div className={clsx('ModalHeader', className)} {...elProps}>
         {ctx.closeButton ? (
           <button className="CloseButton" onClick={() => ctx.onCloseRequest(CloseSource.HEADER)}><i className="fas fa-times" aria-hidden="true"/> <span className="sr-only">Close</span></button>
         ) : null}

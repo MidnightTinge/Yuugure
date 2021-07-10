@@ -1,6 +1,6 @@
+import clsx from 'clsx';
 import * as React from 'react';
 import {useHistory} from 'react-router-dom';
-import Util from '../../classes/Util';
 
 
 export type MediaPreviewProps = {
@@ -20,7 +20,7 @@ export default function MediaPreview({upload}: MediaPreviewProps) {
     <div className="MediaPreview" data-upload={upload.upload.id} data-media={upload.media.id} data-sha256={upload.media.sha256} data-md5={upload.media.md5} data-mime={upload.media.mime}>
       <div className="ThumbWrapper">
         <a href={`/view/${upload.upload.id}`} onClick={handleNavigate} className={upload.state.MODERATION_QUEUED ? 'blurred hover-clear' : ''}>
-          <img src={`/thumb/${upload.upload.id}`} alt={`Thumbnail for upload ${upload.upload.id}`} className={Util.joinedClassName('thumbnail', upload.state.MODERATION_QUEUED ? 'censored hover-clear' : null)}/>
+          <img src={`/thumb/${upload.upload.id}`} alt={`Thumbnail for upload ${upload.upload.id}`} className={clsx('thumbnail', upload.state.MODERATION_QUEUED && 'censored hover-clear')}/>
         </a>
         <div className="IconsWrapper">
           <div className="OverlayIcon" title={`This upload is a${isImage ? 'n image' : 'video'}`}>
@@ -39,15 +39,15 @@ export default function MediaPreview({upload}: MediaPreviewProps) {
         </div>
       </div>
       <div className="DetailsWrapper">
-        <div className={Util.joinedClassName('Detail', upload.bookmarks.bookmarked ? 'text-pink-500' : null)} title="Public Favorites" data-detail="favorites" data-detail-value={upload.bookmarks.total_public}>
+        <div className={clsx('Detail', upload.bookmarks.bookmarked && 'text-pink-500')} title="Public Favorites" data-detail="favorites" data-detail-value={upload.bookmarks.total_public}>
           <i className="fas fa-heart"/>
           <span className="text-pink-500">{upload.bookmarks.total_public}</span>
         </div>
-        <div className={Util.joinedClassName('Detail', (upload.votes.voted && upload.votes.is_upvote) ? 'text-green-500' : null)} title="Upvotes" data-detail="downvotes" data-detail-value={upload.votes.total_upvotes}>
+        <div className={clsx('Detail', (upload.votes.voted && upload.votes.is_upvote) && 'text-green-500')} title="Upvotes" data-detail="downvotes" data-detail-value={upload.votes.total_upvotes}>
           <i className="fas fa-chevron-up"/>
           <span className="text-green-500">{upload.votes.total_upvotes}</span>
         </div>
-        <div className={Util.joinedClassName('Detail', (upload.votes.voted && !upload.votes.is_upvote) ? 'text-red-500' : null)} title="Downvotes" data-detail="downvotes" data-detail-value={upload.votes.total_downvotes}>
+        <div className={clsx('Detail', (upload.votes.voted && !upload.votes.is_upvote) && 'text-red-500')} title="Downvotes" data-detail="downvotes" data-detail-value={upload.votes.total_downvotes}>
           <i className="fas fa-chevron-down"/>
           <span className="text-red-500">{upload.votes.total_downvotes}</span>
         </div>

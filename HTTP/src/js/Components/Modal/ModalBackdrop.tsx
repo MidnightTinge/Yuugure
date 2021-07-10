@@ -1,6 +1,6 @@
+import clsx from 'clsx';
 import * as React from 'react';
 import {useEffect} from 'react';
-import Util from '../../classes/Util';
 import {CloseSource} from './Modal';
 
 type ModalBackdropCloseRequest = (closeSource: CloseSource) => void;
@@ -54,6 +54,6 @@ export default function ModalBackdrop(props: ModalBackdropProps) {
   });
 
   return (
-    <div className={Util.joinedClassName('ModalBackdrop', className)} children={children} {...elProps}/>
+    <div className={clsx('ModalBackdrop', className)} children={children} {...elProps}/>
   );
 }

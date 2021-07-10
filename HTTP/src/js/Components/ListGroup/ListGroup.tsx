@@ -1,5 +1,5 @@
+import clsx from 'clsx';
 import * as React from 'react';
-import Util from '../../classes/Util';
 import ListGroupItem, {ListGroupItemProps} from './ListGroupItem';
 
 interface IListGroupComposition {
@@ -14,7 +14,7 @@ export const ListGroup: React.FC<ListGroupProps> & IListGroupComposition = (prop
   const {children, className, ...elProps} = props;
 
   return (
-    <div className={Util.joinedClassName('ListGroup', className)} {...elProps}>
+    <div className={clsx('ListGroup', className)} {...elProps}>
       {children}
     </div>
   );
