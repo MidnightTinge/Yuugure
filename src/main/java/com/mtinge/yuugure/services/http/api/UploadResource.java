@@ -21,6 +21,9 @@ import io.undertow.util.Methods;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Timestamp;
+import java.time.Instant;
+
 public class UploadResource extends APIResource<DBUpload> {
   private static final Logger logger = LoggerFactory.getLogger(UploadResource.class);
 
@@ -105,7 +108,7 @@ public class UploadResource extends APIResource<DBUpload> {
             var modified = App.database().jdbi().withHandle(handle -> {
               handle.begin();
               try {
-                var props = new BookmarkProps().active(!exchange.getRequestMethod().equals(Methods.DELETE)).isPublic(!_isPrivate);
+                var props = new BookmarkProps().active(!exchange.getRequestMethod().equals(Methods.DELETE)).isPublic(!_isPrivate).timestamp(Timestamp.from(Instant.now()));
                 var bookmarkResult = App.database().bookmarks.handleFlip(authed, resource.resource, props, handle);
                 handle.commit();
 
