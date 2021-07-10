@@ -1,15 +1,27 @@
 .AlertContainer {
-  @apply absolute top-2 right-2 overflow-hidden;
-  /* header height */
-  padding-top: 2.5em;
+  /* 2.5em: header height. spacing: Alert's bottom margin. */
+  --alert-spacing: theme('spacing.3');
+  --top-offset: calc(2.5em + var(--alert-spacing));
 
-  /* spacing.3 for Alert's .mb-3 */
-  max-height: calc(100vh - theme('spacing.3'));
-  /*width: calc(100vw / 3);*/
+  @apply absolute right-2 overflow-hidden;
+  top: var(--top-offset);
+
   max-width: calc(100vw / 3);
+  max-height: calc(100vh - var(--top-offset));
+
+  /* mask from opaque to transparent. causes the alert container to appear to disappear near the bottom in browsers that support. */
+  mask-image: linear-gradient(#000 75%, #0000);
+
+  &:hover {
+    mask-image: linear-gradient(#000, #000);
+  }
 
   .Alert {
-    @apply relative w-full flex flex-col mb-3 shadow rounded opacity-80 backdrop-blur-lg hover:opacity-100;
+    @apply relative w-full flex flex-col shadow rounded opacity-80 backdrop-blur-lg hover:opacity-100;
+
+    &:not(:last-of-type) {
+      margin-bottom: var(--alert-spacing);
+    }
 
     .AlertHeader {
       /* note: border/bg colors are handled by contextual classes in React */
