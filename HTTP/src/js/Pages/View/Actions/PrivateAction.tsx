@@ -1,3 +1,5 @@
+import {mdiEyeOff} from '@mdi/js';
+import Icon from '@mdi/react';
 import * as React from 'react';
 import {useState} from 'react';
 import KY from '../../../classes/KY';
@@ -34,6 +36,6 @@ export default function PrivateAction({upload, checked}: PrivateActionProps) {
   }
 
   return (
-    <ToggleSwitch checked={checked} onChange={handleChange} loading={posting}><i className="fas fa-eye-slash mr-1" aria-hidden={true}/>Private</ToggleSwitch>
+    <ToggleSwitch checked={checked} onChange={handleChange} loading={posting}><Icon path={mdiEyeOff} size={1} className="mr-1 relative bottom-px inline-block"/>Private</ToggleSwitch>
   );
 }

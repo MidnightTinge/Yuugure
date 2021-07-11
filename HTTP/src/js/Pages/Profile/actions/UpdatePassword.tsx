@@ -1,3 +1,5 @@
+import {mdiCheckCircle} from '@mdi/js';
+import Icon from '@mdi/react';
 import * as React from 'react';
 import {useRef, useState} from 'react';
 import KY from '../../../classes/KY';
@@ -118,7 +120,7 @@ export default function UpdatePassword(props: UpdatePasswordProps) {
             !error ? (
               <div className="text-center px-3 pb-3">
                 <p className="text-lg">Password Updated</p>
-                <i className="fas fa-check-circle fa-4x text-green-500"/>
+                <Icon path={mdiCheckCircle} size={4} className="text-green-500 mx-auto my-0"/>
               </div>
             ) : null
           )}

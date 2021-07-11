@@ -1,3 +1,5 @@
+import {mdiClose} from '@mdi/js';
+import Icon from '@mdi/react';
 import * as React from 'react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {animate as Animate} from 'velocity-animate';
@@ -94,7 +96,7 @@ export default function AlertRenderer({alert, onCloseRequest: closeRequest, onCl
       <div className={`AlertHeader ${colors.header} ${colors.border}`} id={`h-${alert.id}`}>
         {alert.dismissable ? <span className="pr-4">{alert.header}</span> : alert.header}
         {alert.dismissable ? (
-          <button className="CloseButton" aria-label="Close" onClick={handleCloseClick} autoFocus><i className="fas fa-times" aria-hidden={true}/></button>
+          <button className="CloseButton" aria-label="Close" onClick={handleCloseClick} autoFocus><Icon path={mdiClose} size={1} className="inline-block"/></button>
         ) : null}
       </div>
       <div className={`AlertBody ${colors.body} ${colors.border}`} id={`b-${alert.id}`}>

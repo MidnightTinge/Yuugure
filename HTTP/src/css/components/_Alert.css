@@ -29,7 +29,7 @@
       @apply relative text-lg flex-shrink px-2 rounded-t border;
 
       .CloseButton {
-        @apply absolute right-2 top-px text-red-800;
+        @apply absolute right-2 bottom-px text-red-800;
       }
     }
 

@@ -1,3 +1,5 @@
+import {mdiAlertOctagon} from '@mdi/js';
+import Icon from '@mdi/react';
 import anchorme from 'anchorme';
 import * as React from 'react';
 import {useContext, useMemo, useState} from 'react';
@@ -58,7 +60,7 @@ export default function Comment({comment}: CommentProps) {
             <a href={`/user/${comment.account.id}`} target="_blank" className="text-gray-700 font-medium hover:underline hover:text-gray-800">{comment.account.username}</a>
           </div>
           <div className="flex-shrink">
-            {authState.authed ? (<Button variant="gray" className="mr-2" onClick={onReportClicked} link><i className="fas fa-exclamation-triangle" aria-hidden={true}/><span className="sr-only">Report</span></Button>) : null}
+            {authState.authed ? (<Button variant="gray" title="Report" className="mr-2" onClick={onReportClicked} link><Icon path={mdiAlertOctagon} size={1} className="relative bottom-px inline-block"/><span className="sr-only">Report</span></Button>) : null}
             <a href={`#comment-${comment.id}`} className="text-xs text-gray-400 hover:text-gray-500 underline" title={new Date(comment.timestamp).toString()}>{RelativeTime(comment.timestamp)}</a>
           </div>
         </div>

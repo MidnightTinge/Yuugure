@@ -1,3 +1,5 @@
+import {mdiPageFirst, mdiPageLast} from '@mdi/js';
+import Icon from '@mdi/react';
 import clsx from 'clsx';
 import * as React from 'react';
 import {useMemo} from 'react';
@@ -9,8 +11,8 @@ export type PaginationProps = {
   onNav?: (page: number) => void;
 };
 
-const leftIcon = (<i className="fas fa-step-backward"/>);
-const rightIcon = (<i className="fas fa-step-forward"/>);
+const leftIcon = (<Icon path={mdiPageFirst} size={1}/>);
+const rightIcon = (<Icon path={mdiPageLast} size={1}/>);
 
 const leftDisabled = (<button className="Floating disabled" disabled>{leftIcon}</button>);
 const rightDisabled = (<button className="Floating disabled" disabled>{rightIcon}</button>);
@@ -46,15 +48,15 @@ export default function Pagination(props: PaginationProps) {
   let onFirstPage = curPage <= 1;
   let onLastPage = curPage >= lastPage;
 
-  const leftFloat = onFirstPage ? leftDisabled : (<a href={makePaginationUrl(1)} onClick={makeNavigator(1)} className="Floating">{leftIcon}</a>);
-  const rightFloat = onLastPage ? rightDisabled : (<a href={makePaginationUrl(lastPage)} onClick={makeNavigator(lastPage)} className="Floating">{rightIcon}</a>);
+  const leftFloat = onFirstPage ? leftDisabled : (<a href={makePaginationUrl(1)} onClick={makeNavigator(1)} className="Floating" aria-label="First Page">{leftIcon}</a>);
+  const rightFloat = onLastPage ? rightDisabled : (<a href={makePaginationUrl(lastPage)} onClick={makeNavigator(lastPage)} className="Floating" aria-label="Last Page">{rightIcon}</a>);
 
   const pages = useMemo(() => {
     let pages = [];
 
     for (let i = stepStart; i <= stepEnd; i++) {
       pages.push(
-        <a href={makePaginationUrl(i)} key={i} className={clsx('Page', curPage === i && 'active')} onClick={makeNavigator(i)}>{i}</a>,
+        <a href={makePaginationUrl(i)} key={i} className={clsx('Page', curPage === i && 'active')} onClick={makeNavigator(i)} aria-label={`Page ${i}`}>{i}</a>,
       );
     }
 
@@ -62,7 +64,7 @@ export default function Pagination(props: PaginationProps) {
   }, [props.current, props.max]);
 
   return (
-    <div className="Pagination">
+    <div className="Pagination" role="navigation">
       {pgExtend ? leftFloat : null}
       <div className="Pages">
         {pages}

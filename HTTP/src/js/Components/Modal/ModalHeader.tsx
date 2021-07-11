@@ -1,3 +1,5 @@
+import {mdiClose} from '@mdi/js';
+import Icon from '@mdi/react';
 import clsx from 'clsx';
 import * as React from 'react';
 import {CloseSource} from './Modal';
@@ -14,7 +16,7 @@ export default function ModalHeader(props: ModalHeaderProps) {
     <ModalContext.Consumer>{ctx => (
       <div className={clsx('ModalHeader', className)} {...elProps}>
         {ctx.closeButton ? (
-          <button className="CloseButton" onClick={() => ctx.onCloseRequest(CloseSource.HEADER)}><i className="fas fa-times" aria-hidden="true"/> <span className="sr-only">Close</span></button>
+          <button className="CloseButton" onClick={() => ctx.onCloseRequest(CloseSource.HEADER)}><Icon path={mdiClose} size={1} aria-label="Close"/></button>
         ) : null}
         {children}
       </div>

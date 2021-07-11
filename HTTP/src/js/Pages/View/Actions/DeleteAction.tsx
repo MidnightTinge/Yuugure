@@ -1,3 +1,5 @@
+import {mdiDeleteForever} from '@mdi/js';
+import Icon from '@mdi/react';
 import {Options} from 'ky';
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
@@ -159,7 +161,7 @@ export default function DeleteAction(props: DeleteActionProps) {
         {deleting ? (
           <><Spinner/> Deleting...</>
         ) : (
-          <><i className="fas fa-times-circle mr-1" aria-hidden={true}/>Delete</>
+          <><Icon path={mdiDeleteForever} size={1} className="mr-1 relative bottom-px inline-block"/>Delete</>
         )}
       </Button>
     </>

@@ -1,3 +1,5 @@
+import {mdiAlert, mdiBookmark, mdiBookmarkOutline, mdiChevronDownCircle, mdiChevronDownCircleOutline, mdiChevronUpCircle, mdiChevronUpCircleOutline, mdiEyeOff, mdiImage, mdiLock, mdiVideo} from '@mdi/js';
+import Icon from '@mdi/react';
 import clsx from 'clsx';
 import * as React from 'react';
 import {useHistory} from 'react-router-dom';
@@ -24,31 +26,31 @@ export default function MediaPreview({upload}: MediaPreviewProps) {
         </a>
         <div className="IconsWrapper">
           <div className="OverlayIcon" title={`This upload is a${isImage ? 'n image' : 'video'}`}>
-            <i className={`fas ${isImage ? 'fa-image' : 'fa-video'}`}/>
+            <Icon path={isImage ? mdiImage : mdiVideo} size={1}/>
           </div>
           {upload.state.PRIVATE ? (
             <div className="OverlayIcon" title="This upload is private.">
-              <i className="fas fa-lock"/>
+              <Icon path={mdiEyeOff} size={1}/>
             </div>
           ) : null}
           {upload.state.MODERATION_QUEUED ? (
             <div className="OverlayIcon" title="This upload is awaiting moderator approval.">
-              <i className="fas fa-exclamation-triangle"/>
+              <Icon path={mdiAlert} size={1}/>
             </div>
           ) : null}
         </div>
       </div>
       <div className="DetailsWrapper">
         <div className={clsx('Detail', upload.bookmarks.bookmarked && 'text-pink-500')} title="Public Favorites" data-detail="favorites" data-detail-value={upload.bookmarks.total_public}>
-          <i className="fas fa-heart"/>
+          <Icon path={upload.bookmarks.bookmarked ? mdiBookmark : mdiBookmarkOutline} size={1} className="inline-block mr-px relative bottom-px"/>
           <span className="text-pink-500">{upload.bookmarks.total_public}</span>
         </div>
         <div className={clsx('Detail', (upload.votes.voted && upload.votes.is_upvote) && 'text-green-500')} title="Upvotes" data-detail="downvotes" data-detail-value={upload.votes.total_upvotes}>
-          <i className="fas fa-chevron-up"/>
+          <Icon path={(upload.votes.voted && upload.votes.is_upvote) ? mdiChevronUpCircle : mdiChevronUpCircleOutline} size={1} className="inline-block mr-px relative bottom-px"/>
           <span className="text-green-500">{upload.votes.total_upvotes}</span>
         </div>
         <div className={clsx('Detail', (upload.votes.voted && !upload.votes.is_upvote) && 'text-red-500')} title="Downvotes" data-detail="downvotes" data-detail-value={upload.votes.total_downvotes}>
-          <i className="fas fa-chevron-down"/>
+          <Icon path={(upload.votes.voted && !upload.votes.is_upvote) ? mdiChevronDownCircle : mdiChevronDownCircleOutline} size={1} className="inline-block mr-px relative bottom-px"/>
           <span className="text-red-500">{upload.votes.total_downvotes}</span>
         </div>
       </div>

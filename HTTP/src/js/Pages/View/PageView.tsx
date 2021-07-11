@@ -1,3 +1,5 @@
+import {mdiCog, mdiComment, mdiImage, mdiLeadPencil} from '@mdi/js';
+import Icon from '@mdi/react';
 import * as React from 'react';
 import {useContext, useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import {useParams} from 'react-router';
@@ -18,6 +20,7 @@ import InternalRouter from '../../Components/InternalNav/InternalRouter';
 import InternalSwitch from '../../Components/InternalNav/InternalSwitch';
 import useInternalNavigator from '../../Components/InternalNav/useInternalNavigator';
 import ListGroup from '../../Components/ListGroup/ListGroup';
+import LoadingPing from '../../Components/LoadingPing';
 import {CloseSource} from '../../Components/Modal/Modal';
 import ReportModal from '../../Components/modals/ReportModal';
 import Spinner from '../../Components/Spinner';
@@ -432,7 +435,7 @@ export default function PageView(props: PageViewProps) {
           <div className="flex flex-col w-full h-full items-center justify-center">
             <div className="flex-shrink">
               <div className="block text-center">
-                <i className="fas fa-circle-notch fa-spin fa-4x text-gray-300"/>
+                <LoadingPing/>
               </div>
             </div>
           </div>
@@ -467,15 +470,15 @@ export default function PageView(props: PageViewProps) {
                     <InternalNavContext.Consumer>
                       {({path = ''}) => (
                         <ListGroup>
-                          <ListGroup.Item active={path === 'view'} onClick={makeInternalNavigator('view')}><i className="fas fa-image"/> View</ListGroup.Item>
+                          <ListGroup.Item active={path === 'view'} onClick={makeInternalNavigator('view')}><Icon path={mdiImage} size={1} className="relative bottom-px inline-block"/> View</ListGroup.Item>
                           <ListGroup.Item active={path === 'comments'} onClick={makeInternalNavigator('comments')}>
-                            <i className="fas fa-comment-alt" aria-hidden={true}/> Comments
+                            <Icon path={mdiComment} size={1} className="relative bottom-px inline-block"/> Comments
                             <span className="inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg bg-blue-100 border border-blue-200 text-blue-400 opacity-95 shadow">
                               {comments.fetching ? (<Spinner/>) : (comments.comments.length)}
                             </span>
                           </ListGroup.Item>
-                          <ListGroup.Item active={path === 'edit'} onClick={makeInternalNavigator('edit')}><i className="fas fa-pencil-alt"/> Edit</ListGroup.Item>
-                          <ListGroup.Item active={path === 'actions'} onClick={makeInternalNavigator('actions')}><i className="fas fa-wrench"/> Actions</ListGroup.Item>
+                          <ListGroup.Item active={path === 'edit'} onClick={makeInternalNavigator('edit')}><Icon path={mdiLeadPencil} size={1} className="relative bottom-px inline-block"/> Edit</ListGroup.Item>
+                          <ListGroup.Item active={path === 'actions'} onClick={makeInternalNavigator('actions')}><Icon path={mdiCog} size={1} className="relative bottom-px inline-block"/> Actions</ListGroup.Item>
                         </ListGroup>
                       )}
                     </InternalNavContext.Consumer>

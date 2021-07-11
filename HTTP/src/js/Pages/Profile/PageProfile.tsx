@@ -1,3 +1,5 @@
+import {mdiAccountCog, mdiAlert, mdiAlertOctagon, mdiBookmark, mdiCardAccountDetails, mdiCheckCircle, mdiFolderOpen} from '@mdi/js';
+import Icon from '@mdi/react';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {useParams} from 'react-router';
@@ -166,7 +168,7 @@ export default function PageProfile(props: PageProfileProps) {
         ) : (
           fetching ? (
             <div className="flex flex-col items-center justify-center h-full">
-              <LoadingPing icon="fas fa-address-card"/>
+              <LoadingPing path={mdiCardAccountDetails}/>
             </div>
           ) : (
             <InternalRouter defaultPath="details">
@@ -176,30 +178,30 @@ export default function PageProfile(props: PageProfileProps) {
                     <InternalNavContext.Consumer>
                       {({path = ''}) => (
                         <ListGroup>
-                          <ListGroup.Item active={path === 'details'} onClick={makeNavigator('details')}><i className="fas fa-address-card" aria-hidden={true}/> Details</ListGroup.Item>
+                          <ListGroup.Item active={path === 'details'} onClick={makeNavigator('details')}><Icon path={mdiCardAccountDetails} size={1} className="relative bottom-px inline-block"/> Details</ListGroup.Item>
                           <ListGroup.Item active={path === 'uploads'} onClick={makeNavigator('uploads')}>
-                            <i className="fas fa-folder-open" aria-hidden={true}/> Uploads
+                            <Icon path={mdiFolderOpen} size={1} className="relative bottom-px inline-block"/> Uploads
                             {fetchingUploads || uploadsErrored ? (
                               <span className={`inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg border ${!uploadsErrored ? 'bg-blue-100 border-blue-200 text-blue-400' : 'bg-red-100 border-red-200 text-red-400'} opacity-95 shadow`}>
-                                {fetchingUploads ? (<Spinner/>) : (
-                                  uploadsErrored ? (<i className="fas fa-exclamation-triangle text-xs"/>) : null
+                                {fetchingUploads ? (<Spinner size="0.75rem"/>) : (
+                                  uploadsErrored ? (<Icon path={mdiAlert} size="0.75rem"/>) : null
                                 )}
                               </span>
                             ) : null}
                           </ListGroup.Item>
                           <ListGroup.Item active={path === 'bookmarks'} onClick={makeNavigator('bookmarks')}>
-                            <i className="fas fa-bookmark" aria-hidden={true}/> Bookmarks
+                            <Icon path={mdiBookmark} size={1} className="relative bottom-px inline-block"/> Bookmarks
                             {fetchingBookmarks || bookmarksErrored ? (
                               <span className={`inline-block relative top-1 text-sm leading-none px-3 float-right rounded-lg border ${!bookmarksErrored ? 'bg-blue-100 border-blue-200 text-blue-400' : 'bg-red-100 border-red-200 text-red-400'} opacity-95 shadow`}>
-                                {fetchingBookmarks ? (<Spinner/>) : (
-                                  bookmarksErrored ? (<i className="fas fa-exclamation-triangle text-xs"/>) : null
+                                {fetchingBookmarks ? (<Spinner size="0.75rem"/>) : (
+                                  bookmarksErrored ? (<Icon path={mdiAlert} size="0.75rem"/>) : null
                                 )}
                               </span>
                             ) : null}
                           </ListGroup.Item>
-                          <ListGroup.Item active={path === 'votes'} onClick={makeNavigator('votes')}><i className="fas fa-check-circle" aria-hidden={true}/> Votes</ListGroup.Item>
+                          <ListGroup.Item active={path === 'votes'} onClick={makeNavigator('votes')}><Icon path={mdiCheckCircle} size={1} className="relative bottom-px inline-block"/> Votes</ListGroup.Item>
                           {profile && profile.self ? (
-                            <ListGroup.Item active={path === 'settings'} onClick={makeNavigator('settings')}><i className="fas fa-user-cog" aria-hidden={true}/> Settings</ListGroup.Item>
+                            <ListGroup.Item active={path === 'settings'} onClick={makeNavigator('settings')}><Icon path={mdiAccountCog} size={1} className="relative bottom-px inline-block"/> Settings</ListGroup.Item>
                           ) : null}
                         </ListGroup>
                       )}

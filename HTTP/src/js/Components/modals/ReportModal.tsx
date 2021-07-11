@@ -1,3 +1,5 @@
+import {mdiAlertOctagon, mdiCheckCircle} from '@mdi/js';
+import Icon from '@mdi/react';
 import * as React from 'react';
 import {useMemo, useState} from 'react';
 import KY from '../../classes/KY';
@@ -66,7 +68,7 @@ export default function ReportModal(props: ReportModalProps) {
       <Modal.Body>
         {reported ? (
           <div className="text-center">
-            <i className="fas fa-check-circle text-green-500 fa-4x"/>
+            <Icon path={mdiCheckCircle} size={4} className="text-green-500 mx-auto my-0"/>
             <p className="text-green-800">Your report has been sent successfuly. You can close this dialog.</p>
           </div>
         ) : (

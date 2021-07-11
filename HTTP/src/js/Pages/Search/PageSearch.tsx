@@ -1,3 +1,5 @@
+import {mdiMagnify} from '@mdi/js';
+import Icon from '@mdi/react';
 import * as React from 'react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from 'react-query';
@@ -156,7 +158,9 @@ export default function PageSearch(props: PageSearchProps) {
               <input name="page" type="hidden" value={1}/>
               <div className="flex">
                 <input type="text" ref={txtSearch} id={txtSearchId} defaultValue={query} placeholder="Search" className="bg-gray-100 border border-r-0 border-gray-300 rounded-l-md px-1.5 py-0.5 w-full placeholder-gray-400 focus:ring-0 focus-within:ring-0 focus:shadow-none focus-within:shadow-none focus:border-gray-300 focus-within:border-gray-300 focus:outline-none focus-within:outline-none active:outline-none"/>
-                <button className="px-1.5 flex items-center justify-center bg-gray-200 border border-gray-300 rounded-r-md hover:bg-gray-300 focus:outline-none focus-within:outline-none active:outline-none"><i className="fas fa-search text-sm" aria-hidden={true}/><span className="sr-only">Submit</span></button>
+                <button className="px-1.5 flex items-center justify-center bg-gray-200 border border-gray-300 rounded-r-md hover:bg-gray-300 focus:outline-none focus-within:outline-none active:outline-none" aria-label="Search">
+                  <Icon path={mdiMagnify} size="1.25rem" aria-hidden={true}/>
+                </button>
               </div>
             </form>
           </section>

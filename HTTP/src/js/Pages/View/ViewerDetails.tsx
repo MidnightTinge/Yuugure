@@ -1,3 +1,5 @@
+import {mdiHelpCircle} from '@mdi/js';
+import Icon from '@mdi/react';
 import * as React from 'react';
 import {useContext, useMemo} from 'react';
 import Util from '../../classes/Util';
@@ -61,7 +63,9 @@ export default function ViewerDetails(props: ViewerDetailsProps) {
             <th className="text-right pr-3">Bookmarks:</th>
             <td className="relative">
               {details.bookmarks}
-              <span className="block absolute text-xs top-0 transform translate-x-2.5 -translate-y-1 text-gray-400 hover:text-gray-600 underline" title="This number only counts public bookmarks."><i className="fas fa-question-circle" aria-hidden={true}/></span>
+              <span className="block absolute text-xs top-0 transform translate-x-2.5 -translate-y-1 text-gray-400 hover:text-gray-600 underline" title="This number only counts public bookmarks.">
+                <Icon path={mdiHelpCircle} size="0.75rem" className="relative bottom-px inline-block"/>
+              </span>
             </td>
           </tr>
         </tbody>

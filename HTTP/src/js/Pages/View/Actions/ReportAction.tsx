@@ -1,3 +1,5 @@
+import {mdiAlertOctagon} from '@mdi/js';
+import Icon from '@mdi/react';
 import * as React from 'react';
 import {useState} from 'react';
 import Button from '../../../Components/Button';
@@ -24,7 +26,7 @@ export default function ReportAction(props: ReportActionProps) {
   return (
     <>
       <ReportModal targetType="upload" targetId={props.upload.upload.id} onCloseRequest={handleCloseRequest} show={showModal}/>
-      <Button variant="yellow" onClick={handleReport}><i className="fas fa-bullhorn mr-1" aria-hidden={true}/>Report</Button>
+      <Button variant="yellow" onClick={handleReport}><Icon path={mdiAlertOctagon} size={1} className="mr-1 inline-block relative bottom-px"/>Report</Button>
     </>
   );
 }

@@ -1,3 +1,5 @@
+import {mdiAlertOctagon} from '@mdi/js';
+import Icon from '@mdi/react';
 import * as React from 'react';
 import {useContext} from 'react';
 import {AuthStateContext} from '../Context/AuthStateProvider';
@@ -18,8 +20,8 @@ export default function PageRenderer(props: PageRendererProps) {
     toRender = (
       <CenteredBlockPage pageBackground="bg-red-100" cardBackground="bg-red-400" className="text-white">
         <div className="text-center">
-          <p className="text-xl font-bold mb-4">Access Restricted</p>
-          <i className="fas fa-exclamation-triangle fa-3x mb-4"/>
+          <p className="text-2xl font-bold mb-1">Access Restricted</p>
+          <Icon path={mdiAlertOctagon} size={3} style={{margin: '0 auto'}}/>
           <p>You must be logged in to view this resource.</p>
         </div>
       </CenteredBlockPage>

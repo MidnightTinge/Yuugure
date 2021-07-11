@@ -1,3 +1,5 @@
+import {mdiBookmark, mdiChevronDown, mdiChevronUp} from '@mdi/js';
+import Icon from '@mdi/react';
 import * as React from 'react';
 import BookmarkPopup from './BookmarkPopup';
 
@@ -75,13 +77,13 @@ export default class BookmarkFavBar extends React.Component<BookmarkFavBarProps,
     return (
       <div className="flex flex-row rounded w-full">
         <button onClick={this._doUpvote.bind(this)} className={`px-2 flex-grow ${upvoteColor} rounded-l border border-r-0 border-blue-200 bg-blue-100 hover:bg-blue-200 focus:outline-none focus-within:outline-none`}>
-          <i className="fas fa-chevron-up" aria-hidden={true}/><span className="sr-only">Upvote</span>
+          <Icon path={mdiChevronUp} size={1} className="relative bottom-px inline-block"/><span className="sr-only">Upvote</span>
         </button>
         <BookmarkPopup bookmarkState={{...this.props.bookmarkState}} onAction={this._doAction.bind(this)} className={`px-2 flex-grow ${bookmarkColor} border border-r-0 border-blue-200 bg-blue-100 hover:bg-blue-200 focus:outline-none focus-within:outline-none`}>
-          <i className="fas fa-bookmark" aria-hidden={true}/><span className="sr-only">Bookmark</span>
+          <Icon path={mdiBookmark} size={1} className="relative bottom-px inline-block"/><span className="sr-only">Bookmark</span>
         </BookmarkPopup>
         <button onClick={this._doDownvote.bind(this)} className={`px-2 flex-grow ${downvoteColor} rounded-r border border-r-0 border-blue-200 bg-blue-100 hover:bg-blue-200 focus:outline-none focus-within:outline-none`}>
-          <i className="fas fa-chevron-down" aria-hidden={true}/><span className="sr-only">Downvote</span>
+          <Icon path={mdiChevronDown} size={1} className="relative bottom-px inline-block"/><span className="sr-only">Downvote</span>
         </button>
       </div>
     );

@@ -23,7 +23,7 @@ export default function ToggleSwitch(props: ToggleSwitchProps) {
         <span className="mr-2 cursor-pointer select-none">{props.children}</span>
         <div className="bg-gray-300 relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-green-200">
           <span className="translate-x-2 bg-gray-50 border-gray-200 border inline-block w-7 h-4 transform rounded-full transition-transform text-xs flex flex-row items-center justify-center text-gray-600">
-            <Spinner/>
+            <Spinner size="0.75rem" spin={0.8}/>
           </span>
         </div>
       </div>

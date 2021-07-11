@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useEffect, useMemo} from 'react';
+import {useMemo} from 'react';
 import namedContext from '../classes/NamedContext';
 import RoomHelper from '../classes/RoomHelper';
 import WS, {CancelHolder} from '../classes/WS';
@@ -91,36 +91,6 @@ export default function WebSocketProvider({children}: any) {
 
     ws.connect();
     return {ws, rooms};
-  }, []);
-
-  // Ensure our close icon is loaded into the browser's memcache on mount so that if the user's
-  // internet drops it will still render. Inserting the icon will force the browser to fetch the
-  // font.
-  useEffect(() => {
-    const closeIcon = document.createElement('i');
-    closeIcon.classList.add('fas', 'fa-times');
-
-    // hide from the user
-    const iconWrapper = document.createElement('div');
-    iconWrapper.style.width = '1px';
-    iconWrapper.style.height = '1px';
-    iconWrapper.style.margin = '-1px';
-    iconWrapper.style.padding = '0px';
-    iconWrapper.style.overflow = 'hidden';
-    iconWrapper.style.clip = 'rect(0,0,0,0)';
-    iconWrapper.style.border = '0';
-    iconWrapper.style.position = 'absolute';
-    iconWrapper.style.whiteSpace = 'nowrap';
-    iconWrapper.style.borderWidth = '0';
-
-    // inject
-    iconWrapper.appendChild(closeIcon);
-    document.body.appendChild(iconWrapper);
-
-    // remove once mounted
-    setTimeout(() => {
-      iconWrapper.remove();
-    }, 10);
   }, []);
 
   return (
