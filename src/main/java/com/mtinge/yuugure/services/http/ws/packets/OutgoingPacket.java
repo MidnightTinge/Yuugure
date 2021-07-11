@@ -1,5 +1,6 @@
 package com.mtinge.yuugure.services.http.ws.packets;
 
+import com.mtinge.yuugure.data.postgres.states.UploadState;
 import lombok.Getter;
 
 import java.util.LinkedHashMap;
@@ -22,4 +23,7 @@ public class OutgoingPacket {
     return new OutgoingPacket().addData("type", type);
   }
 
+  public static OutgoingPacket uploadStateUpdate(UploadState state) {
+    return OutgoingPacket.prepare("state_updated").addData("state", state);
+  }
 }

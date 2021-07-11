@@ -4,7 +4,7 @@ import namedContext from '../classes/NamedContext';
 import RoomHelper from '../classes/RoomHelper';
 import WS, {CancelHolder} from '../classes/WS';
 import {Alert, AlertType} from '../Components/Alerts/Alert/Alert';
-import {useAlertContext} from '../Components/Alerts/AlertsProvider';
+import {useAlerts} from '../Components/Alerts/AlertsProvider';
 
 export type WebSocketProviderState = {
   ws: WS;
@@ -23,7 +23,7 @@ function DisconnectBody({remaining}: { remaining: number }) {
 }
 
 export default function WebSocketProvider({children}: any) {
-  const alerts = useAlertContext();
+  const alerts = useAlerts();
   const ctxMemo = useMemo<WebSocketProviderState>(() => {
     let ws = new WS();
     let rooms = new RoomHelper(ws);

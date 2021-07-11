@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useContext, useMemo} from 'react';
+import Util from '../../classes/Util';
 import DetailsBox from '../../Components/DetailsBox';
 import {PageViewContext} from './PageView';
 
@@ -8,6 +9,7 @@ type ViewerDetails = {
   mid: number;
   score: number;
   bookmarks: number;
+  filesize: number;
 }
 
 export type ViewerDetailsProps = {
@@ -23,6 +25,7 @@ export default function ViewerDetails(props: ViewerDetailsProps) {
       mid: -1,
       score: 0,
       bookmarks: 0,
+      filesize: -1,
     };
 
     if (upload != null) {
@@ -31,11 +34,12 @@ export default function ViewerDetails(props: ViewerDetailsProps) {
         mid: upload.media.id,
         score: upload.votes.total_upvotes - upload.votes.total_downvotes,
         bookmarks: upload.bookmarks.total_public,
+        filesize: upload.media_meta.filesize,
       };
     }
 
     return ret;
-  }, [upload?.upload, upload?.media, upload?.votes, upload?.bookmarks]);
+  }, [upload?.upload, upload?.media, upload?.votes, upload?.bookmarks, upload?.media_meta]);
 
   return (
     <DetailsBox header="Details">
@@ -54,11 +58,21 @@ export default function ViewerDetails(props: ViewerDetailsProps) {
             <td className={`${details.score > 0 ? 'text-green-700' : 'text-red-700'}`}>{details.score}</td>
           </tr>
           <tr>
-            <th className="text-right pr-3">Public bookmarks:</th>
-            <td>{details.bookmarks}</td>
+            <th className="text-right pr-3">Bookmarks:</th>
+            <td className="relative">
+              {details.bookmarks}
+              <span className="block absolute text-xs top-0 transform translate-x-2.5 -translate-y-1 text-gray-400 hover:text-gray-600 underline" title="This number only counts public bookmarks."><i className="fas fa-question-circle" aria-hidden={true}/></span>
+            </td>
           </tr>
         </tbody>
       </table>
+
+      {details.uid > 0 ? (
+        <div className="mt-3">
+          <p className="text-gray-600 font-medium" title={`${Intl.NumberFormat().format(details.filesize)} Bytes`}>Filesize: {Util.formatBytes(details.filesize)}</p>
+          <p><a href={`/full/${details.uid}`} className="underline text-blue-500 hover:text-blue-600 focus:outline-none">Direct Link</a></p>
+        </div>
+      ) : null}
     </DetailsBox>
   );
 }

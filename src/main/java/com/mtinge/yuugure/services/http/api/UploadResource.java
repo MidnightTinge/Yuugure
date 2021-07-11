@@ -5,6 +5,8 @@ import com.mtinge.yuugure.core.States;
 import com.mtinge.yuugure.data.http.ReportResponse;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.postgres.DBUpload;
+import com.mtinge.yuugure.data.postgres.states.UploadState;
+import com.mtinge.yuugure.services.database.Database;
 import com.mtinge.yuugure.services.database.UploadFetchParams;
 import com.mtinge.yuugure.services.database.props.BookmarkProps;
 import com.mtinge.yuugure.services.database.props.VoteProps;
@@ -16,8 +18,8 @@ import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.server.handlers.form.FormDataParser;
-import io.undertow.util.Headers;
 import io.undertow.util.Methods;
+import io.undertow.util.StatusCodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,27 +33,51 @@ public class UploadResource extends APIResource<DBUpload> {
   public PathTemplateHandler getRoutes() {
     return Handlers.pathTemplate()
       .add("/index", this::fetchForIndex)
-      .add("/{upload}", this::handleFetch)
+      .add("/{upload}", this::handleRaw)
       .add("/{upload}/{action}", this::handleAction);
   }
 
   private void fetchForIndex(HttpServerExchange exchange) {
-    var authed = getAuthed(exchange);
-    var uploads = App.database().jdbi().withHandle(handle -> App.database().uploads.getIndexUploads(authed, handle));
+    if (MethodValidator.handleMethodValidation(exchange, Methods.GET)) {
+      var authed = getAuthed(exchange);
+      var uploads = App.database().jdbi().withHandle(handle -> App.database().uploads.getIndexUploads(authed, handle));
 
-    Responder.with(exchange).json(Response.good(uploads));
+      Responder.with(exchange).json(Response.good(uploads));
+    }
   }
 
-  private void handleFetch(HttpServerExchange exchange) {
+  private void handleRaw(HttpServerExchange exchange) {
     var res = Responder.with(exchange);
-    var resource = fetchResource(exchange);
-    if (resource.state == FetchState.OK) {
-      var renderable = App.database().jdbi().withHandle(handle -> App.database().uploads.makeUploadRenderable(resource.resource, exchange.getAttachment(SessionHandler.ATTACHMENT_KEY), handle));
-      res
-        .header(Headers.CACHE_CONTROL, "no-store, max-age=0")
-        .json(Response.good(renderable));
-    } else {
-      sendTerminalForState(exchange, resource.state);
+    if (MethodValidator.handleMethodValidation(exchange, Methods.GET, Methods.DELETE)) {
+      var resource = fetchResource(exchange);
+      if (resource.state == FetchState.OK) {
+        if (exchange.getRequestMethod().equals(Methods.GET)) {
+          var renderable = App.database().jdbi().withHandle(handle -> App.database().uploads.makeUploadRenderable(resource.resource, exchange.getAttachment(SessionHandler.ATTACHMENT_KEY), handle));
+          res.json(Response.good(renderable));
+        } else if (exchange.getRequestMethod().equals(Methods.DELETE)) {
+          var authed = getAuthed(exchange);
+          if (authed == null) {
+            res.status(StatusCodes.UNAUTHORIZED).json(Response.fromCode(StatusCodes.UNAUTHORIZED).addMessage("You must be logged in to perform this action."));
+          } else if (authed.id != resource.resource.owner) {
+            res.status(StatusCodes.FORBIDDEN).json(Response.fromCode(StatusCodes.FORBIDDEN).addMessage("You do not own this resource."));
+          } else {
+            var delres = App.database().jdbi().inTransaction(handle ->
+              App.database().uploads.delete(resource.resource.id, handle)
+            );
+
+            if (delres.isSuccess()) {
+              App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(
+                OutgoingPacket.uploadStateUpdate(UploadState.fromDb(delres.getResource()))
+              );
+              res.json(Response.good());
+            } else {
+              res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR));
+            }
+          }
+        }
+      } else {
+        sendTerminalForState(exchange, resource.state);
+      }
     }
   }
 
@@ -59,7 +85,7 @@ public class UploadResource extends APIResource<DBUpload> {
     var res = Responder.with(exchange);
     var action = extract(exchange, "action");
     if (action.isBlank()) {
-      this.handleFetch(exchange);
+      this.handleRaw(exchange);
       return;
     }
     var authed = getAuthed(exchange);
@@ -212,6 +238,50 @@ public class UploadResource extends APIResource<DBUpload> {
               }
             });
             res.json(Response.good().addData(modified));
+          }
+        }
+        case "private" -> {
+          if (MethodValidator.handleMethodValidation(exchange, Methods.PATCH)) {
+            // default this to true by requiring an explicit "false" on the form.
+            var isPrivate = !extractForm(exchange, "private").equalsIgnoreCase("false");
+            // TODO Allow admins to override regardless of owner. Should mods have the same ability?
+            //      Mods are more for rule enforcement than general site maintenance... hrmm...
+            if (authed.id == resource.resource.owner) {
+              var updated = App.database().jdbi().withHandle(handle -> {
+                try {
+                  handle.begin();
+
+                  // since we're playing with state we might as well lock.
+                  handle.execute("SELECT 1 FROM upload WHERE id = ? FOR UPDATE", resource.resource.id);
+
+                  long newState = isPrivate ? States.addFlag(resource.resource.state, States.Upload.PRIVATE) : States.removeFlag(resource.resource.state, States.Upload.PRIVATE);
+                  var altered = Database.firstOrNull(
+                    handle.createQuery("UPDATE upload SET state = :state WHERE id = :id RETURNING *")
+                      .bind("state", newState)
+                      .bind("id", resource.resource.id),
+                    DBUpload.class
+                  );
+
+                  handle.commit();
+                  return altered;
+                } catch (Exception e) {
+                  logger.error("Failed to update private state to {} on upload {}.", isPrivate, resource.resource.id, e);
+                  handle.rollback();
+                }
+                return null;
+              });
+
+              if (updated != null) {
+                App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(
+                  OutgoingPacket.uploadStateUpdate(UploadState.fromDb(updated))
+                );
+                res.json(Response.good());
+              } else {
+                res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR));
+              }
+            } else {
+              res.status(StatusCodes.FORBIDDEN).json(Response.fromCode(StatusCodes.FORBIDDEN));
+            }
           }
         }
       }

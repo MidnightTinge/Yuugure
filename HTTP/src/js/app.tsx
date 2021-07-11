@@ -6,7 +6,7 @@ import {QueryClient, QueryClientProvider} from 'react-query';
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import AlertsProvider from './Components/Alerts/AlertsProvider';
 import PageRenderer from './Components/PageRenderer';
-import AuthStateProvider, {useAuthState} from './Context/AuthStateProvider';
+import AuthStateProvider from './Context/AuthStateProvider';
 import WebSocketProvider from './Context/WebSocketProvider';
 import Page404 from './Pages/404/Page404';
 import PageIndex from './Pages/Index/PageIndex';

@@ -20,7 +20,7 @@ type AlertContextProps = {
 
 export const AlertContext = namedContext<AlertContextProps>('AlertContext');
 
-export function useAlertContext() {
+export function useAlerts() {
   return useContext(AlertContext);
 }
 

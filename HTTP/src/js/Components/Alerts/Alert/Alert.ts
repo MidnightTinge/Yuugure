@@ -2,6 +2,7 @@ export enum AlertType {
   INFO = 'info',
   ERROR = 'error',
   WARNING = 'warning',
+  SUCCESS = 'success',
 }
 
 export type Alert = {

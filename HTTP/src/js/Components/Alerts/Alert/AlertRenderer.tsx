@@ -127,6 +127,13 @@ function getColors(alert: Alert): AlertColors {
         border: 'border-yellow-300',
       };
     }
+    case AlertType.SUCCESS: {
+      return {
+        header: 'bg-green-200',
+        body: 'bg-green-100',
+        border: 'border-green-300',
+      };
+    }
     default: {
       return {
         header: 'bg-gray-200',

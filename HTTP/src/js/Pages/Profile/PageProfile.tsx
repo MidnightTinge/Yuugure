@@ -4,7 +4,7 @@ import {useContext, useEffect, useState} from 'react';
 import {useParams} from 'react-router';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 
-import {useAlertContext} from '../../Components/Alerts/AlertsProvider';
+import {useAlerts} from '../../Components/Alerts/AlertsProvider';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
 import InternalRoute from '../../Components/InternalNav/InternalRoute';
@@ -34,7 +34,7 @@ export default function PageProfile(props: PageProfileProps) {
   const params = useParams<{ accountId: string }>();
   const navigator = useInternalNavigator(true);
 
-  const alerts = useAlertContext();
+  const alerts = useAlerts();
 
   const [fetching, setFetching] = useState(false);
   const [fetched, setFetched] = useState(false);

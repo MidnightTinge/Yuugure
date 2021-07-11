@@ -1,10 +1,13 @@
 import * as React from 'react';
-import {useContext, useEffect, useMemo, useReducer, useState} from 'react';
+import {useContext, useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import {useParams} from 'react-router';
+import {useHistory} from 'react-router-dom';
 import KY from '../../classes/KY';
 import namedContext from '../../classes/NamedContext';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
+import {AlertType} from '../../Components/Alerts/Alert/Alert';
+import {useAlerts} from '../../Components/Alerts/AlertsProvider';
 
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 
@@ -21,6 +24,7 @@ import UploadViewer from '../../Components/UploadViewer/UploadViewer';
 import {useAuthState} from '../../Context/AuthStateProvider';
 import {WebSocketContext} from '../../Context/WebSocketProvider';
 import NotFound from '../404/NotFound';
+import ActionProvider from './Actions/ActionProvider';
 import BookmarkFavBar, {Action, ActionHandler, BookmarkState} from './BookmarkFavBar/BookmarkFavBar';
 import useCommentsReducer, {CommentsState} from './ViewerComments/CommentsReducer';
 import ViewerComments from './ViewerComments/ViewerComments';
@@ -32,6 +36,7 @@ const UploadAction = Object.freeze({
   PARTIAL: 'partial',
 
   UPLOAD_SET: 'set/upload',
+  UPLOAD_STATE: 'upload/state',
 
   BOOKMARK_ADDED: 'bookmarks/total_added',
   BOOKMARK_REMOVED: 'bookmarks/total_removed',
@@ -64,6 +69,17 @@ function UploadReducer(state: UploadState, action: ReducerAction): UploadState {
       return {
         ...state,
         upload: {...action.payload},
+      };
+    }
+    case UploadAction.UPLOAD_STATE: {
+      return {
+        ...state,
+        upload: {
+          ...state.upload,
+          state: {
+            ...action.payload,
+          },
+        },
       };
     }
 
@@ -173,6 +189,10 @@ export default function PageView(props: PageViewProps) {
   const params = useParams<{ uploadId: string }>();
   const authState = useAuthState();
   const navigator = useInternalNavigator(true);
+  const delStateRef = useRef<boolean>(null);
+  const delInitiated = useRef<boolean>(false);
+  const history = useHistory();
+  const alerts = useAlerts();
   const [got404, setGot404] = useState(false);
   const [censored, setCensored] = useState(false);
   const [constrain, setConstrain] = useState(true);
@@ -215,11 +235,19 @@ export default function PageView(props: PageViewProps) {
       uploadDispatch({type: packet.change === 'add' ? UploadAction.BOOKMARK_ADDED : UploadAction.BOOKMARK_REMOVED});
     }
 
+    function handleState({state}: UploadStateUpdatePacket) {
+      uploadDispatch({
+        type: UploadAction.UPLOAD_STATE,
+        payload: {...state},
+      });
+    }
+
     if (params && params.uploadId) {
       if (ws != null) {
         ws.on('comment', handleComment);
         ws.on('votes_updated', handleVote);
         ws.on('bookmarks_updated', handleBookmark);
+        ws.on('state_updated', handleState);
         rooms.join(`upload:${params.uploadId}`);
       }
 
@@ -260,6 +288,7 @@ export default function PageView(props: PageViewProps) {
         ws.removeEventHandler('comment', handleComment);
         ws.removeEventHandler('bookmarks_updated', handleBookmark);
         ws.removeEventHandler('votes_updated', handleVote);
+        ws.removeEventHandler('state_updated', handleState);
       }
     };
   }, []);
@@ -267,6 +296,20 @@ export default function PageView(props: PageViewProps) {
   useEffect(() => {
     (window as any).CURRENT_UPLOAD = upload;
   }, [upload]);
+
+  useEffect(() => {
+    if (upload?.state.DELETED === true && delStateRef.current !== true) {
+      if (delInitiated.current !== true) {
+        alerts.add({
+          type: AlertType.WARNING,
+          header: 'Resource Deleted',
+          body: 'The resource you were viewing has been deleted. You have been redirected as a result.',
+        });
+        history.push('/');
+      }
+    }
+    delStateRef.current = upload?.state.DELETED === true;
+  }, [upload?.state]);
 
   const bookmarkState: BookmarkState = useMemo(() => {
     let ret: BookmarkState = {
@@ -329,6 +372,10 @@ export default function PageView(props: PageViewProps) {
     if (!posting) {
       closeModal();
     }
+  }
+
+  function handleDeleteInitiated() {
+    delInitiated.current = true;
   }
 
   const handleBookmarkBarAction: ActionHandler = (action: Action) => {
@@ -402,18 +449,9 @@ export default function PageView(props: PageViewProps) {
           ) : (
             <InternalRouter defaultPath="view">
               <div className="grid grid-cols-12 gap-2 p-2 pb-0 h-full">
-                <div className="col-span-4 md:col-span-2">
+                <div className="col-span-4 lg:col-span-2">
                   <section className="text-right">
-                    {authState && authState.authed ? (
-                      <div>
-                        {authState.account.id === upload.owner.id ? (
-                          <button onClick={handleDelete} className="text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Delete</button>
-                        ) : null}
-                        <button onClick={handleReport} className="ml-1 text-sm text-blue-300 underline hover:text-blue-400 focus:outline-none">Report</button>
-                      </div>
-                    ) : null}
                     <div>
-                      <a href={`/full/${upload.upload.id}`} target="_blank" className="underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none">Direct Link<i className="ml-1 fas fa-external-link-square-alt" aria-hidden={true}/></a>
                       <div className="block md:hidden">
                         <div>
                           <button className="ml-1 underline text-sm text-yellow-400 hover:text-yellow-500 focus:outline-none" onClick={handleToggleCensor}>Toggle Blur</button>
@@ -447,14 +485,14 @@ export default function PageView(props: PageViewProps) {
                       <BookmarkFavBar resourceType="upload" bookmarkState={bookmarkState} onAction={handleBookmarkBarAction} resourceId={upload.upload.id}/>
                     </section>
                   ) : null}
-                  <section className="mt-1">
+                  <section className={authState.authed ? `mt-1` : `mt-1.5`}>
                     <ViewerDetails/>
                   </section>
                   <section className="mt-1">
                     <ViewerTags/>
                   </section>
                 </div>
-                <div className="col-span-8 md:col-span-10">
+                <div className="col-span-8 lg:col-span-10">
                   <InternalSwitch>
                     <InternalRoute path="comments">
                       <ViewerComments/>
@@ -463,7 +501,7 @@ export default function PageView(props: PageViewProps) {
                       <p>hello edit</p>
                     </InternalRoute>
                     <InternalRoute path="actions">
-                      <p>hello actions</p>
+                      <ActionProvider upload={upload} onDeleteInitiated={handleDeleteInitiated}/>
                     </InternalRoute>
                     <InternalRoute path="*">
                       <div className="h-8 text-center hidden md:block">

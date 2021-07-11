@@ -12,3 +12,7 @@ type VotesUpdatedPacket = {
   action: 'add' | 'remove' | 'swap';
   upvote: boolean;
 }
+
+type UploadStateUpdatePacket = {
+  state: UploadState;
+}

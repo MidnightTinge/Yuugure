@@ -10,11 +10,12 @@
   max-height: calc(100vh - var(--top-offset));
 
   /* mask from opaque to transparent. causes the alert container to appear to disappear near the bottom in browsers that support. */
-  mask-image: linear-gradient(#000 75%, #0000);
+  /* note: disabled for now, looks fine on a large block that reaches the bottom, but ends up fading single alerts as well. */
+  /*mask-image: linear-gradient(#000 75%, #0000);
 
   &:hover {
     mask-image: linear-gradient(#000, #000);
-  }
+  }*/
 
   .Alert {
     @apply relative w-full flex flex-col shadow rounded opacity-80 backdrop-blur-lg hover:opacity-100;

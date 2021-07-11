@@ -203,6 +203,7 @@ public class UploadProvider extends Provider<DBUpload, UploadProps> {
           .where("id", ":id")
           .returning("*")
           .bind("state", States.Upload.DELETED)
+          .bind("id", id)
           .toQuery(handle),
         DBUpload.class
       )

@@ -14,7 +14,7 @@ type DBMediaMeta = {
   video: boolean;
   video_duration: number;
   has_audio: boolean;
-  audio_duration: number;
+  filesize: number;
 }
 
 type DBUpload = {
