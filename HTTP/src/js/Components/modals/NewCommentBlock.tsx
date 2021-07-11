@@ -1,8 +1,9 @@
-import KY from '../../classes/KY';
 import * as React from 'react';
 import {useMemo, useState} from 'react';
+import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
+import Button from '../Button';
 import Spinner from '../Spinner';
 
 export type NewCommentBlockProps = {
@@ -54,7 +55,7 @@ export default function NewCommentBlock(props: NewCommentBlockProps) {
         <label htmlFor={id} className="text-gray-500">Comment:</label>
         <textarea ref={txtComment} id={id} name="body" className={`block w-full rounded-md shadow border ${!error ? 'bg-gray-50 border-gray-300 hover:bg-gray-100' : 'bg-red-50 border-red-300 hover:bg-red-100'} disabled:cursor-not-allowed disabled:bg-gray-200`} disabled={posting} required/>
         <div className="mt-2 text-right">
-          <button type="submit" className={`px-2 py-1 ${!error ? 'bg-green-500 border border-green-700 hover:bg-green-700' : 'bg-red-500 border borer-red-700 hover:bg-red-700'} text-white rounded-md shadow-sm font-medium`}>{posting ? (<Spinner/>) : 'Comment'}</button>
+          <Button type="submit" variant={!error ? 'green' : 'red'}>{posting ? (<Spinner/>) : 'Comment'}</Button>
         </div>
         {error ? (
           <p className="text-sm text-red-500 whitespace-pre-wrap">{error}</p>

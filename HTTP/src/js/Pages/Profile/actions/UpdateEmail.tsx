@@ -1,8 +1,9 @@
-import KY from '../../../classes/KY';
 import * as React from 'react';
 import {useRef, useState} from 'react';
+import KY from '../../../classes/KY';
 import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
 import Util from '../../../classes/Util';
+import Button from '../../../Components/Button';
 
 import FormBlock from '../../../Components/FormBlock';
 import Modal from '../../../Components/Modal/Modal';
@@ -96,10 +97,10 @@ export default function UpdateEmail(props: UpdateEmailProps) {
               </FormBlock>
 
               <div className="text-right mt-2">
-                <button type="button" className="px-2 bg-blue-300 border border-blue-400 hover:bg-blue-400 hover:border-blue-500 rounded-md cursor-pointer mr-2" onClick={handleCloseRequest}>Cancel</button>
-                <button type="submit" className="px-2 bg-red-300 border border-red-400 hover:bg-red-400 hover:border-red-500 rounded-md cursor-pointer">{
+                <Button type="button" variant="blue" onClick={handleCloseRequest}>Cancel</Button>
+                <Button type="submit" variant="red">{
                   posting ? (<><Spinner/> Working...</>) : ('Confirm')
-                }</button>
+                }</Button>
               </div>
             </form>
           ) : (
@@ -116,7 +117,7 @@ export default function UpdateEmail(props: UpdateEmailProps) {
         </Modal.Body>
       </Modal>
       <div>
-        <button className="text-blue-400 hover:text-blue-500 focus:outline-none underline" onClick={handleAction}>Update Email</button>
+        <Button variant="blue" onClick={handleAction} link>Update Email</Button>
       </div>
     </>
   );

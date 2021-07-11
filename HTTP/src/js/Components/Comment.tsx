@@ -3,6 +3,7 @@ import * as React from 'react';
 import {useContext, useMemo, useState} from 'react';
 import RelativeTime from '../classes/RelativeTime';
 import {AuthStateContext} from '../Context/AuthStateProvider';
+import Button from './Button';
 import {CloseSource} from './Modal/Modal';
 import ReportModal from './modals/ReportModal';
 
@@ -57,7 +58,7 @@ export default function Comment({comment}: CommentProps) {
             <a href={`/user/${comment.account.id}`} target="_blank" className="text-gray-700 font-medium hover:underline hover:text-gray-800">{comment.account.username}</a>
           </div>
           <div className="flex-shrink">
-            {authState.authed ? (<button className="text-gray-400 hover:text-gray-500 underline mr-2" onClick={onReportClicked}><i className="fas fa-exclamation-triangle" aria-hidden={true}/><span className="sr-only">Report</span></button>) : null}
+            {authState.authed ? (<Button variant="gray" className="mr-2" onClick={onReportClicked} link><i className="fas fa-exclamation-triangle" aria-hidden={true}/><span className="sr-only">Report</span></Button>) : null}
             <a href={`#comment-${comment.id}`} className="text-xs text-gray-400 hover:text-gray-500 underline" title={new Date(comment.timestamp).toString()}>{RelativeTime(comment.timestamp)}</a>
           </div>
         </div>

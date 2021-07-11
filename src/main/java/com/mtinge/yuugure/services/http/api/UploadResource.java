@@ -56,14 +56,35 @@ public class UploadResource extends APIResource<DBUpload> {
           res.json(Response.good(renderable));
         } else if (exchange.getRequestMethod().equals(Methods.DELETE)) {
           var authed = getAuthed(exchange);
+
+          // allow deletion if the authenticated user is the resource owner or if they are a mod/admin.
+          boolean canDel = authed != null && (authed.id == resource.resource.owner || authed.hasModPerms());
           if (authed == null) {
             res.status(StatusCodes.UNAUTHORIZED).json(Response.fromCode(StatusCodes.UNAUTHORIZED).addMessage("You must be logged in to perform this action."));
-          } else if (authed.id != resource.resource.owner) {
-            res.status(StatusCodes.FORBIDDEN).json(Response.fromCode(StatusCodes.FORBIDDEN).addMessage("You do not own this resource."));
+          } else if (!canDel) {
+            res.status(StatusCodes.FORBIDDEN).json(Response.fromCode(StatusCodes.FORBIDDEN).addMessage("You do not have permission to perform this action."));
           } else {
-            var delres = App.database().jdbi().inTransaction(handle ->
-              App.database().uploads.delete(resource.resource.id, handle)
-            );
+            boolean adminAction = authed.id != resource.resource.owner;
+            String reason = null;
+            if (adminAction) {
+              reason = extractForm(exchange, "reason");
+              if (reason.isBlank()) {
+                res.status(StatusCodes.BAD_REQUEST).json(Response.fromCode(StatusCodes.BAD_REQUEST).addMessage("Reason is required."));
+                return;
+              }
+            }
+
+            // finalizing for lambada usage
+            final String _reason = reason;
+            var delres = App.database().jdbi().inTransaction(handle -> {
+              var _ret = App.database().uploads.delete(resource.resource.id, handle);
+
+              if (_ret.isSuccess() && adminAction) {
+                App.database().audits.trackAction(authed, resource.resource, "delete", "Admin supplied reason: " + _reason, handle);
+              }
+
+              return _ret;
+            });
 
             if (delres.isSuccess()) {
               App.webServer().lobby().in(resource.resource).broadcast(
@@ -247,9 +268,9 @@ public class UploadResource extends APIResource<DBUpload> {
           if (MethodValidator.handleMethodValidation(exchange, Methods.PATCH)) {
             // default this to true by requiring an explicit "false" on the form.
             var isPrivate = !extractForm(exchange, "private").equalsIgnoreCase("false");
-            // TODO Allow admins to override regardless of owner. Should mods have the same ability?
-            //      Mods are more for rule enforcement than general site maintenance... hrmm...
-            if (authed.id == resource.resource.owner) {
+            if (authed.id == resource.resource.owner || authed.hasAdminPerms()) {
+              boolean adminAction = authed.id != resource.resource.owner;
+
               var updated = App.database().jdbi().withHandle(handle -> {
                 try {
                   handle.begin();
@@ -264,6 +285,10 @@ public class UploadResource extends APIResource<DBUpload> {
                       .bind("id", resource.resource.id),
                     DBUpload.class
                   );
+
+                  if (adminAction) {
+                    App.database().audits.trackAction(authed, resource.resource, "private", "Forced private state to " + isPrivate, handle);
+                  }
 
                   handle.commit();
                   return altered;
@@ -303,13 +328,18 @@ public class UploadResource extends APIResource<DBUpload> {
 
   @Override
   protected ResourceResult<DBUpload> fetchResource(HttpServerExchange exchange) {
+    return getUpload(exchange, "upload");
+  }
+
+
+  public static ResourceResult<DBUpload> getUpload(HttpServerExchange exchange, String paramName) {
     var authed = getAuthed(exchange);
-    var uid = extractInt(exchange, "upload");
+    var uid = extractInt(exchange, paramName);
 
     if (uid != null) {
       var upload = App.database().jdbi().withHandle(handle -> App.database().uploads.read(uid, new UploadFetchParams(false, true), handle));
       if (upload != null) {
-        if (States.flagged(upload.state, States.Upload.PRIVATE) && (authed == null || authed.id != upload.owner)) {
+        if (States.flagged(upload.state, States.Upload.PRIVATE) && (authed == null || (!authed.hasModPerms() && authed.id != upload.owner))) {
           return ResourceResult.unauthorized();
         } else {
           return ResourceResult.OK(upload);

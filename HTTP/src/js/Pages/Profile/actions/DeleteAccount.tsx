@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {Container, create} from 'react-modal-promise';
 import {InstanceProps} from 'react-modal-promise/lib/types';
+import Button from '../../../Components/Button';
 import {makeDangerousPasswordConfirmation, ResourceDeletion} from './DangerousActionHelper';
 
 export type DeleteAccountProps = {
@@ -32,7 +33,7 @@ export default function DeleteAccount(props: DeleteAccountProps) {
     <>
       <Container/>
       <div>
-        <button className="text-red-400 hover:text-red-500 focus:outline-none underline" onClick={handleAction}>Delete Account</button>
+        <Button variant="red" onClick={handleAction} link>Delete Account</Button>
       </div>
     </>
   );

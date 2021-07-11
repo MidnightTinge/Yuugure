@@ -13,6 +13,9 @@ import org.jdbi.v3.core.Handle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
+
 public class AccountProvider extends Provider<DBAccount, AccountProps> {
   public static final int FAIL_EXISTING_USERNAME = 1;
   public static final int FAIL_EXISTING_EMAIL = 2;
@@ -48,18 +51,19 @@ public class AccountProvider extends Provider<DBAccount, AccountProps> {
 
       return Result.fail(FAIL_EXISTING_USERNAME);
     } else {
-      var hash = BCrypt.withDefaults().hashToString(12, props.password().toCharArray());
+      var hash = BCrypt.withDefaults().hashToString(12, requireNonNull(props.password()).toCharArray());
 
       // Insert the account and return a failure if the returned result is null
       return Result.fromValue(
         Database.firstOrNull(
           QueryBuilder.insert("account")
-            .columns("username", "email", "password")
-            .values(":username", ":email", ":hash")
+            .columns("username", "email", "password", "roles")
+            .values(":username", ":email", ":hash", ":roles")
             .returning("*")
-            .bind("username", props.username())
-            .bind("email", props.email())
+            .bind("username", requireNonNull(props.username()))
+            .bind("email", requireNonNull(props.email()))
             .bind("hash", hash)
+            .bind("roles", requireNonNullElse(props.roles(), 0L))
             .toQuery(handle),
           DBAccount.class
         )
@@ -129,8 +133,11 @@ public class AccountProvider extends Provider<DBAccount, AccountProps> {
           .set("state", ":state")
           .bind("state", updated.state());
       }
-
-      var built = update.build();
+      if (updated.roles() != null) {
+        update
+          .set("roles", ":roles")
+          .bind("roles", updated.roles());
+      }
 
       var altered = Database.first(
         update.toQuery(handle),

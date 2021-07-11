@@ -4,6 +4,7 @@ import com.mtinge.RateLimit.Limiter;
 import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.postgres.DBAccount;
+import com.mtinge.yuugure.data.postgres.holders.AccountHolder;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.handlers.AddressHandler;
 import com.mtinge.yuugure.services.http.handlers.SessionHandler;
@@ -44,23 +45,23 @@ public abstract class APIResource<T> {
 
   public abstract PathTemplateHandler getRoutes();
 
-  protected DBAccount getAuthed(HttpServerExchange exchange) {
+  protected static AccountHolder getAuthed(HttpServerExchange exchange) {
     return exchange.getAttachment(SessionHandler.ATTACHMENT_KEY);
   }
 
-  protected String extract(HttpServerExchange exchange, String key) {
+  protected static String extract(HttpServerExchange exchange, String key) {
     return extract(exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY), key);
   }
 
-  protected String extract(PathTemplateMatch match, String key) {
+  protected static String extract(PathTemplateMatch match, String key) {
     return match == null ? "" : match.getParameters().getOrDefault(key, "");
   }
 
-  protected Integer extractInt(HttpServerExchange exchange, String key) {
+  protected static Integer extractInt(HttpServerExchange exchange, String key) {
     return extractInt(exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY), key);
   }
 
-  protected Integer extractInt(PathTemplateMatch match, String key) {
+  protected static Integer extractInt(PathTemplateMatch match, String key) {
     var extracted = extract(match, key);
     if (!extracted.isBlank() && extracted.matches("^[0-9]+$")) {
       return Integer.parseInt(extracted);
@@ -69,11 +70,11 @@ public abstract class APIResource<T> {
     return null;
   }
 
-  protected String extractForm(HttpServerExchange exchange, String key) {
+  protected static String extractForm(HttpServerExchange exchange, String key) {
     return extractForm(exchange.getAttachment(FormDataParser.FORM_DATA), key);
   }
 
-  protected String extractForm(FormData data, String key) {
+  protected static String extractForm(FormData data, String key) {
     if (data != null && data.contains(key)) {
       var frm = data.getFirst(key);
       if (!frm.isFileItem()) {
@@ -84,7 +85,7 @@ public abstract class APIResource<T> {
     return "";
   }
 
-  protected String extractConfirmationToken(HttpServerExchange exchange) {
+  protected static String extractConfirmationToken(HttpServerExchange exchange) {
     var form = exchange.getAttachment(FormDataParser.FORM_DATA);
     if (form != null && form.contains("confirmation_token")) {
       var frmToken = form.getFirst("confirmation_token");

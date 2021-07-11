@@ -30,4 +30,10 @@ public final class AccountProps {
    * @see com.mtinge.yuugure.core.States.Account
    */
   private Long state = null;
+  /**
+   * The user's roles.
+   *
+   * @see com.mtinge.yuugure.core.States.Roles
+   */
+  private Long roles = null;
 }

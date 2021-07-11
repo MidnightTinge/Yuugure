@@ -10,7 +10,6 @@ import com.mtinge.yuugure.data.http.Response;
 import com.mtinge.yuugure.data.http.SafeComment;
 import com.mtinge.yuugure.data.postgres.DBComment;
 import com.mtinge.yuugure.data.postgres.DBUpload;
-import com.mtinge.yuugure.services.database.UploadFetchParams;
 import com.mtinge.yuugure.services.http.Responder;
 import com.mtinge.yuugure.services.http.util.MethodValidator;
 import com.mtinge.yuugure.services.http.ws.packets.OutgoingPacket;
@@ -90,11 +89,30 @@ public class CommentResource extends APIResource<DBComment> {
         if (method.equals(Methods.GET)) {
           res.json(Response.good(SafeComment.fromDb(comment.resource)));
         } else if (method.equals(Methods.DELETE)) {
-          // TODO people with elevated roles/permissions (moderators/etc) should be able to delete.
-          if (authed == null || authed.id != comment.resource.account) {
+          if (authed == null || (!authed.hasModPerms() && authed.id != comment.resource.account)) {
             res.status(StatusCodes.UNAUTHORIZED).json(Response.fromCode(StatusCodes.UNAUTHORIZED));
           } else {
-            var deleted = App.database().jdbi().withHandle(handle -> App.database().comments.delete(comment.resource.id, handle));
+            boolean isAdminAction = authed.id != comment.resource.account;
+            String reason = null;
+            if (isAdminAction) {
+              reason = extractForm(exchange, "reason");
+              if (reason.isBlank()) {
+                res.status(StatusCodes.BAD_REQUEST).json(Response.fromCode(StatusCodes.BAD_REQUEST).addMessage("Missing reason."));
+                return;
+              }
+            }
+
+            // finalized for lambda
+            final String _reason = reason;
+            var deleted = App.database().jdbi().withHandle(handle -> {
+              var _ret = App.database().comments.delete(comment.resource.id, handle);
+
+              if (isAdminAction && _ret.isSuccess()) {
+                App.database().audits.trackAction(authed, comment.resource, "delete", "Admin supplied reason: " + _reason, handle);
+              }
+
+              return _ret;
+            });
 
             var code = deleted.isSuccess() ? StatusCodes.OK : StatusCodes.INTERNAL_SERVER_ERROR;
             res.status(code).json(Response.fromCode(code));
@@ -173,20 +191,7 @@ public class CommentResource extends APIResource<DBComment> {
   }
 
   protected ResourceResult<DBUpload> fetchUpload(HttpServerExchange exchange) {
-    var authed = getAuthed(exchange);
-    var uid = extractInt(exchange, "upload");
-
-    if (uid != null) {
-      var upload = App.database().jdbi().withHandle(handle -> App.database().uploads.read(uid, new UploadFetchParams(false, true), handle));
-      if (upload != null) {
-        if (States.flagged(upload.state, States.Upload.PRIVATE) && (authed == null || authed.id != upload.owner)) {
-          return ResourceResult.unauthorized();
-        }
-        return ResourceResult.OK(upload);
-      }
-    }
-
-    return ResourceResult.notFound();
+    return UploadResource.getUpload(exchange, "upload");
   }
 
   @Override

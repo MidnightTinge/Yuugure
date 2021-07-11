@@ -1,12 +1,13 @@
 import * as React from 'react';
 import {useCallback, useContext, useEffect, useReducer} from 'react';
-import namedContext from '../classes/NamedContext';
+import Account from '../classes/Account';
 import KY from '../classes/KY';
+import namedContext from '../classes/NamedContext';
 import RouterResponseConsumer from '../classes/RouterResponseConsumer';
 
 export type AuthState = {
   authed: boolean;
-  account: SafeAccount;
+  account: Account;
   error: string;
 };
 
@@ -62,9 +63,21 @@ export default function AuthStateProvider({children}: any) {
 
       if (consumed.success) {
         let [resp] = consumed.data;
-        dispatch({type: 'fetched', payload: {authed: resp.authenticated, account: resp.account, error: null}});
+        dispatch({
+          type: 'fetched', payload: {
+            authed: resp.authenticated,
+            account: new Account(resp.account),
+            error: null,
+          },
+        });
       } else {
-        dispatch({type: 'fetched', payload: {error: consumed.message, account: null, authed: false}});
+        dispatch({
+          type: 'fetched', payload: {
+            error: consumed.message,
+            account: null,
+            authed: false,
+          },
+        });
       }
     } catch (e) {
       dispatch({type: 'error', payload: e.toString()});

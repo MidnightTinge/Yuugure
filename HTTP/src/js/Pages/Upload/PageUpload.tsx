@@ -1,9 +1,10 @@
-import KY from '../../classes/KY';
 import * as React from 'react';
 import {useMemo, useRef, useState} from 'react';
 import {useHistory} from 'react-router-dom';
+import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
+import Button from '../../Components/Button';
 
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FileInput from '../../Components/FileInput';
@@ -106,9 +107,9 @@ export default function PageUpload(props: PageUploadProps) {
                 <textarea id={txtTagsId} name="tags" onKeyUp={handleTagsChange} className="block w-full rounded-md border border-gray-300 hover:bg-gray-50 shadow focus:border-gray-500 focus:ring focus:ring-gray-400 focus:ring-opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200" disabled={uploading} required/>
               </div>
               <div className="mt-1">
-                <button type="button" className="block w-full bg-green-500 py-1 mt-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" onClick={handleClick} disabled={!canUpload}>
+                <Button type="button" variant="green" className="block w-full" onClick={handleClick} disabled={!canUpload}>
                   {uploading ? (<><Spinner/> Uploading...</>) : `Upload`}
-                </button>
+                </Button>
               </div>
             </form>
           </>
@@ -116,7 +117,7 @@ export default function PageUpload(props: PageUploadProps) {
           <>
             <p className="text-lg text-center">File Uploaded</p>
             <p className="my-3">Your file has been uploaded successfully. Click <a href={`/view/${uploadResult.upload.upload.id}`} onClick={handleUploadNavigation} className="text-blue-500 hover:text-blue-600 focus:text-blue-500">here</a> to view it.</p>
-            <button type="button" className="block w-full py-1 border bg-blue-400 border-blue-500 text-white rounded-md cursor-pointer shadow-sm hover:bg-blue-500 hover:border-blue-600 hover:text-gray-100" onClick={handleFormReset}>Upload Another</button>
+            <Button type="button" variant="blue" className="block w-full" onClick={handleFormReset}>Upload Another</Button>
             {uploadResult.notices.length > 0 ? (
               <>
                 <p className="mt-2 text-gray-700">Notice:</p>

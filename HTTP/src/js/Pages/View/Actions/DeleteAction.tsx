@@ -1,24 +1,27 @@
+import {Options} from 'ky';
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
 import {Container, create} from 'react-modal-promise';
 import {InstanceProps} from 'react-modal-promise/lib/types';
-import {useHistory} from 'react-router-dom';
 import KY from '../../../classes/KY';
 import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
+import Util from '../../../classes/Util';
 import {AlertType} from '../../../Components/Alerts/Alert/Alert';
 import {useAlerts} from '../../../Components/Alerts/AlertsProvider';
+import Button from '../../../Components/Button';
+import Modal from '../../../Components/Modal/Modal';
 import DangerousConfirmModal from '../../../Components/modals/DangerousConfirmModal';
+import InputModal from '../../../Components/modals/InputModal';
 import Spinner from '../../../Components/Spinner';
 
 export type DeleteActionProps = {
   upload: RenderableUpload;
   onDeleteInitiated: () => void;
+  addReason?: boolean;
 };
 
 export default function DeleteAction(props: DeleteActionProps) {
   const [deleting, setDeleting] = useState(false);
-  const [mount, setMount] = useState(true);
-  const history = useHistory();
   const alerts = useAlerts();
   const mounted = useRef<boolean>(null);
 
@@ -38,58 +41,101 @@ export default function DeleteAction(props: DeleteActionProps) {
     </DangerousConfirmModal>
   );
 
-  function doDelete() {
-    props.onDeleteInitiated();
-    setDeleting(true);
-    KY.delete(`/api/upload/${props.upload.upload.id}`).json<RouterResponse>().then(data => {
-      const consumed = RouterResponseConsumer(data);
-      if (consumed.success) {
-        alerts.add({
-          type: AlertType.SUCCESS,
-          header: 'Upload Deleted',
-          body: 'The upload was deleted successfully.',
-        });
-        setTimeout(() => {
-          history.push('/');
-        }, 250);
-      } else {
+  const ReasonModal = ({isOpen, onResolve}: InstanceProps<string>) => (
+    <InputModal onComplete={onResolve} show={isOpen}>
+      <p>Please specify the reason for moderator deletion.</p>
+    </InputModal>
+  );
+
+  const CompleteModal = ({isOpen, onResolve}: InstanceProps<string>) => (
+    <Modal show={isOpen}>
+      <Modal.Header>Deleted</Modal.Header>
+      <Modal.Body>
+        <p>The upload was deleted successfully. Click <a href="/" className="text-blue-400 hover:text-blue-500 underline">here</a> to go home.</p>
+      </Modal.Body>
+    </Modal>
+  );
+
+  function doDelete(reason: Nullable<string>): Promise<void> {
+    return new Promise((resolve, reject) => {
+
+      props.onDeleteInitiated();
+      setDeleting(true);
+      let opts: Options = reason != null ? (
+        {
+          body: Util.formatUrlEncodedBody({
+            reason,
+          }),
+        }
+      ) : {};
+
+      KY.delete(`/api/upload/${props.upload.upload.id}`, opts).json<RouterResponse>().then(data => {
+        const consumed = RouterResponseConsumer(data);
+        if (consumed.success) {
+          resolve();
+        } else {
+          alerts.add({
+            type: AlertType.ERROR,
+            header: 'Deletion Failed',
+            body: (
+              <>
+                <p>Failed to delete the upload.</p>
+                <p>{consumed.message}</p>
+              </>
+            ),
+          });
+          reject(new Error('Failed to delete the upload. API Response: ' + consumed.message));
+        }
+      }).catch(err => {
         alerts.add({
           type: AlertType.ERROR,
           header: 'Deletion Failed',
           body: (
             <>
               <p>Failed to delete the upload.</p>
-              <p>{consumed.message}</p>
+              <p>{err?.toString() ?? 'Failed to delete. Check your connection and try again later.'}</p>
             </>
           ),
         });
-      }
-    }).catch(err => {
-      alerts.add({
-        type: AlertType.ERROR,
-        header: 'Deletion Failed',
-        body: (
-          <>
-            <p>Failed to delete the upload.</p>
-            <p>{err?.toString() ?? 'Failed to delete. Check your connection and try again later.'}</p>
-          </>
-        ),
-      });
-    }).then(() => {
-      if (mounted.current) {
+        reject(err);
+      }).then(() => {
         setDeleting(false);
-      }
+      });
     });
   }
 
   function handleClick() {
     create(ConfirmModal)().then(confirmed => {
-      // react-modal-promise sets a timeout to do some state cleanup on dismount. this leads to
-      // harmless errors in console if we redirect before dismounting but best to let it do its
-      // thing regardless.
-      setMount(false);
       if (confirmed === true) {
-        doDelete();
+        if (props.addReason) {
+          create(ReasonModal)().then(reason => {
+            if (reason) {
+              doDelete(reason).then(() => {
+                create(CompleteModal)().then(() => {
+                  // noop
+                });
+              }).catch(console.error);
+            }
+          }).catch(err => {
+            console.error('Failed to handle deletion.', err);
+            alerts.add({
+              type: AlertType.ERROR,
+              header: 'Deletion Failed',
+              body: (
+                <>
+                  <p>Failed to delete the upload.</p>
+                  <p>{err?.toString() ?? 'Failed to delete. Check your connection and try again later.'}</p>
+                </>
+              ),
+            });
+          });
+        } else {
+          doDelete(null).then(() => {
+            create(CompleteModal)().then(() => {
+              // noop
+            }).catch(console.error);
+          });
+        }
       }
     }).catch(err => {
       console.error('Failed to handle deletion.', err);
@@ -108,14 +154,14 @@ export default function DeleteAction(props: DeleteActionProps) {
 
   return (
     <>
-      {mount ? (<Container/>) : null}
-      <button className="inline-block px-4 py-1 font-semibold rounded text-white border border-red-500 bg-red-400 hover:bg-red-500 disabled:bg-red-600 disabled:hover:bg-red-600 disabled:cursor-not-allowed" onClick={handleClick} disabled={deleting}>
+      <Container/>
+      <Button variant="red" onClick={handleClick} disabled={deleting}>
         {deleting ? (
           <><Spinner/> Deleting...</>
         ) : (
           <><i className="fas fa-times-circle mr-1" aria-hidden={true}/>Delete</>
         )}
-      </button>
+      </Button>
     </>
   );
 }

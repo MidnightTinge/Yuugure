@@ -4,6 +4,7 @@ import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.core.PrometheusMetrics;
 import com.mtinge.yuugure.data.postgres.DBAccount;
 import com.mtinge.yuugure.data.postgres.DBSession;
+import com.mtinge.yuugure.data.postgres.holders.AccountHolder;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.Cookie;
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 public class SessionHandler implements HttpHandler {
-  public static final AttachmentKey<DBAccount> ATTACHMENT_KEY = AttachmentKey.create(DBAccount.class);
+  public static final AttachmentKey<AccountHolder> ATTACHMENT_KEY = AttachmentKey.create(AccountHolder.class);
 
   private static final Logger logger = LoggerFactory.getLogger(SessionHandler.class);
   private static final ConcurrentHashMap<String, Byte> ignoredPaths = new ConcurrentHashMap<>();
@@ -49,8 +50,8 @@ public class SessionHandler implements HttpHandler {
         var sessCookie = exchange.getRequestCookie(App.config().http.auth.cookieName);
         if (sessCookie != null) {
           // check if the session is valid
-          var aId = SessionHandler.tokenToAccount(sessCookie.getValue(), true);
-          if (aId != null) {
+          var _account = SessionHandler.tokenToAccount(sessCookie.getValue(), true);
+          if (_account != null) {
             // touch the session expiry if we're on a touchable path
             if (!ignoreTouchPattern.matcher(exchange.getRequestURI()).find()) {
               final Instant expires = Instant.now().plus(App.config().http.auth.sessionExpires);
@@ -66,16 +67,16 @@ public class SessionHandler implements HttpHandler {
               if (session != null) {
                 exchange.setResponseCookie(makeSessionCookie(session.token, session.expires.toInstant()));
               } else {
-                logger.error("Failed to update session for user {}, the update query didn't return a value.", aId);
+                logger.error("Failed to update session for user {}, the update query didn't return a value.", _account);
               }
             }
 
             // attach the account ID to our session
-            exchange.putAttachment(ATTACHMENT_KEY, aId);
+            exchange.putAttachment(ATTACHMENT_KEY, new AccountHolder(_account));
           }
 
           // set authenticated state for prometheus counter
-          authed = aId != null;
+          authed = _account != null;
         }
       }
     } finally {

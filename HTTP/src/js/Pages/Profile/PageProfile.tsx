@@ -5,6 +5,7 @@ import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 
 import {useAlerts} from '../../Components/Alerts/AlertsProvider';
+import Button from '../../Components/Button';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
 import InternalRoute from '../../Components/InternalNav/InternalRoute';
@@ -244,7 +245,7 @@ export default function PageProfile(props: PageProfileProps) {
                               ) : null}
                             </tbody>
                           </table>
-                          <button className="underline text-blue-400 hover:text-blue-500 focus:outline-none" onClick={handleReportClick}>Report</button>
+                          <Button variant="blue" onClick={handleReportClick} link>Report</Button>
                         </div>
                       ) : null}
                     </InternalRoute>

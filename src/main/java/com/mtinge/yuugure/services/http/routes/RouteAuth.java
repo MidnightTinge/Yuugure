@@ -117,7 +117,7 @@ public class RouteAuth extends Route {
               mtxEmail.acquire();
               mtxUsername.acquire();
 
-              var accountProps = new AccountProps(email, username, password, 0L);
+              var accountProps = new AccountProps(email, username, password, 0L, 0L);
               App.database().jdbi().useHandle(handle -> {
                 handle.begin();
 

@@ -69,10 +69,16 @@ type AccountState = {
   PRIVATE: boolean;
 }
 
+type AccountRoles = {
+  ADMIN: boolean;
+  MOD: boolean;
+}
+
 type SafeAccount = {
   id: number;
   username: string;
   state: AccountState;
+  roles: AccountRoles;
 }
 
 type ProfileResponse = {

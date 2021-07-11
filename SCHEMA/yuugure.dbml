@@ -12,6 +12,7 @@ table account {
   password     varchar(60) [not null]
   state        bigint      [not null, default: 0]
   registered   timestamptz [not null, default: `now()`]
+  roles        bigint      [not null, default: 0]
 
   indexes {
     `lower(username)`     [unique]

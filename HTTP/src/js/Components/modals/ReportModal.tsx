@@ -3,6 +3,7 @@ import {useMemo, useState} from 'react';
 import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
+import Button from '../Button';
 import Modal, {CloseSource} from '../Modal/Modal';
 import Spinner from '../Spinner';
 
@@ -75,11 +76,11 @@ export default function ReportModal(props: ReportModalProps) {
               <textarea ref={txtReason} id={id} rows={5} disabled={posting} name="reason" className={`block w-full rounded-md shadow border bg-gray-50 border-gray-300 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-200`} placeholder="Breaks rule #3" required/>
             </div>
             <div className="text-right mt-3">
-              <button type="submit" className="px-2 bg-green-400 border border-green-500 rounded-md text-white hover:bg-green-500 hover:border-green-600 disabled:bg-green-200 disabled:border-green-300 disabled:cursor-not-allowed" disabled={posting}>
+              <Button type="submit" variant="green" disabled={posting}>
                 {posting ? (
                   <><Spinner/> Sending...</>
                 ) : `Send`}
-              </button>
+              </Button>
             </div>
           </form>
         )}

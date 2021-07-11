@@ -21,6 +21,11 @@ public final class States {
     public static final long LOCKED_COMMENTS   = 1L << 4L;
     public static final long MODERATION_QUEUED = 1L << 5L;
   }
+
+  public static final class Roles {
+    public static final long MOD   = 1L << 0L; // 0b1
+    public static final long ADMIN = 1L << 1L; // 0b10...
+  }
   // @formatter:on
 
   /**

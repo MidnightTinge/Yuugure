@@ -1,6 +1,5 @@
 package com.mtinge.yuugure.data.postgres;
 
-import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.mapper.reflect.ColumnName;
 
 import java.beans.ConstructorProperties;
@@ -25,14 +24,17 @@ public class DBAccount {
   public final long state;
   @ColumnName("registered")
   public final Timestamp registered;
+  @ColumnName("roles")
+  public final long roles;
 
-  @ConstructorProperties({"id", "username", "email", "password", "state", "registered"})
-  public DBAccount(int id, String username, String email, String password, long state, Timestamp registered) {
+  @ConstructorProperties({"id", "username", "email", "password", "state", "registered", "roles"})
+  public DBAccount(int id, String username, String email, String password, long state, Timestamp registered, long roles) {
     this.id = id;
     this.username = username;
     this.email = email;
     this.password = password;
     this.state = state;
     this.registered = registered;
+    this.roles = roles;
   }
 }

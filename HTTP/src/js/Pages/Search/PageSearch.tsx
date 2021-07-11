@@ -1,11 +1,12 @@
-import KY from '../../classes/KY';
 import * as React from 'react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from 'react-query';
 import {useLocation} from 'react-router';
 import {useHistory} from 'react-router-dom';
+import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
+import Button from '../../Components/Button';
 
 import LoadingPing from '../../Components/LoadingPing';
 import MediaPreview from '../../Components/MediaPreview/MediaPreview';
@@ -143,7 +144,7 @@ export default function PageSearch(props: PageSearchProps) {
             <input type="text" ref={txtSearch} id={txtSearchId} name="q" className="block w-full border border-gray-300 bg-gray-200 shadow-sm rounded-md"/>
           </div>
           <div className="text-right mt-3">
-            <button className="inline-block border border-blue-400 bg-blue-300 px-4 py-1 rounded font-semibold text-white hover:bg-blue-400 disabled:cursor-not-allowed">Search</button>
+            <Button variant="blue">Search</Button>
           </div>
         </form>
       </div>

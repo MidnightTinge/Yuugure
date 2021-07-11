@@ -42,6 +42,7 @@ public class Database implements IService {
   public final TagProvider tags = new TagProvider();
   public final BookmarkProvider bookmarks = new BookmarkProvider();
   public final VoteProvider votes = new VoteProvider();
+  public final AuditsProvider audits = new AuditsProvider();
 
   @Override
   public void init() throws Exception {

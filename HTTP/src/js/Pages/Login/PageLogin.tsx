@@ -3,6 +3,7 @@ import * as React from 'react';
 import {FormEvent, useRef, useState} from 'react';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
+import Button from '../../Components/Button';
 
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FormBlock from '../../Components/FormBlock';
@@ -85,9 +86,9 @@ export default function PageLogin(props: LoginProps) {
         <FormBlock ref={txtEmail} type="text" name="email" className="mb-2" autoComplete="email" invalid={emailInvalid} validationError={emailError} disabled={posting} required>Email</FormBlock>
         <FormBlock ref={txtPassword} type="password" name="password" className="mb-3" autoComplete="current-password" invalid={pwInvalid} validationError={pwError} disabled={posting} required>Password</FormBlock>
 
-        <button type="submit" className="block w-full bg-green-500 py-1 shadow-sm rounded text-white hover:bg-green-600 focus:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-700 disabled:text-gray-400" disabled={posting}>
+        <Button type="submit" variant="green" disabled={posting}>
           {posting ? (<><Spinner/> Logging in...</>) : `Log In`}
-        </button>
+        </Button>
         {error != null ? (
           <p className="text-red-500 text-sm text-center font-mono my-2">{error}</p>
         ) : null}

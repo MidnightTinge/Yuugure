@@ -1,8 +1,9 @@
-import KY from '../../classes/KY';
 import * as React from 'react';
 import {useRef, useState} from 'react';
+import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
+import Button from '../Button';
 import FormBlock from '../FormBlock';
 import Modal from '../Modal/Modal';
 import Spinner from '../Spinner';
@@ -74,12 +75,12 @@ export default function ConfirmPasswordModal(props: ConfirmPasswordModalProps) {
             <p className="my-2 text-red-500 whitespace-pre-wrap">{error}</p>
           ) : null}
           <div className="text-right mt-2">
-            <button type="button" disabled={posting} className="px-2 bg-gray-200 border border-gray-300 hover:bg-gray-300 hover:border-gray-400 rounded-md cursor-pointer mr-2 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed" onClick={handleCancelClick}>Cancel</button>
-            <button type="submit" disabled={posting} className="px-2 bg-blue-300 border border-blue-400 hover:bg-blue-400 hover:border-blue-500 rounded-md cursor-pointer disabled:bg-blue-200 disabled:border-blue-300 disabled:text-blue-300 disabled:cursor-not-allowed">
+            <Button variant="gray" type="button" disabled={posting} onClick={handleCancelClick}>Cancel</Button>
+            <Button variant="blue" type="submit" disabled={posting}>
               {!posting ? 'Submit' : (
                 <><Spinner/> Working...</>
               )}
-            </button>
+            </Button>
           </div>
         </form>
       </Modal.Body>

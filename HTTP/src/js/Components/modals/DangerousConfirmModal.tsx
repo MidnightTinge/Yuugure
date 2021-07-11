@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useMemo, useState} from 'react';
 import Util from '../../classes/Util';
+import Button from '../Button';
 import Modal from '../Modal/Modal';
 
 export type DangerousConfirmModalProps = {
@@ -61,8 +62,8 @@ export default function DangerousConfirmModal(props: DangerousConfirmModalProps)
             <input type="text" id={id} onChange={handleChange} defaultValue={value} placeholder={props.confirmPhrase} className="block w-full rounded-md border border-gray-300 placeholder-gray-400 hover:bg-gray-50 shadow focus:border-gray-500 focus:ring focus:ring-gray-400 focus:ring-opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200" required/>
           </div>
           <div className="mt-2 text-right">
-            <button type="button" className="px-2 rounded bg-gray-200 border border-gray-300 hover:bg-gray-300 hover:border-gray-400 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 mr-2 disabled:cursor-not-allowed" onClick={handleCancel}>{props.cancelText || 'Cancel'}</button>
-            <button type="submit" className="px-2 rounded bg-blue-300 border border-blue-400 hover:bg-blue-400 hover:border-blue-500 disabled:bg-blue-100 disabled:border-blue-200 disabled:text-gray-500 disabled:cursor-not-allowed" disabled={!phraseMatches}>{props.confirmText || 'Confirm'}</button>
+            <Button type="button" variant="gray" onClick={handleCancel}>{props.cancelText || 'Cancel'}</Button>
+            <Button type="submit" variant="blue" disabled={!phraseMatches}>{props.confirmText || 'Confirm'}</Button>
           </div>
         </form>
       </Modal.Body>

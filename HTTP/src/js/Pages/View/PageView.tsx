@@ -8,6 +8,7 @@ import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
 import {AlertType} from '../../Components/Alerts/Alert/Alert';
 import {useAlerts} from '../../Components/Alerts/AlertsProvider';
+import Button from '../../Components/Button';
 
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 
@@ -454,10 +455,10 @@ export default function PageView(props: PageViewProps) {
                     <div>
                       <div className="block md:hidden">
                         <div>
-                          <button className="ml-1 underline text-sm text-yellow-400 hover:text-yellow-500 focus:outline-none" onClick={handleToggleCensor}>Toggle Blur</button>
+                          <Button className="ml-1" variant="yellow" onClick={handleToggleCensor}>Toggle Blur</Button>
                         </div>
                         <div>
-                          <button className="ml-1 underline text-sm text-blue-300 hover:text-blue-400 focus:outline-none" onClick={handleToggleResize}>Toggle Resize</button>
+                          <Button className="ml-1" variant="blue" onClick={handleToggleResize}>Toggle Resize</Button>
                         </div>
                       </div>
                     </div>
@@ -505,6 +506,7 @@ export default function PageView(props: PageViewProps) {
                     </InternalRoute>
                     <InternalRoute path="*">
                       <div className="h-8 text-center hidden md:block">
+                        {/* These buttons are exempt from (<Button />) refactor - they are styled specifically for this gap and touching the gap will mess up resizing. */}
                         {upload?.state?.MODERATION_QUEUED ? (
                           <button className="inline-block px-4 rounded-md border border-yellow-200 bg-yellow-100 shadow mr-1" onClick={handleToggleCensor}>Toggle Blur</button>
                         ) : null}
