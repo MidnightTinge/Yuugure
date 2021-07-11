@@ -6,7 +6,7 @@ type UploadState = {
   uploads: RenderableUpload[];
 };
 
-function UploadReducer(state: UploadState, action: { type: string, payload?: Arrayable<RenderableUpload> }): UploadState {
+function UploadReducer(state: UploadState, action: { type: string, payload?: any }): UploadState {
   let payload = Array.isArray(action.payload) ? action.payload : [action.payload];
 
   switch (action.type) {
@@ -19,7 +19,7 @@ function UploadReducer(state: UploadState, action: { type: string, payload?: Arr
     case 'remove': {
       return {
         ...state,
-        uploads: state.uploads.filter(x => x.upload.id !== payload[0].upload.id),
+        uploads: state.uploads.filter(x => x.upload.id !== action.payload),
       };
     }
     case 'set': {
@@ -34,7 +34,7 @@ function UploadReducer(state: UploadState, action: { type: string, payload?: Arr
 type UploadActions = {
   set: (uploads: Arrayable<RenderableUpload>) => void;
   add: (uploads: Arrayable<RenderableUpload>) => void;
-  remove: (upload: RenderableUpload) => void;
+  remove: (upload_id: number) => void;
 }
 
 function _makeActions(dispatch: Dispatch<ReducerAction>): UploadActions {
@@ -57,7 +57,7 @@ function _makeActions(dispatch: Dispatch<ReducerAction>): UploadActions {
         payload: upload,
       });
     },
-    remove: (upload: RenderableUpload) => {
+    remove: (upload: number) => {
       dispatch({
         type: 'remove',
         payload: upload,

@@ -66,8 +66,11 @@ public class UploadResource extends APIResource<DBUpload> {
             );
 
             if (delres.isSuccess()) {
-              App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(
+              App.webServer().lobby().in(resource.resource).broadcast(
                 OutgoingPacket.uploadStateUpdate(UploadState.fromDb(delres.getResource()))
+              );
+              App.webServer().lobby().in("account:" + resource.resource.owner).broadcast(
+                OutgoingPacket.prepare("remove_upload").addData("id", resource.resource.id)
               );
               res.json(Response.good());
             } else {
@@ -147,21 +150,21 @@ public class UploadResource extends APIResource<DBUpload> {
                     if (bookmarkResult.isActive && bookmarkResult.wasActive && !bookmarkResult.wasPublic) {
                       // user changed their bookmark from private to public
                       //  ->bookmark_added
-                      App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(packet.addData("change", "add"));
+                      App.webServer().lobby().in(resource.resource).broadcast(packet.addData("change", "add"));
                     } else if (bookmarkResult.isActive && !bookmarkResult.wasActive) {
                       // user added a bookmark
                       //  ->bookmark_added
-                      App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(packet.addData("change", "add"));
+                      App.webServer().lobby().in(resource.resource).broadcast(packet.addData("change", "add"));
                     } else {
                       // user removed their bookmark
                       //  ws->bookmark_removed
-                      App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(packet.addData("change", "remove"));
+                      App.webServer().lobby().in(resource.resource).broadcast(packet.addData("change", "remove"));
                     }
                   } else { // else: bookmark is private
                     if (bookmarkResult.isActive && bookmarkResult.wasActive && bookmarkResult.wasPublic) {
                       // user changed their bookmark from public to private
                       //  ws->bookmark_removed
-                      App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(packet.addData("change", "remove"));
+                      App.webServer().lobby().in(resource.resource).broadcast(packet.addData("change", "remove"));
                     } // else: the bookmark is either currently inactive or was previously inactive,
                     //         and is currently private. there is no state change to
                     //         report because there was no state known to begin with.
@@ -198,11 +201,11 @@ public class UploadResource extends APIResource<DBUpload> {
                       if (voteRes.isUpvote) {
                         // user swapped their vote from a downvote to an upvote
                         //  ws->('swapped', 'upvote')
-                        App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(packet.addData("action", "swap").addData("upvote", true));
+                        App.webServer().lobby().in(resource.resource).broadcast(packet.addData("action", "swap").addData("upvote", true));
                       } else {
                         // user swapped their vote from an upvote to a downvote
                         //  ws->('swapped', 'downvote')
-                        App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(packet.addData("action", "swap").addData("upvote", false));
+                        App.webServer().lobby().in(resource.resource).broadcast(packet.addData("action", "swap").addData("upvote", false));
                       }
                     }
                   } else if (voteRes.isActive) {
@@ -210,22 +213,22 @@ public class UploadResource extends APIResource<DBUpload> {
                     if (voteRes.isUpvote) {
                       // user sent an upvote
                       //  ws->('added', 'upvote')
-                      App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(packet.addData("action", "add").addData("upvote", true));
+                      App.webServer().lobby().in(resource.resource).broadcast(packet.addData("action", "add").addData("upvote", true));
                     } else {
                       // user sent a downvote
                       //  ws->('added', 'downvote')
-                      App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(packet.addData("action", "add").addData("upvote", false));
+                      App.webServer().lobby().in(resource.resource).broadcast(packet.addData("action", "add").addData("upvote", false));
                     }
                   } else if (voteRes.wasActive) {
                     // user removed a vote
                     if (voteRes.isUpvote) {
                       // user removed an upvote
                       //  ws->('removed', 'upvote')
-                      App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(packet.addData("action", "remove").addData("upvote", true));
+                      App.webServer().lobby().in(resource.resource).broadcast(packet.addData("action", "remove").addData("upvote", true));
                     } else {
                       // user removed a downvote
                       //  ws->('removed', 'downvote')
-                      App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(packet.addData("action", "remove").addData("upvote", false));
+                      App.webServer().lobby().in(resource.resource).broadcast(packet.addData("action", "remove").addData("upvote", false));
                     }
                   }
                 }
@@ -272,9 +275,17 @@ public class UploadResource extends APIResource<DBUpload> {
               });
 
               if (updated != null) {
-                App.webServer().lobby().in("upload:" + resource.resource.id).broadcast(
+                App.webServer().lobby().in(resource.resource).broadcast(
                   OutgoingPacket.uploadStateUpdate(UploadState.fromDb(updated))
                 );
+                if (isPrivate) {
+                  App.webServer().lobby().in("account:" + resource.resource.owner).broadcast(
+                    OutgoingPacket.prepare("remove_upload").addData("id", resource.resource.id),
+                    channel -> channel.accountId() == null || channel.accountId() != resource.resource.owner
+                  );
+                } // else: we could send the "upload" packet but we'd have to make it renderable,
+                //         not worth the db hit right now. in the future we can check if anyone is
+                //         subscribed to the room and if so then take the hit.
                 res.json(Response.good());
               } else {
                 res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(Response.fromCode(StatusCodes.INTERNAL_SERVER_ERROR));

@@ -3,6 +3,17 @@ package com.mtinge.yuugure.services.http.ws.packets;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * <p>A binary WebSocket packet spec assembler. The format is purposefully overly simplistic:</p>
+ * <pre>
+ *   [
+ *     PACKET_TYPE,
+ *     PACKET_HEADER...,
+ *     PAYLOAD_SEPARATOR,
+ *     PAYLOAD...
+ *   ]
+ * </pre>
+ */
 public class BinaryPacket {
   public static byte PAYLOAD_SEPARATOR = 0;
 

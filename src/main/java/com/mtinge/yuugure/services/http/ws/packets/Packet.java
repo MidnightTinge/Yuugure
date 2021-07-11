@@ -10,6 +10,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+/**
+ * An incoming WebSocket packet descriptor and associated action handler.
+ *
+ * @see PacketFactory
+ */
 @AllArgsConstructor
 public class Packet {
   public final String type;

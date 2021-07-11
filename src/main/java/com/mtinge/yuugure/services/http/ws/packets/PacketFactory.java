@@ -3,6 +3,9 @@ package com.mtinge.yuugure.services.http.ws.packets;
 import java.util.HashMap;
 import java.util.HashSet;
 
+/**
+ * A factory for building and tracking incoming WebSocket packets.
+ */
 public class PacketFactory {
   private final Object _monitor = new Object();
   private final HashMap<String, Packet> typePacketMap = new HashMap<>();

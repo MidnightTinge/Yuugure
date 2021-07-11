@@ -1,7 +1,7 @@
-import KY from '../../classes/KY';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {useParams} from 'react-router';
+import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 
 import {useAlerts} from '../../Components/Alerts/AlertsProvider';
@@ -79,15 +79,21 @@ export default function PageProfile(props: PageProfileProps) {
       uploadActions.add(args.upload);
     }
 
+    function handleRemoveUpload({id}: RemoveUploadPacket) {
+      uploadActions.remove(id);
+    }
+
     let id = accountId === '@me' ? (authState.authed ? authState.account.id : null) : accountId;
     if (id !== null && ws != null) {
       ws.addEventHandler('upload', handleUpload);
+      ws.addEventHandler('remove_upload', handleRemoveUpload);
       rooms.join(`account:${id}`);
     }
 
     return function unsub() {
       if (id !== null && ws != null) {
         ws.removeEventHandler('upload', handleUpload);
+        ws.removeEventHandler('remove_upload', handleRemoveUpload);
         rooms.leave(`account:${id}`);
       }
     };

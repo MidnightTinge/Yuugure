@@ -1,5 +1,8 @@
 package com.mtinge.yuugure.services.http.ws;
 
+import com.mtinge.yuugure.data.postgres.DBAccount;
+import com.mtinge.yuugure.data.postgres.DBUpload;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,6 +28,14 @@ public class Lobby {
 
   public Room in(String roomName) {
     return get(roomName);
+  }
+
+  public Room in(DBUpload upload) {
+    return in("upload:" + upload.id);
+  }
+
+  public Room in(DBAccount account) {
+    return in("account:" + account.id);
   }
 
   public List<Room> createdRooms() {

@@ -6,6 +6,9 @@ import lombok.Getter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * An outgoing WebSocket packet.
+ */
 @Getter
 public class OutgoingPacket {
   private final Map<String, Object> data;

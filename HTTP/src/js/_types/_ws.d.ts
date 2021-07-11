@@ -16,3 +16,7 @@ type VotesUpdatedPacket = {
 type UploadStateUpdatePacket = {
   state: UploadState;
 }
+
+type RemoveUploadPacket = {
+  id: number
+}
