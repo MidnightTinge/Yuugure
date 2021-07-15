@@ -7,15 +7,15 @@ import com.mtinge.TagTokenizer.tokenizer.TagToken;
 import com.mtinge.TagTokenizer.tokenizer.TermModifier;
 import com.mtinge.yuugure.App;
 import com.mtinge.yuugure.data.postgres.DBTag;
+import lombok.Getter;
+import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.jdbi.v3.core.Handle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * A tag management class that interfaces with the <code>tag</code> database table and attemtps to
@@ -27,8 +27,11 @@ public class TagManager {
 
   private final Object _monitor = new Object();
   private ConcurrentRadixTree<LinkedList<MutableTag>> tagCache;
+  @Getter
+  private LinkedHashMap<Integer, HashSet<Integer>> assocMap;
 
   public TagManager() {
+    this.assocMap = new LinkedHashMap<>();
     this.tagCache = new ConcurrentRadixTree<>(new DefaultCharSequenceNodeFactory());
   }
 
@@ -455,7 +458,9 @@ public class TagManager {
           }
         } else {
           var fromTree = tagCache.getValueForExactKey(search);
-          ret.addAll(fromTree);
+          if (fromTree != null && !fromTree.isEmpty()) {
+            ret.addAll(fromTree);
+          }
         }
       }
     }
@@ -495,6 +500,7 @@ public class TagManager {
         if (updated > 0) {
           handle.commit();
           child.parent = parent.id;
+          _assoc(parent.id, child.id);
           return true;
         } else {
           logger.warn("No rows updated when setting child {}'s parent to {}.", child.id, parent.id);
@@ -533,6 +539,7 @@ public class TagManager {
 
           if (updated > 0) {
             handle.commit();
+            _disassoc(tag.parent, tag.id);
             tag.parent = null;
             return true;
           } else {
@@ -550,21 +557,44 @@ public class TagManager {
   }
 
   private void _injectAs(BoolQueryBuilder builder, MutableTag tag, TermModifier as) {
-    if (tag.parent != null && tag.parent > 0) {
-      if (as.equals(TermModifier.NOT)) {
-        builder.mustNot(QueryBuilders.termQuery("tags", tag.id));
-        builder.mustNot(QueryBuilders.termQuery("tags", tag.parent));
+    /*
+     * With a list of tags such as
+     *   > Tag(id=1, name=glasses)
+     *   > Tag(id=2, name=red_glasses, alias=1)
+     *   > Tag(id=3, name=green_glasses, alias=1)
+     *   > Tag(id=4, name=black_glasses, alias=1)
+     *
+     * then a query for "red_glasses" should only return hits with tag "2". However, a search for
+     * "glasses" should return hits with tag "1", "2", "3", or "4", keeping in mind it's perfectly
+     * legal to tag something just as "glasses" (id=1).
+     */
+
+    AbstractQueryBuilder<?> term;
+    if (tag.parent == null) {
+      // potential parent tag, check for associations in the cache
+      if (assocMap.containsKey(tag.id)) {
+        // there are children associated with this tag, inject them
+        var query = new BoolQueryBuilder();
+        query.should(QueryBuilders.termQuery("tags", tag.id));
+        for (var assoc : assocMap.get(tag.id)) {
+          query.should(QueryBuilders.termQuery("tags", assoc));
+        }
+
+        // treat it as a wildcard result
+        term = query;
       } else {
-        builder.should(QueryBuilders.termQuery("tags", tag.id));
-        builder.should(QueryBuilders.termQuery("tags", tag.parent));
+        // this parent tag has no children, inject normally
+        term = QueryBuilders.termQuery("tags", tag.id);
       }
     } else {
-      var term = QueryBuilders.termQuery("tags", tag.id);
-      switch (as) {
-        case AND -> builder.must(term);
-        case NOT -> builder.mustNot(term);
-        case OR -> builder.should(term);
-      }
+      // this tag is a known child, inject normally
+      term = QueryBuilders.termQuery("tags", tag.id);
+    }
+
+    switch (as) {
+      case AND -> builder.must(term);
+      case NOT -> builder.mustNot(term);
+      case OR -> builder.should(term);
     }
   }
 
@@ -636,6 +666,43 @@ public class TagManager {
       // mutate the existing list
       list.add(MutableTag.fromDb(tag));
     }
+
+    if (tag.parent != null) {
+      _assoc(tag.parent, tag.id);
+    }
+  }
+
+  /**
+   * Associate the child with the parent in the cache.
+   *
+   * @param parent The parent.
+   * @param child The child to add.
+   */
+  private void _assoc(Integer parent, Integer child) {
+    assocMap.compute(parent, (k, v) -> {
+      if (v == null) {
+        v = new HashSet<>();
+      }
+
+      v.add(child);
+      return v;
+    });
+  }
+
+  /**
+   * Disassociate the child from the parent in the cache.
+   *
+   * @param parent The parent.
+   * @param child The child to remove.
+   */
+  private void _disassoc(Integer parent, Integer child) {
+    assocMap.compute(parent, (k, v) -> {
+      if (v != null) {
+        v.remove(child);
+      }
+
+      return v;
+    });
   }
 
   @SuppressWarnings("unchecked")
