@@ -585,8 +585,16 @@ public class TagManager {
           // Since we have more than one result we're assuming this was from a wildcard result.
           // We don't want our wildcard terms to be 'MUST' because we're looking for any of the
           // following tags, but we also want to respect a 'NOT' wildcard search.
+
+          // Generate a secondary bool query of 'OR' to inject
+          var wrapped = QueryBuilders.boolQuery();
           for (var tag : tags) {
-            _injectAs(builder, tag, token.modifier.equals(TermModifier.NOT) ? TermModifier.NOT : TermModifier.OR);
+            wrapped.should(QueryBuilders.termQuery("tags", tag.id));
+          }
+          switch (token.modifier) {
+            case NOT -> builder.mustNot(wrapped);
+            case OR -> builder.should(wrapped);
+            case AND -> builder.must(wrapped);
           }
         } else if (!tags.isEmpty()) {
           _injectAs(builder, tags.getFirst(), token.modifier);
