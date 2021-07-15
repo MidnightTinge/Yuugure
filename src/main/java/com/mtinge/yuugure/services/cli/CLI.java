@@ -29,7 +29,9 @@ public class CLI implements IService {
       new ReprocessAllUploads(),
       new ReprocessSpecificUpload(),
       new ActiveMediaProcessors(),
-      new AddTagsFromFilesystem()
+      new AddTagsFromFilesystem(),
+      new SearchScript(),
+      new DslScript()
     );
   }
 
