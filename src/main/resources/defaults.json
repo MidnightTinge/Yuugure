@@ -39,9 +39,9 @@
   },
   "zeromq": {
     "bind": {
-      "broadcast": "tcp://127.0.0.1:50328",
-      "internalSupplier": "tcp://0.0.0.0:58378",
-      "internalConsolidator": "tcp://0.0.0.0:59951"
+      "broadcast": "tcp://127.0.0.1:30328",
+      "internalSupplier": "tcp://0.0.0.0:38378",
+      "internalConsolidator": "tcp://0.0.0.0:39951"
     }
   }
 }

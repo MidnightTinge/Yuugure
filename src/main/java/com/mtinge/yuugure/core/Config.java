@@ -169,9 +169,9 @@ public final class Config {
       public final String internalConsolidator;
 
       public Bind() {
-        this.broadcast = "tcp://127.0.0.1:50328";
-        this.internalSupplier = "tcp://0.0.0.0:58378";
-        this.internalConsolidator = "tcp://0.0.0.0:59951";
+        this.broadcast = "tcp://127.0.0.1:30328";
+        this.internalSupplier = "tcp://0.0.0.0:38378";
+        this.internalConsolidator = "tcp://0.0.0.0:39951";
       }
     }
   }
