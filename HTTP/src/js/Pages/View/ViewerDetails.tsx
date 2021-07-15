@@ -36,7 +36,7 @@ export default function ViewerDetails(props: ViewerDetailsProps) {
         mid: upload.media.id,
         score: upload.votes.total_upvotes - upload.votes.total_downvotes,
         bookmarks: upload.bookmarks.total_public,
-        filesize: upload.media_meta.filesize,
+        filesize: upload.media_meta?.filesize ?? -1, // can be null if accessed before processor finishes
       };
     }
 
