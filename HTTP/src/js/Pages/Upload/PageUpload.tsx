@@ -9,6 +9,7 @@ import Button from '../../Components/Button';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import FileInput from '../../Components/FileInput';
 import Spinner from '../../Components/Spinner';
+import RatingGroup from './RatingGroup';
 
 export type PageUploadProps = {
   //
@@ -29,6 +30,8 @@ export default function PageUpload(props: PageUploadProps) {
   const [tags, setTags] = useState<string>('');
   const txtTagsId = useMemo(() => Util.mkid(), []);
 
+  const [rating, setRating] = useState<string>('safe'); // TODO: Set based on account settings.
+
   const canUpload = useMemo(() => files != null && files.length > 0 && tags.trim().length > 0, [files, tags]);
 
   function handleClick() {
@@ -39,6 +42,7 @@ export default function PageUpload(props: PageUploadProps) {
         private: String(cbPrivate.current.checked),
         file: files[0],
         tags,
+        rating,
       }),
     }).json<RouterResponse>().then(data => {
         const consumed = RouterResponseConsumer<UploadResult>(data);
@@ -83,6 +87,8 @@ export default function PageUpload(props: PageUploadProps) {
     setUploadResult(null);
     setFileErrors(null);
     setFiles(null);
+    setTags('');
+    setRating('safe'); // TODO: Set based on account settings.
   }
 
   function handleTagsChange(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -96,17 +102,20 @@ export default function PageUpload(props: PageUploadProps) {
           <>
             <p className="text-lg text-center">Upload File</p>
             <form method="post" action="/upload" encType="multipart/form-data">
-              <div className="mb-1">
+              <div className="mb-2">
                 <FileInput label="Image/Video" onFiles={handleFiles} invalid={fileErrors && fileErrors.length > 0} errorText={fileErrors}/>
               </div>
-              <div className="my-1">
+              <div className="my-2">
                 <label><input ref={cbPrivate} type="checkbox" name="private"/> Private</label>
               </div>
-              <div className="my-1">
+              <div className="my-2">
                 <label htmlFor={txtTagsId} id={`lbl-${txtTagsId}`} className="mb-1 text-sm font-medium text-gray-800">Tags</label>
                 <textarea id={txtTagsId} name="tags" onKeyUp={handleTagsChange} className="block w-full rounded-md border border-gray-300 hover:bg-gray-50 shadow focus:border-gray-500 focus:ring focus:ring-gray-400 focus:ring-opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200" disabled={uploading} required/>
               </div>
-              <div className="mt-1">
+              <div className="my-2">
+                <RatingGroup rating={rating} onChange={setRating}/>
+              </div>
+              <div className="mt-2">
                 <Button type="button" variant="green" className="block w-full" onClick={handleClick} disabled={!canUpload}>
                   {uploading ? (<><Spinner/> Uploading...</>) : `Upload`}
                 </Button>

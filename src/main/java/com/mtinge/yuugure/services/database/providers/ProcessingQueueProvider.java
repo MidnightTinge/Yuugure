@@ -205,7 +205,8 @@ public class ProcessingQueueProvider extends Provider<DBProcessingQueue, Process
       // can happen on a reprocess.
       App.database().tags.addTagsToUpload(result.dequeued().upload.id, tds.tags, handle);
 
-      // Get current tags and filter out system tags (we're overriding with processor result)
+      // Get current tags and filter out system tags except for rating (we're overriding with
+      // processor result).
       var curTags = Database.toList(
         QueryBuilder.select("t.*")
           .from("upload_tags ut")
@@ -215,7 +216,7 @@ public class ProcessingQueueProvider extends Provider<DBProcessingQueue, Process
           .toQuery(handle),
         DBTag.class
       ).stream()
-        .filter(t -> t.category.equalsIgnoreCase(TagCategory.USERLAND.getName()))
+        .filter(t -> t.category.equalsIgnoreCase(TagCategory.USERLAND.getName()) || t.category.equalsIgnoreCase(TagCategory.RATING.getName()))
         .map(t -> t.id)
         .collect(Collectors.toList());
 
