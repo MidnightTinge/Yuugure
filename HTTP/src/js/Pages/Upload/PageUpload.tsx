@@ -103,8 +103,10 @@ export default function PageUpload(props: PageUploadProps) {
             <p className="text-lg text-center mb-2">Upload File</p>
             <form method="post" action="/upload" encType="multipart/form-data">
               <div className="mb-2">
-                {/*<FileInput label="Image/Video" onFiles={handleFiles} invalid={fileErrors && fileErrors.length > 0} errorText={fileErrors}/>*/}
-                <FileDragDrop className="mx-auto" onFile={handleFile}/>
+                <FileDragDrop className="mx-auto" errored={fileErrors?.trim().length > 0} onFile={handleFile}/>
+                {fileErrors?.trim().length > 0 ? (
+                  <p className="mt-1 ml-1 text-sm font-medium text-red-500 whitespace-pre-wrap break-words">{fileErrors}</p>
+                ) : null}
               </div>
               <div className="my-2">
                 <label><input ref={cbPrivate} type="checkbox" name="private"/> Private</label>

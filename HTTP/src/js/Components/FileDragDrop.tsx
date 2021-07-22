@@ -8,6 +8,7 @@ import Util from '../classes/Util';
 type FileDragDropProps = {
   className?: string;
   onFile?: (file: File) => void;
+  errored?: boolean;
 }
 
 type FileDragDropState = {
@@ -37,14 +38,18 @@ export default class FileDragDrop extends React.Component<FileDragDropProps, Fil
   }
 
   render() {
+    const bg = this.props.errored ? 'bg-red-100' : 'bg-gray-100';
+    const border = this.props.errored ? 'border-red-200' : 'border-gray-200';
+    const label = this.props.errored ? 'text-red-600' : 'text-green-600';
+
     return (
       <Dropzone onDrop={this.handleDrop.bind(this)}>
         {({getRootProps, getInputProps, isDragActive}) => (
-          <div {...getRootProps({className: clsx('inline-block select-none cursor-pointer flex flex-col items-center justify-center min-w-48 min-h-20 py-1.5 rounded-lg bg-gray-100 border border-gray-200 shadow-md text-gray-500 hover:shadow-lg hover:text-gray-400', this.props.className)})}>
+          <div {...getRootProps({className: clsx('inline-block select-none cursor-pointer flex flex-col items-center justify-center min-w-48 min-h-20 py-1.5 rounded-lg border shadow-md text-gray-500 hover:shadow-lg hover:text-gray-400', this.props.className, bg, border)})}>
             <input {...getInputProps({className: 'sr-only'})}/>
             <Icon path={mdiFilePlusOutline} size="2rem"/>
             {this.state.file != null ? (
-              <span className="text-green-600 font-medium">{this.state.file.name}</span>
+              <span className={clsx(label, 'font-medium')}>{this.state.file.name}</span>
             ) : null}
             <p className="text-center text-sm">{isDragActive ? 'Drop the file to accept' : 'Drag a file or click to browse'}</p>
           </div>
