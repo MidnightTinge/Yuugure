@@ -96,7 +96,7 @@ export default function PageUpload(props: PageUploadProps) {
   }
 
   return (
-    <CenteredBlockPage>
+    <CenteredBlockPage cardBackground="bg-gray-50" cardBorder="border-gray-100">
       <>
         {!uploadResult ? (
           <>
