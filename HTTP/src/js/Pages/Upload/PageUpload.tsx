@@ -7,7 +7,7 @@ import Util from '../../classes/Util';
 import Button from '../../Components/Button';
 
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
-import FileInput from '../../Components/FileInput';
+import FileDragDrop from '../../Components/FileDragDrop';
 import Spinner from '../../Components/Spinner';
 import RatingGroup from './RatingGroup';
 
@@ -22,7 +22,7 @@ export default function PageUpload(props: PageUploadProps) {
   const [error, setError] = useState<string>(null);
   const [uploadResult, setUploadResult] = useState<UploadResult>(null);
 
-  const [files, setFiles] = useState<FileList>(null);
+  const [file, setFile] = useState<File>(null);
   const [fileErrors, setFileErrors] = useState<string>(null);
 
   const cbPrivate = useRef<HTMLInputElement>(null);
@@ -32,7 +32,7 @@ export default function PageUpload(props: PageUploadProps) {
 
   const [rating, setRating] = useState<string>('safe'); // TODO: Set based on account settings.
 
-  const canUpload = useMemo(() => files != null && files.length > 0 && tags.trim().length > 0, [files, tags]);
+  const canUpload = useMemo(() => (file?.size ?? 0) > 0 && tags.trim().length > 0, [file, tags]);
 
   function handleClick() {
     setUploading(true);
@@ -40,7 +40,7 @@ export default function PageUpload(props: PageUploadProps) {
     KY.post('/upload', {
       body: Util.formatFormData({
         private: String(cbPrivate.current.checked),
-        file: files[0],
+        file,
         tags,
         rating,
       }),
@@ -72,8 +72,8 @@ export default function PageUpload(props: PageUploadProps) {
       });
   }
 
-  function handleFiles(newFiles: FileList) {
-    setFiles(newFiles);
+  function handleFile(file: File) {
+    setFile(file);
   }
 
   function handleUploadNavigation(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
@@ -86,7 +86,7 @@ export default function PageUpload(props: PageUploadProps) {
     setError(null);
     setUploadResult(null);
     setFileErrors(null);
-    setFiles(null);
+    setFile(null);
     setTags('');
     setRating('safe'); // TODO: Set based on account settings.
   }
@@ -100,10 +100,11 @@ export default function PageUpload(props: PageUploadProps) {
       <>
         {!uploadResult ? (
           <>
-            <p className="text-lg text-center">Upload File</p>
+            <p className="text-lg text-center mb-2">Upload File</p>
             <form method="post" action="/upload" encType="multipart/form-data">
               <div className="mb-2">
-                <FileInput label="Image/Video" onFiles={handleFiles} invalid={fileErrors && fileErrors.length > 0} errorText={fileErrors}/>
+                {/*<FileInput label="Image/Video" onFiles={handleFiles} invalid={fileErrors && fileErrors.length > 0} errorText={fileErrors}/>*/}
+                <FileDragDrop className="mx-auto" onFile={handleFile}/>
               </div>
               <div className="my-2">
                 <label><input ref={cbPrivate} type="checkbox" name="private"/> Private</label>
