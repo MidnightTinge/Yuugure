@@ -159,7 +159,7 @@ export default function DeleteAction(props: DeleteActionProps) {
       <Container/>
       <Button variant="red" onClick={handleClick} disabled={deleting}>
         {deleting ? (
-          <><Spinner/> Deleting...</>
+          <><Spinner inline/> Deleting...</>
         ) : (
           <><Icon path={mdiDeleteForever} size={1} className="mr-1 relative bottom-px inline-block"/>Delete</>
         )}

@@ -101,7 +101,7 @@ export default function UpdateEmail(props: UpdateEmailProps) {
               <div className="text-right mt-2">
                 <Button type="button" variant="blue" onClick={handleCloseRequest}>Cancel</Button>
                 <Button type="submit" variant="red">{
-                  posting ? (<><Spinner/> Working...</>) : ('Confirm')
+                  posting ? (<><Spinner inline/> Working...</>) : ('Confirm')
                 }</Button>
               </div>
             </form>

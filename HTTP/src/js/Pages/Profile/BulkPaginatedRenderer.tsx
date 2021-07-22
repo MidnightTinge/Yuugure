@@ -79,7 +79,7 @@ export default function BulkPaginatedRenderer({endpoint, reducer, onError: _onEr
           <MediaPreviewBlock upload={uploads[index]}/>
         ) : (
           <div className="flex flex-col justify-center items-center">
-            <Spinner/> Loading...
+            <Spinner inline/> Loading...
           </div>
         )}
       </div>

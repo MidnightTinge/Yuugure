@@ -80,7 +80,7 @@ export default function ReportModal(props: ReportModalProps) {
             <div className="text-right mt-3">
               <Button type="submit" variant="green" disabled={posting}>
                 {posting ? (
-                  <><Spinner/> Sending...</>
+                  <><Spinner inline/> Sending...</>
                 ) : `Send`}
               </Button>
             </div>

@@ -78,7 +78,7 @@ export default function ConfirmPasswordModal(props: ConfirmPasswordModalProps) {
             <Button variant="gray" type="button" disabled={posting} onClick={handleCancelClick}>Cancel</Button>
             <Button variant="blue" type="submit" disabled={posting}>
               {!posting ? 'Submit' : (
-                <><Spinner/> Working...</>
+                <><Spinner inline/> Working...</>
               )}
             </Button>
           </div>

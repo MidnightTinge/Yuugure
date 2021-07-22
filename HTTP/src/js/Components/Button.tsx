@@ -4,6 +4,7 @@ import * as React from 'react';
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant: 'gray' | 'red' | 'yellow' | 'green' | 'blue' | 'indigo' | 'purple' | 'pink';
   link?: boolean;
+  block?: boolean;
 };
 
 const BUTTON_BASE = 'inline-block disabled:cursor-not-allowed';
@@ -35,7 +36,7 @@ const LINK_VARIANTS = Object.freeze({
 });
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>((props: ButtonProps, ref: React.ForwardedRef<HTMLButtonElement>) => {
-  let {variant = 'gray', link, ...buttonProps} = props;
+  let {variant = 'gray', link, block, ...buttonProps} = props;
 
   if (!BLOCK_VARIANTS[variant]) {
     // invalid variant supplied - reset to gray
@@ -46,7 +47,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>((props: ButtonPr
   const _variant = (link ? LINK_VARIANTS : BLOCK_VARIANTS)[variant];
 
   return (
-    <button {...buttonProps} ref={ref} className={clsx(buttonProps.className, BUTTON_BASE, _base, _variant)}>{props.children}</button>
+    <button {...buttonProps} ref={ref} className={clsx(buttonProps.className, BUTTON_BASE, _base, _variant, block && 'block w-full')}>{props.children}</button>
   );
 });
 

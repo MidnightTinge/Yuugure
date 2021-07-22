@@ -63,7 +63,7 @@ export default function Nav(props: NavProps) {
               <NavItem href={`/user/${authState.account.id}?settings`}>Profile</NavItem>
               {loggingOut ? (
                 <li className={`p-2 mr-1`}>
-                  <span className="text-gray-300 cursor-not-allowed select-none"><Spinner/> Logging out...</span>
+                  <span className="text-gray-300 cursor-not-allowed select-none"><Spinner inline/> Logging out...</span>
                 </li>
               ) : (
                 <NavItem href="/auth/logout" onClick={handleLogoutClick}>Logout</NavItem>

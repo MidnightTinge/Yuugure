@@ -116,8 +116,8 @@ export default function PageUpload(props: PageUploadProps) {
                 <RatingGroup rating={rating} onChange={setRating}/>
               </div>
               <div className="mt-2">
-                <Button type="button" variant="green" className="block w-full" onClick={handleClick} disabled={!canUpload}>
-                  {uploading ? (<><Spinner/> Uploading...</>) : `Upload`}
+                <Button type="button" variant="green" onClick={handleClick} disabled={!canUpload} block>
+                  {uploading ? (<><Spinner inline/> Uploading...</>) : `Upload`}
                 </Button>
               </div>
             </form>
@@ -126,7 +126,7 @@ export default function PageUpload(props: PageUploadProps) {
           <>
             <p className="text-lg text-center">File Uploaded</p>
             <p className="my-3">Your file has been uploaded successfully. Click <a href={`/view/${uploadResult.upload.upload.id}`} onClick={handleUploadNavigation} className="text-blue-500 hover:text-blue-600 focus:text-blue-500">here</a> to view it.</p>
-            <Button type="button" variant="blue" className="block w-full" onClick={handleFormReset}>Upload Another</Button>
+            <Button type="button" variant="blue" onClick={handleFormReset} block>Upload Another</Button>
             {uploadResult.notices.length > 0 ? (
               <>
                 <p className="mt-2 text-gray-700">Notice:</p>

@@ -128,8 +128,8 @@ export default function PageRegister(props: PageRegisterProps) {
         <FormBlock ref={txtPassword} type="password" name="password" autoComplete="new-password" className="mb-2" invalid={passwordInvalid.invalid} validationError={passwordInvalid.error} disabled={posting} required>Password</FormBlock>
         <FormBlock ref={txtRepeat} type="password" name="repeat" autoComplete="new-password" className="mb-4" invalid={repeatInvalid.invalid} validationError={repeatInvalid.error} disabled={posting} required>Repeat</FormBlock>
 
-        <Button type="submit" variant="green" disabled={posting}>
-          {posting ? (<><Spinner/> Creating account...</>) : `Register`}
+        <Button type="submit" variant="green" disabled={posting} block>
+          {posting ? (<><Spinner inline/> Creating account...</>) : `Register`}
         </Button>
         {error != null ? (
           <p className="text-red-500 text-sm text-center font-mono my-2">{error}</p>

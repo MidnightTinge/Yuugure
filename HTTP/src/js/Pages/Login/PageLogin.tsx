@@ -1,6 +1,6 @@
-import KY from '../../classes/KY';
 import * as React from 'react';
 import {FormEvent, useRef, useState} from 'react';
+import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
 import Button from '../../Components/Button';
@@ -86,8 +86,8 @@ export default function PageLogin(props: LoginProps) {
         <FormBlock ref={txtEmail} type="text" name="email" className="mb-2" autoComplete="email" invalid={emailInvalid} validationError={emailError} disabled={posting} required>Email</FormBlock>
         <FormBlock ref={txtPassword} type="password" name="password" className="mb-3" autoComplete="current-password" invalid={pwInvalid} validationError={pwError} disabled={posting} required>Password</FormBlock>
 
-        <Button type="submit" variant="green" disabled={posting}>
-          {posting ? (<><Spinner/> Logging in...</>) : `Log In`}
+        <Button type="submit" variant="green" disabled={posting} block>
+          {posting ? (<><Spinner inline/> Logging in...</>) : `Log In`}
         </Button>
         {error != null ? (
           <p className="text-red-500 text-sm text-center font-mono my-2">{error}</p>
