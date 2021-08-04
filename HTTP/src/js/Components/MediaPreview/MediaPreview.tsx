@@ -1,4 +1,4 @@
-import {mdiAlert, mdiBookmark, mdiBookmarkOutline, mdiChevronDownCircle, mdiChevronDownCircleOutline, mdiChevronUpCircle, mdiChevronUpCircleOutline, mdiEyeOff, mdiImage, mdiLock, mdiVideo} from '@mdi/js';
+import {mdiAlert, mdiBookmark, mdiBookmarkOutline, mdiChevronDownCircle, mdiChevronDownCircleOutline, mdiChevronUpCircle, mdiChevronUpCircleOutline, mdiEyeOff, mdiImage, mdiVideo} from '@mdi/js';
 import Icon from '@mdi/react';
 import clsx from 'clsx';
 import * as React from 'react';
