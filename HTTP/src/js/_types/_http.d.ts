@@ -163,3 +163,10 @@ type BulkPaginatedResponse = {
   uploads: BulkRenderableUpload;
   max: number;
 };
+
+type RateLimitResponse = {
+  maximum: number;
+  items: number;
+  period: number;
+  minimum_wait: number;
+};

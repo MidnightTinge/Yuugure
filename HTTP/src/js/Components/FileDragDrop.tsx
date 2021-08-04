@@ -28,7 +28,7 @@ export default class FileDragDrop extends React.Component<FileDragDropProps, Fil
     this.inputId = Util.mkid();
   }
 
-  handleDrop(files: File[]) {
+  handleDrop(files: File[]): void {
     this.setState({
       file: files[0],
     });
@@ -37,6 +37,7 @@ export default class FileDragDrop extends React.Component<FileDragDropProps, Fil
     }
   }
 
+  // eslint-disable-next-line
   render() {
     const bg = this.props.errored ? 'bg-red-100' : 'bg-gray-100';
     const border = this.props.errored ? 'border-red-200' : 'border-gray-200';

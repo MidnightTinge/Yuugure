@@ -10,7 +10,7 @@ export type ViewerCommentsProps = {
   //
 };
 
-export default function ViewerComments(props: ViewerCommentsProps) {
+export const ViewerComments: React.FC<ViewerCommentsProps> = () => {
   const authState = useAuthState();
   const {comments} = useContext(PageViewContext);
 
@@ -76,4 +76,6 @@ export default function ViewerComments(props: ViewerCommentsProps) {
       )}
     </PageViewContext.Consumer>
   );
-}
+};
+
+export default ViewerComments;

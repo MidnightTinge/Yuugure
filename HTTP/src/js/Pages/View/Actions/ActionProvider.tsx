@@ -10,7 +10,7 @@ export type ActionProviderProps = {
   onDeleteInitiated: () => void;
 };
 
-export default function ActionProvider({upload, onDeleteInitiated}: ActionProviderProps) {
+export const ActionProvider: React.FC<ActionProviderProps> = ({upload, onDeleteInitiated}: ActionProviderProps) => {
   const {authed, account} = useAuthState();
 
   return (
@@ -61,4 +61,6 @@ export default function ActionProvider({upload, onDeleteInitiated}: ActionProvid
       ) : null}
     </div>
   );
-}
+};
+
+export default ActionProvider;

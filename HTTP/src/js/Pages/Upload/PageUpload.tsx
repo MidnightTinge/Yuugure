@@ -15,7 +15,7 @@ export type PageUploadProps = {
   //
 };
 
-export default function PageUpload(props: PageUploadProps) {
+export const PageUpload: React.FC<PageUploadProps> = () => {
   const history = useHistory();
 
   const [uploading, setUploading] = useState(false);
@@ -44,14 +44,15 @@ export default function PageUpload(props: PageUploadProps) {
         tags,
         rating,
       }),
-    }).json<RouterResponse>().then(data => {
+    }).json<RouterResponse>()
+      .then(data => {
         const consumed = RouterResponseConsumer<UploadResult>(data);
         if (consumed.success) {
           setError(null);
           setFileErrors(null);
           setUploadResult({...consumed.data[0]});
         } else {
-          let [ur] = consumed.data;
+          const [ur] = consumed.data;
           setError(consumed.message);
 
           if ('file' in ur.inputErrors) {
@@ -120,7 +121,7 @@ export default function PageUpload(props: PageUploadProps) {
               </div>
               <div className="mt-2">
                 <Button type="button" variant="green" onClick={handleClick} disabled={!canUpload} block>
-                  {uploading ? (<><Spinner inline/> Uploading...</>) : `Upload`}
+                  {uploading ? (<><Spinner inline/> Uploading...</>) : 'Upload'}
                 </Button>
               </div>
             </form>
@@ -146,4 +147,6 @@ export default function PageUpload(props: PageUploadProps) {
       </>
     </CenteredBlockPage>
   );
-}
+};
+
+export default PageUpload;

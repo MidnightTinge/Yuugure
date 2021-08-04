@@ -67,6 +67,7 @@ const _default: AlertsState = {
   alerts: [],
 };
 
+// eslint-disable-next-line
 export default function useAlertReducer() {
   return useReducer(AlertReducer, {..._default}, () => ({..._default}));
 }

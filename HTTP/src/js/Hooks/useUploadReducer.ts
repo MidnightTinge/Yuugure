@@ -7,7 +7,7 @@ type UploadState = {
 };
 
 function UploadReducer(state: UploadState, action: { type: string, payload?: any }): UploadState {
-  let payload = Array.isArray(action.payload) ? action.payload : [action.payload];
+  const payload = Array.isArray(action.payload) ? action.payload : [action.payload];
 
   switch (action.type) {
     case 'add': {

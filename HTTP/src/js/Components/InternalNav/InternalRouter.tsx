@@ -9,7 +9,7 @@ export type InternalRouterProps = {
   defaultPath?: string;
 };
 
-export default function InternalRouter({children, defaultPath}: InternalRouterProps) {
+export const InternalRouter: React.FC<InternalRouterProps> = ({children, defaultPath}: InternalRouterProps) => {
   const loc = useLocation();
 
   let path: string = defaultPath;
@@ -23,4 +23,6 @@ export default function InternalRouter({children, defaultPath}: InternalRouterPr
   return (
     <InternalNavContext.Provider value={{path}} children={children}/>
   );
-}
+};
+
+export default InternalRouter;

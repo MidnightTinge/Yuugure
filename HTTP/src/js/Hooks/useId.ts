@@ -1,9 +1,6 @@
 import {useMemo} from 'react';
-import * as React from 'react';
 import Util from '../classes/Util';
 
-export default function useId() {
-  const id = useMemo(() => Util.mkid(), []);
-
-  return id;
+export default function useId(): string {
+  return useMemo(() => Util.mkid(), []);
 }

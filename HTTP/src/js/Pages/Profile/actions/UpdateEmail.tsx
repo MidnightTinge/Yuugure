@@ -1,4 +1,4 @@
-import {mdiBookmark, mdiCheckCircle} from '@mdi/js';
+import {mdiCheckCircle} from '@mdi/js';
 import Icon from '@mdi/react';
 import * as React from 'react';
 import {useRef, useState} from 'react';
@@ -15,7 +15,7 @@ export type UpdateEmailProps = {
   //
 };
 
-export default function UpdateEmail(props: UpdateEmailProps) {
+export const UpdateEmail: React.FC<UpdateEmailProps> = () => {
   const [showModal, setShowModal] = useState(false);
   const [posting, setPosting] = useState(false);
   const [posted, setPosted] = useState(false);
@@ -44,7 +44,7 @@ export default function UpdateEmail(props: UpdateEmailProps) {
         setError(consumed.message);
 
         // Set any input errors as necessary
-        let [authRes] = consumed.data;
+        const [authRes] = consumed.data;
         if (authRes) {
           if ('email' in authRes.inputErrors) {
             setEmailValidity({valid: false, error: authRes.inputErrors.email.join('\n')});
@@ -123,4 +123,6 @@ export default function UpdateEmail(props: UpdateEmailProps) {
       </div>
     </>
   );
-}
+};
+
+export default UpdateEmail;

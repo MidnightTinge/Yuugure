@@ -7,7 +7,7 @@ export type UploadsRendererProps = {
   errored: boolean;
 };
 
-export default function UploadsRenderer({uploads, errored}: UploadsRendererProps) {
+export const UploadsRenderer: React.FC<UploadsRendererProps> = ({uploads, errored}: UploadsRendererProps) => {
   function rowRenderer({key, index, style}: ListRowProps): React.ReactNode {
     return (
       <div key={key} style={style}>
@@ -36,4 +36,6 @@ export default function UploadsRenderer({uploads, errored}: UploadsRendererProps
       )}
     </div>
   );
-}
+};
+
+export default UploadsRenderer;

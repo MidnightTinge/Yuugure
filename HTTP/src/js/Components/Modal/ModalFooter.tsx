@@ -5,10 +5,12 @@ export type ModalFooterProps = React.HTMLProps<HTMLDivElement> & {
   children?: React.ReactFragment;
 };
 
-export default function ModalFooter(props: ModalFooterProps) {
-  let {children, className, ...elProps} = props;
+export const ModalFooter: React.FC<ModalFooterProps> = (props: ModalFooterProps) => {
+  const {children, className, ...elProps} = props;
 
   return (
     <div className={clsx('ModalFooter', className)} children={children} {...elProps}/>
   );
-}
+};
+
+export default ModalFooter;

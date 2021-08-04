@@ -6,9 +6,5 @@ type ModalContextProps = {
   onCloseRequest: (cs: CloseSource) => void;
 }
 
-export const CreateModalContext = (props?: ModalContextProps) => {
-  return namedContext('ModalContext', props);
-};
-
-export const ModalContext = CreateModalContext();
+export const ModalContext = namedContext<ModalContextProps>('ModalContext');
 export default ModalContext;

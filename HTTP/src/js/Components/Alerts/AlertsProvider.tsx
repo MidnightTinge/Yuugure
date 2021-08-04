@@ -20,16 +20,23 @@ type AlertContextProps = {
 
 export const AlertContext = namedContext<AlertContextProps>('AlertContext');
 
-export function useAlerts() {
+/**
+ * A hook that consumes the AlertContext
+ */
+export function useAlerts(): AlertContextProps {
   return useContext(AlertContext);
 }
 
-export default function AlertsProvider({children}: any) {
+type AlertsProviderProps = {
+  children: React.ReactNode;
+}
+
+export const AlertsProvider: React.FC<AlertsProviderProps> = ({children}: AlertsProviderProps) => {
   const [alerts, dispatch] = useAlertReducer();
   const ctxMemo = useMemo<AlertContextProps>(() => {
     return {
       add: (alert: _Alert) => {
-        let payload: Alert = {
+        const payload: Alert = {
           ...alert,
           dismissable: alert.dismissable !== false, // default to true
           show: true,
@@ -44,7 +51,7 @@ export default function AlertsProvider({children}: any) {
         return payload;
       },
       update: (alert: Alert) => {
-        let payload: Alert = {...alert};
+        const payload: Alert = {...alert};
         dispatch({
           type: ACTIONS.MODIFY,
           payload,
@@ -85,4 +92,6 @@ export default function AlertsProvider({children}: any) {
       {createPortal(<AlertContainer alerts={alerts.alerts} onClose={handleAlertClosed} onCloseRequest={handleCloseRequest}/>, document.body)}
     </>
   );
-}
+};
+
+export default AlertsProvider;

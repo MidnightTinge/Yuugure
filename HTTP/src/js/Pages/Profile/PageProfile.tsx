@@ -1,12 +1,10 @@
-import {mdiAccountCog, mdiAlert, mdiAlertOctagon, mdiBookmark, mdiCardAccountDetails, mdiCheckCircle, mdiFolderOpen} from '@mdi/js';
+import {mdiAccountCog, mdiAlert, mdiBookmark, mdiCardAccountDetails, mdiCheckCircle, mdiFolderOpen} from '@mdi/js';
 import Icon from '@mdi/react';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {useParams} from 'react-router';
 import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
-
-import {useAlerts} from '../../Components/Alerts/AlertsProvider';
 import Button from '../../Components/Button';
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
@@ -30,14 +28,12 @@ export type PageProfileProps = {
   self?: boolean;
 };
 
-export default function PageProfile(props: PageProfileProps) {
+export const PageProfile: React.FC<PageProfileProps> = (props: PageProfileProps) => {
   const {ws, rooms} = useContext(WebSocketContext);
 
   const {state: authState} = useContext(AuthStateContext);
   const params = useParams<{ accountId: string }>();
   const navigator = useInternalNavigator(true);
-
-  const alerts = useAlerts();
 
   const [fetching, setFetching] = useState(false);
   const [fetched, setFetched] = useState(false);
@@ -86,7 +82,7 @@ export default function PageProfile(props: PageProfileProps) {
       uploadActions.remove(id);
     }
 
-    let id = accountId === '@me' ? (authState.authed ? authState.account.id : null) : accountId;
+    const id = accountId === '@me' ? (authState.authed ? authState.account.id : null) : accountId;
     if (id !== null && ws != null) {
       ws.addEventHandler('upload', handleUpload);
       ws.addEventHandler('remove_upload', handleRemoveUpload);
@@ -265,4 +261,6 @@ export default function PageProfile(props: PageProfileProps) {
       )}
     </>
   );
-}
+};
+
+export default PageProfile;

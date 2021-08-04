@@ -19,7 +19,7 @@ export class WS extends EventableBase {
     this.#url = url;
   }
 
-  emit(type: string, payload?: any) {
+  emit(type: string, payload?: any): void {
     this.send(Object.assign(payload == null ? {} : payload, {type}));
   }
 
@@ -36,7 +36,7 @@ export class WS extends EventableBase {
     }
   }
 
-  connect() {
+  connect(): void {
     if (this.#ws != null) {
       this.clearHandlers();
       try {
@@ -52,7 +52,7 @@ export class WS extends EventableBase {
     this.addHandlers();
   }
 
-  disconnect() {
+  disconnect(): void {
     this.#disconnecting = true;
     if (this.#ws != null) {
       this.#ws.close();
@@ -85,11 +85,11 @@ export class WS extends EventableBase {
     this.#ws = null;
     this.invoke('close', e);
     if (!this.#disconnecting) {
-      let cancelMaybe: CancelHolder = {
+      const cancelMaybe: CancelHolder = {
         cancel: false,
       };
 
-      let timeout = (((this.#connectionAttempts ** 1.5) / 2 >> 0) * 1000 + (Math.random() * 500)) >> 0;
+      const timeout = (((this.#connectionAttempts ** 1.5) / 2 >> 0) * 1000 + (Math.random() * 500)) >> 0;
       this.invoke('timeout', this.#connectionAttempts, timeout, cancelMaybe);
 
       if (cancelMaybe.cancel === true) {

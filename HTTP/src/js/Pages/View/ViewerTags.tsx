@@ -8,7 +8,7 @@ export type ViewerTagsProps = {
   //
 };
 
-export default function ViewerTags(props: ViewerTagsProps) {
+export const ViewerTags: React.FC<ViewerTagsProps> = () => {
   const history = useHistory();
   const {upload} = useContext(PageViewContext);
 
@@ -17,9 +17,9 @@ export default function ViewerTags(props: ViewerTagsProps) {
       return {user: [], system: []};
     }
 
-    let user = [];
-    let system = [];
-    for (let tag of upload.tags) {
+    const user = [];
+    const system = [];
+    for (const tag of upload.tags) {
       if (tag.category === 'userland') {
         user.push(tag);
       } else {
@@ -46,4 +46,6 @@ export default function ViewerTags(props: ViewerTagsProps) {
       {tags.user.map(tag => (<div key={tag.id}><a href={`/search?q=${encodeURIComponent(tag.name)}`} onClick={makeRedirector(`/search?q=${encodeURIComponent(tag.name)}`)} className="whitespace-pre-wrap break-all text-gray-700 hover:underline hover:text-gray-500" data-tag={tag.id} data-category={tag.category} data-name={tag.name}>{tag.name}</a></div>))}
     </DetailsBox>
   );
-}
+};
+
+export default ViewerTags;

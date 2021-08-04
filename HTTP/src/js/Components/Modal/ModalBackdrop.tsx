@@ -10,8 +10,8 @@ export type ModalBackdropProps = React.HTMLAttributes<HTMLDivElement> & {
   onBackdropCloseRequest: ModalBackdropCloseRequest;
 };
 
-export default function ModalBackdrop(props: ModalBackdropProps) {
-  let {onBackdropCloseRequest, children, className, ...elProps} = props;
+export const ModalBackdrop: React.FC<ModalBackdropProps> = (props: ModalBackdropProps) => {
+  const {onBackdropCloseRequest, children, className, ...elProps} = props;
 
   // Attach event listeners to the window so that we can trigger a backdrop close request with
   // proper context to support better overall UX, e.g. only send `KEYBOARD` if we don't have an
@@ -56,4 +56,6 @@ export default function ModalBackdrop(props: ModalBackdropProps) {
   return (
     <div className={clsx('ModalBackdrop', className)} children={children} {...elProps}/>
   );
-}
+};
+
+export default ModalBackdrop;

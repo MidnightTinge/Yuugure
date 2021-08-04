@@ -9,8 +9,8 @@ export type ModalHeaderProps = React.HTMLProps<HTMLDivElement> & {
   children?: React.ReactFragment;
 };
 
-export default function ModalHeader(props: ModalHeaderProps) {
-  let {children, className, ...elProps} = (props as any);
+export const ModalHeader: React.FC<ModalHeaderProps> = (props: ModalHeaderProps) => {
+  const {children, className, ...elProps} = (props as any);
 
   return (
     <ModalContext.Consumer>{ctx => (
@@ -22,4 +22,6 @@ export default function ModalHeader(props: ModalHeaderProps) {
       </div>
     )}</ModalContext.Consumer>
   );
-}
+};
+
+export default ModalHeader;

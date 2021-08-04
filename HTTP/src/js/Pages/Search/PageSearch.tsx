@@ -28,7 +28,7 @@ function parseLocation(): Record<string, any> {
     return (document.location.search.startsWith('?') ? document.location.search.substring(1) : document.location.search)
       .split('&')
       .map(str => str.split('='))
-      .reduce((map: Record<string, any>, val, idx, arr) => {
+      .reduce((map: Record<string, any>, val) => {
         map[decodeURIComponent(val[0])] = decodeURIComponent(val[1]);
         return map;
       }, {});
@@ -36,7 +36,7 @@ function parseLocation(): Record<string, any> {
   return {};
 }
 
-export default function PageSearch(props: PageSearchProps) {
+export const PageSearch: React.FC<PageSearchProps> = () => {
   const history = useHistory();
   const location = useLocation();
   const [query, setQuery] = useState<string>(null);
@@ -204,4 +204,6 @@ export default function PageSearch(props: PageSearchProps) {
       </div>
     )
   );
-}
+};
+
+export default PageSearch;

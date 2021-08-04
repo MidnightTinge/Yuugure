@@ -1,7 +1,7 @@
-import KY from '../../classes/KY';
 import * as React from 'react';
 import {useState} from 'react';
-import {AutoSizer, IndexRange, InfiniteLoader, InfiniteLoaderChildProps, List, ListRowProps, Size} from 'react-virtualized';
+import {AutoSizer, InfiniteLoader, InfiniteLoaderChildProps, List, ListRowProps, Size} from 'react-virtualized';
+import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
 
@@ -17,7 +17,7 @@ export type BulkPaginatedRendererProps = {
   setMax?: (max: number) => void;
 };
 
-export default function BulkPaginatedRenderer({endpoint, reducer, onError: _onError, onFetchState: _onFetchState, setMax: _setMax}: BulkPaginatedRendererProps) {
+export const BulkPaginatedRenderer: React.FC<BulkPaginatedRendererProps> = ({endpoint, reducer, onError: _onError, onFetchState: _onFetchState, setMax: _setMax}: BulkPaginatedRendererProps) => {
   const [{uploads}, /* ignored */, uploadActions] = reducer;
   const [bottomed, setBottomed] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -30,7 +30,7 @@ export default function BulkPaginatedRenderer({endpoint, reducer, onError: _onEr
   const rowCount = bottomed ? uploads.length : uploads.length + 1;
   const isRowLoaded = ({index}: any) => bottomed || index < uploads.length;
 
-  async function loadMoreRows(_: IndexRange) {
+  async function loadMoreRows() {
     if (fetching || bottomed) {
       return;
     }
@@ -97,7 +97,9 @@ export default function BulkPaginatedRenderer({endpoint, reducer, onError: _onEr
       )}
     </InfiniteLoader>
   );
-}
+};
+
+export default BulkPaginatedRenderer;
 
 function noop() {
   //

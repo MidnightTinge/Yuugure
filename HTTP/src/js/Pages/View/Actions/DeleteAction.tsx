@@ -22,7 +22,7 @@ export type DeleteActionProps = {
   addReason?: boolean;
 };
 
-export default function DeleteAction(props: DeleteActionProps) {
+export const DeleteAction: React.FC<DeleteActionProps> = (props: DeleteActionProps) => {
   const [deleting, setDeleting] = useState(false);
   const alerts = useAlerts();
   const mounted = useRef<boolean>(null);
@@ -49,7 +49,7 @@ export default function DeleteAction(props: DeleteActionProps) {
     </InputModal>
   );
 
-  const CompleteModal = ({isOpen, onResolve}: InstanceProps<string>) => (
+  const CompleteModal = ({isOpen}: InstanceProps<string>) => (
     <Modal show={isOpen}>
       <Modal.Header>Deleted</Modal.Header>
       <Modal.Body>
@@ -63,7 +63,7 @@ export default function DeleteAction(props: DeleteActionProps) {
 
       props.onDeleteInitiated();
       setDeleting(true);
-      let opts: Options = reason != null ? (
+      const opts: Options = reason != null ? (
         {
           body: Util.formatUrlEncodedBody({
             reason,
@@ -166,4 +166,6 @@ export default function DeleteAction(props: DeleteActionProps) {
       </Button>
     </>
   );
-}
+};
+
+export default DeleteAction;

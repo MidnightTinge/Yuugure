@@ -12,7 +12,7 @@ export type PageRendererProps = {
   authControlled?: true;
 };
 
-export default function PageRenderer(props: PageRendererProps) {
+export const PageRenderer: React.FC<PageRendererProps> = (props: PageRendererProps) => {
   const {state: authState} = useContext(AuthStateContext);
 
   let toRender = props.children;
@@ -34,4 +34,6 @@ export default function PageRenderer(props: PageRendererProps) {
       {toRender}
     </div>
   );
-}
+};
+
+export default PageRenderer;

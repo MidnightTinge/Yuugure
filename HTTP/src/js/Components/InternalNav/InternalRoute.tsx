@@ -7,7 +7,7 @@ export type InternalRouteProps = {
   exact?: true;
 }
 
-export default function InternalRoute(props: InternalRouteProps) {
+export const InternalRoute: React.FC<InternalRouteProps> = (props: InternalRouteProps) => {
   return (
     <InternalNavContext.Consumer>
       {ctx => (
@@ -15,9 +15,10 @@ export default function InternalRoute(props: InternalRouteProps) {
       )}
     </InternalNavContext.Consumer>
   );
-}
+};
+export default InternalRoute;
 
-export function checkPath(props: InternalRouteProps, path: string) {
+export function checkPath(props: InternalRouteProps, path: string): boolean {
   if (props.path === '*') {
     return true;
   }

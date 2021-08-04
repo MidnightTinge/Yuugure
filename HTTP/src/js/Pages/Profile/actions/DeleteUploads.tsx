@@ -2,13 +2,13 @@ import * as React from 'react';
 import {Container, create} from 'react-modal-promise';
 import {InstanceProps} from 'react-modal-promise/lib/types';
 import Button from '../../../Components/Button';
-import {makeDangerousPasswordConfirmation, ResourceDeletion} from './DangerousActionHelper';
+import ResourceDeletion, {makeDangerousPasswordConfirmation} from './DangerousActionHelper';
 
 export type DeleteUploadsProps = {
   //
 };
 
-export default function DeleteUploads(props: DeleteUploadsProps) {
+export const DeleteUploads: React.FC<DeleteUploadsProps> = () => {
   // WARNING: This is a destructive element - it initiates deletion on mount.
   const DeletionStatusModal = ({isOpen, onResolve, confirmationToken}: InstanceProps<any> & { confirmationToken: string }) => {
     return (
@@ -37,4 +37,6 @@ export default function DeleteUploads(props: DeleteUploadsProps) {
       </div>
     </>
   );
-}
+};
+
+export default DeleteUploads;

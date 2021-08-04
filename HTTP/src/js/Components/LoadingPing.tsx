@@ -6,10 +6,12 @@ export type LoadingPingProps = {
   path?: string;
 };
 
-export default function LoadingPing(props: LoadingPingProps) {
+export const LoadingPing: React.FC<LoadingPingProps> = (props: LoadingPingProps) => {
   return (
     <>
       <Icon path={props.path || mdiTimerSand} size={5} className="relative animate-ping" aria-label="Loading..."/>
     </>
   );
-}
+};
+
+export default LoadingPing;

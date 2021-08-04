@@ -21,7 +21,7 @@ function defaultFormatter(prefix: string) {
   return (page: number) => `${prefix}&page=${page}`;
 }
 
-export default function Pagination(props: PaginationProps) {
+export const Pagination: React.FC<PaginationProps> = (props: PaginationProps) => {
   const formatter: ((page: number) => string) = typeof props.urlFormat !== 'function' ? defaultFormatter(props.urlFormat) : props.urlFormat;
 
   function makePaginationUrl(page: number) {
@@ -38,21 +38,21 @@ export default function Pagination(props: PaginationProps) {
   }
 
   // Pagination rendering props
-  let curPage = props.current;
-  let lastPage = props.max;
+  const curPage = props.current;
+  const lastPage = props.max;
 
-  let pgExtend = lastPage > 10;
-  let stepStart = curPage < 10 ? 1 : curPage - 4;
-  let stepEnd = curPage < 10 ? (Math.min(lastPage, 10)) : (Math.min(curPage + 5, lastPage));
+  const pgExtend = lastPage > 10;
+  const stepStart = curPage < 10 ? 1 : curPage - 4;
+  const stepEnd = curPage < 10 ? (Math.min(lastPage, 10)) : (Math.min(curPage + 5, lastPage));
 
-  let onFirstPage = curPage <= 1;
-  let onLastPage = curPage >= lastPage;
+  const onFirstPage = curPage <= 1;
+  const onLastPage = curPage >= lastPage;
 
   const leftFloat = onFirstPage ? leftDisabled : (<a href={makePaginationUrl(1)} onClick={makeNavigator(1)} className="Floating" aria-label="First Page">{leftIcon}</a>);
   const rightFloat = onLastPage ? rightDisabled : (<a href={makePaginationUrl(lastPage)} onClick={makeNavigator(lastPage)} className="Floating" aria-label="Last Page">{rightIcon}</a>);
 
   const pages = useMemo(() => {
-    let pages = [];
+    const pages = [];
 
     for (let i = stepStart; i <= stepEnd; i++) {
       pages.push(
@@ -72,4 +72,6 @@ export default function Pagination(props: PaginationProps) {
       {pgExtend ? rightFloat : null}
     </div>
   );
-}
+};
+
+export default Pagination;

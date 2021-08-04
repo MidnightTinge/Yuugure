@@ -7,7 +7,7 @@ export type InternalSwitchProps = {
   children: Arrayable<React.ReactElement<InternalRouteProps>>
 };
 
-export default function InternalSwitch(props: InternalSwitchProps) {
+export const InternalSwitch: React.FC<InternalSwitchProps> = (props: InternalSwitchProps) => {
   return (
     <InternalNavContext.Consumer>
       {context => {
@@ -25,4 +25,6 @@ export default function InternalSwitch(props: InternalSwitchProps) {
       }}
     </InternalNavContext.Consumer>
   );
-}
+};
+
+export default InternalSwitch;

@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import * as React from 'react';
 import {ForwardedRef} from 'react';
 
-export type FormBlockProps<T = any> = {
+export type FormBlockProps = {
   type: string;
   name: string;
   children?: React.ReactElement | React.ReactElement[] | string;

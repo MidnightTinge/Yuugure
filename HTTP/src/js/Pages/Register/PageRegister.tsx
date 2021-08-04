@@ -1,6 +1,6 @@
-import KY from '../../classes/KY';
 import * as React from 'react';
 import {FormEvent, useRef, useState} from 'react';
+import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
 import Button from '../../Components/Button';
@@ -18,7 +18,7 @@ export type PageRegisterProps = {
   //
 };
 
-export default function PageRegister(props: PageRegisterProps) {
+export const PageRegister: React.FC<PageRegisterProps> = () => {
 
   const txtEmail = useRef<HTMLInputElement>(null);
   const txtUsername = useRef<HTMLInputElement>(null);
@@ -50,7 +50,7 @@ export default function PageRegister(props: PageRegisterProps) {
         setError(consumed.message);
       }
 
-      let [authRes] = consumed.data;
+      const [authRes] = consumed.data;
       if (authRes.authed) {
         setEmailInvalid({invalid: false, error: null});
         setUsernameInvalid({invalid: false, error: null});
@@ -129,7 +129,7 @@ export default function PageRegister(props: PageRegisterProps) {
         <FormBlock ref={txtRepeat} type="password" name="repeat" autoComplete="new-password" className="mb-4" invalid={repeatInvalid.invalid} validationError={repeatInvalid.error} disabled={posting} required>Repeat</FormBlock>
 
         <Button type="submit" variant="green" disabled={posting} block>
-          {posting ? (<><Spinner inline/> Creating account...</>) : `Register`}
+          {posting ? (<><Spinner inline/> Creating account...</>) : 'Register'}
         </Button>
         {error != null ? (
           <p className="text-red-500 text-sm text-center font-mono my-2">{error}</p>
@@ -141,4 +141,6 @@ export default function PageRegister(props: PageRegisterProps) {
       </form>
     </CenteredBlockPage>
   );
-}
+};
+
+export default PageRegister;

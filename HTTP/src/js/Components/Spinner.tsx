@@ -10,8 +10,10 @@ export type SpinnerProps = {
   className?: string;
 };
 
-export default function Spinner({size = 1, className, spin = true, inline = false}: SpinnerProps) {
+export const Spinner: React.FC<SpinnerProps> = ({size = 1, className, spin = true, inline = false}: SpinnerProps) => {
   return (
     <Icon path={mdiLoading} size={size} className={clsx(className, inline && 'inline-block mr-px relative bottom-px')} spin={spin}/>
   );
-}
+};
+
+export default Spinner;

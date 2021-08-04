@@ -13,7 +13,7 @@ export type ConfirmPasswordModalProps = {
   show: boolean;
 };
 
-export default function ConfirmPasswordModal(props: ConfirmPasswordModalProps) {
+export const ConfirmPasswordModal: React.FC<ConfirmPasswordModalProps> = (props: ConfirmPasswordModalProps) => {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string>(null);
   const [pwValidity, setPwValidity] = useState<InputValidity>({valid: true, error: null});
@@ -32,7 +32,7 @@ export default function ConfirmPasswordModal(props: ConfirmPasswordModalProps) {
     }).json<RouterResponse>().then(data => {
       const consumed = RouterResponseConsumer<AuthConfirmResponse>(data);
       if (consumed.success) {
-        let [authRes] = consumed.data;
+        const [authRes] = consumed.data;
         if (!authRes.authenticated) {
           if ('password' in authRes.inputErrors) {
             setPwValidity({valid: false, error: authRes.inputErrors.password.join('\n')});
@@ -86,4 +86,6 @@ export default function ConfirmPasswordModal(props: ConfirmPasswordModalProps) {
       </Modal.Body>
     </Modal>
   );
-}
+};
+
+export default ConfirmPasswordModal;

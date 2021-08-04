@@ -13,7 +13,7 @@ export type LoginProps = {
   //
 };
 
-export default function PageLogin(props: LoginProps) {
+export const PageLogin: React.FC<LoginProps> = () => {
   const txtEmail = useRef<HTMLInputElement>(null);
   const txtPassword = useRef<HTMLInputElement>(null);
 
@@ -38,7 +38,7 @@ export default function PageLogin(props: LoginProps) {
     }).json<RouterResponse>().then(data => {
       const consumed = RouterResponseConsumer<AuthResponse>(data);
       if (consumed.success) {
-        let [authRes] = consumed.data;
+        const [authRes] = consumed.data;
         if (authRes.authed) {
           setPwInvalid(false);
           setEmailInvalid(false);
@@ -52,7 +52,7 @@ export default function PageLogin(props: LoginProps) {
         setError(consumed.message);
       }
 
-      let [authRes] = consumed.data;
+      const [authRes] = consumed.data;
       if ('email' in authRes.inputErrors) {
         setEmailInvalid(true);
         setEmailError(authRes.inputErrors.email.join('\n'));
@@ -87,7 +87,7 @@ export default function PageLogin(props: LoginProps) {
         <FormBlock ref={txtPassword} type="password" name="password" className="mb-3" autoComplete="current-password" invalid={pwInvalid} validationError={pwError} disabled={posting} required>Password</FormBlock>
 
         <Button type="submit" variant="green" disabled={posting} block>
-          {posting ? (<><Spinner inline/> Logging in...</>) : `Log In`}
+          {posting ? (<><Spinner inline/> Logging in...</>) : 'Log In'}
         </Button>
         {error != null ? (
           <p className="text-red-500 text-sm text-center font-mono my-2">{error}</p>
@@ -99,4 +99,6 @@ export default function PageLogin(props: LoginProps) {
       </form>
     </CenteredBlockPage>
   );
-}
+};
+
+export default PageLogin;

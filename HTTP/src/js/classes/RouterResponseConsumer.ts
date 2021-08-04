@@ -31,7 +31,7 @@ export const MESSAGES: Readonly<Record<number, string>> = Object.freeze({
 
 export default function RouterResponseConsumer<T = any>(response: RouterResponse<T>): ConsumedRouterResponse<T> {
   if (response) {
-    let data: T[] = (Array.isArray(response.data)) ? response.data : [];
+    const data: T[] = (Array.isArray(response.data)) ? response.data : [];
 
     let message;
     if (Array.isArray(response.messages) && response.messages.length > 0) {

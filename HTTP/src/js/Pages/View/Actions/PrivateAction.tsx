@@ -12,7 +12,7 @@ export type PrivateActionProps = {
   checked: boolean;
 };
 
-export default function PrivateAction({upload, checked}: PrivateActionProps) {
+export const PrivateAction: React.FC<PrivateActionProps> = ({upload, checked}: PrivateActionProps) => {
   const [posting, setPosting] = useState(false);
 
   function handleChange(checked: boolean) {
@@ -38,4 +38,6 @@ export default function PrivateAction({upload, checked}: PrivateActionProps) {
   return (
     <ToggleSwitch checked={checked} onChange={handleChange} loading={posting}><Icon path={mdiEyeOff} size={1} className="mr-1 relative bottom-px inline-block"/>Private</ToggleSwitch>
   );
-}
+};
+
+export default PrivateAction;

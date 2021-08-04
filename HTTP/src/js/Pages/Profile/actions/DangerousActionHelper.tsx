@@ -1,8 +1,8 @@
-import KY from '../../../classes/KY';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {create} from 'react-modal-promise';
 import {InstanceProps} from 'react-modal-promise/lib/types';
+import KY from '../../../classes/KY';
 import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
 import Util from '../../../classes/Util';
 
@@ -55,7 +55,7 @@ type DeleteStatusProps = {
  * @param props
  * @constructor
  */
-export function ResourceDeletion(props: DeleteStatusProps) {
+export const ResourceDeletion: React.FC<DeleteStatusProps> = (props: DeleteStatusProps) => {
   const [posting, setPosting] = useState(false);
   const [posted, setPosted] = useState(false);
   const [res, setRes] = useState<string>(null);
@@ -99,7 +99,9 @@ export function ResourceDeletion(props: DeleteStatusProps) {
       </Modal.Body>
     </Modal>
   );
-}
+};
+
+export default ResourceDeletion;
 
 function capitalize(str: string) {
   if (!str) return '';

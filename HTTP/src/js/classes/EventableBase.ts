@@ -19,8 +19,8 @@ export class EventableBase {
     });
   }
 
-  invoke(eventName: string, ...args: any[]) {
-    for (let handler of this._events[eventName]) {
+  invoke(eventName: string, ...args: any[]): void {
+    for (const handler of this._events[eventName]) {
       try {
         handler.apply(window, args);
       } catch (e) {
@@ -29,17 +29,17 @@ export class EventableBase {
     }
   }
 
-  on(eventName: string, handler: Handler) {
+  on(eventName: string, handler: Handler): this {
     return this.addEventHandler(eventName, handler);
   }
 
-  addEventHandler(eventName: string, handler: Handler) {
+  addEventHandler(eventName: string, handler: Handler): this {
     this._events[eventName].push(handler);
 
     return this;
   }
 
-  removeEventHandler(eventName: string, handler: Handler) {
+  removeEventHandler(eventName: string, handler: Handler): boolean {
     for (let i = 0; i < this._events[eventName].length; i++) {
       if (this._events[eventName][i] === handler) {
         this._events[eventName].splice(i, 1);

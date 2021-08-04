@@ -1,11 +1,13 @@
 import ParseBinaryPacket from './ParseBinaryPacket';
 import WS from './WS';
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const ACK = 1;
 const UNKNOWN_TYPE = 99;
 
 const ACK_SUB = 1;
 const ACK_UNSUB = 2;
+/* eslint-enable */
 
 /**
  * A helper class that interfaces with our WebSocket class and manages room state.
@@ -17,7 +19,7 @@ export default class RoomHelper {
   constructor(ws: WS) {
     this._ws = ws;
     this._ws.addEventHandler('open', () => {
-      for (let [room] of Object.entries(this._rooms)) {
+      for (const [room] of Object.entries(this._rooms)) {
         this._ws.emit('sub', {room});
       }
     });
@@ -34,9 +36,9 @@ export default class RoomHelper {
     });
   }
 
-  _handleBlobResponse(data: ArrayBuffer) {
-    let bytes = new Int8Array(data);
-    let parsed = ParseBinaryPacket(bytes);
+  _handleBlobResponse(data: ArrayBuffer): void {
+    const bytes = new Int8Array(data);
+    const parsed = ParseBinaryPacket(bytes);
     if (parsed) {
       if (parsed.type === ACK) {
         if (parsed.header[0] === ACK_SUB) {
@@ -48,12 +50,12 @@ export default class RoomHelper {
     }
   }
 
-  join(room: string) {
+  join(room: string): void {
     this._ws.emit('sub', {room});
     this._rooms[room] = true;
   }
 
-  leave(room: string) {
+  leave(room: string): void {
     this._ws.emit('unsub', {room});
     this._rooms[room] = false;
     delete this._rooms[room];
@@ -67,7 +69,7 @@ export default class RoomHelper {
  * @param bytes The bytes to convert to a string
  * @author https://github.com/pascaldekloe
  */
-function decodeUTF8(bytes: number[]) {
+function decodeUTF8(bytes: number[]): string {
   // https://gist.github.com/pascaldekloe/62546103a1576803dade9269ccf76330#file-utf8-js-L33
   let i = 0, s = '';
   while (i < bytes.length) {

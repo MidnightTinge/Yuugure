@@ -5,7 +5,7 @@ export type MediaPreviewBlockProps = {
   upload: RenderableUpload;
 };
 
-export default function MediaPreviewBlock({upload}: MediaPreviewBlockProps) {
+export const MediaPreviewBlock: React.FC<MediaPreviewBlockProps> = ({upload}: MediaPreviewBlockProps) => {
   return (
     <div className="flex flex-row">
       <div className="flex-shrink flex-grow-0">
@@ -31,4 +31,6 @@ export default function MediaPreviewBlock({upload}: MediaPreviewBlockProps) {
       </div>
     </div>
   );
-}
+};
+
+export default MediaPreviewBlock;

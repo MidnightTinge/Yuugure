@@ -1,7 +1,7 @@
-import KY from '../../classes/KY';
 import * as React from 'react';
 import {useContext, useEffect, useReducer} from 'react';
 import {useHistory} from 'react-router-dom';
+import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
 import Util from '../../classes/Util';
 
@@ -36,7 +36,7 @@ function IndexUploadReducer(state: IndexUploadsState, action: ReducerAction): In
   return state;
 }
 
-export default function PageIndex(props: PageIndexProps) {
+export const PageIndex: React.FC<PageIndexProps> = () => {
   const [indexState, indexStateD] = useReducer(IndexUploadReducer, {uploads: [], fetching: true, error: null});
   const {state} = useContext(AuthStateContext);
   const history = useHistory();
@@ -82,4 +82,7 @@ export default function PageIndex(props: PageIndexProps) {
       </div>
     )
   );
-}
+};
+
+export default PageIndex;
+

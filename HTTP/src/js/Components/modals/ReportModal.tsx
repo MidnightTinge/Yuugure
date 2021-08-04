@@ -1,4 +1,4 @@
-import {mdiAlertOctagon, mdiCheckCircle} from '@mdi/js';
+import {mdiCheckCircle} from '@mdi/js';
 import Icon from '@mdi/react';
 import * as React from 'react';
 import {useMemo, useState} from 'react';
@@ -17,7 +17,7 @@ export type ReportModalProps = & {
   onCloseRequest: (cs: CloseSource, posting: boolean) => void;
 };
 
-export default function ReportModal(props: ReportModalProps) {
+export const ReportModal: React.FC<ReportModalProps> = (props: ReportModalProps) => {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string>(null);
   const [reported, setReported] = useState<boolean>(false);
@@ -35,7 +35,7 @@ export default function ReportModal(props: ReportModalProps) {
     }).json<RouterResponse>().then(data => {
       const consumed = RouterResponseConsumer<ReportResponse>(data);
       if (consumed.success) {
-        let [report] = consumed.data;
+        const [report] = consumed.data;
         setError(null);
         setReported(true);
         if (typeof props.onReportSent === 'function') {
@@ -75,13 +75,13 @@ export default function ReportModal(props: ReportModalProps) {
           <form method="post" action={`/api/${props.targetType}/${props.targetId}`} onSubmit={handleSubmit}>
             <div>
               <label htmlFor={`${id}`}>Reason:</label>
-              <textarea ref={txtReason} id={id} rows={5} disabled={posting} name="reason" className={`block w-full rounded-md shadow border bg-gray-50 border-gray-300 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-200`} placeholder="Breaks rule #3" required/>
+              <textarea ref={txtReason} id={id} rows={5} disabled={posting} name="reason" className={'block w-full rounded-md shadow border bg-gray-50 border-gray-300 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-200'} placeholder="Breaks rule #3" required/>
             </div>
             <div className="text-right mt-3">
               <Button type="submit" variant="green" disabled={posting}>
                 {posting ? (
                   <><Spinner inline/> Sending...</>
-                ) : `Send`}
+                ) : 'Send'}
               </Button>
             </div>
           </form>
@@ -94,4 +94,6 @@ export default function ReportModal(props: ReportModalProps) {
       </Modal.Body>
     </Modal>
   );
-}
+};
+
+export default ReportModal;

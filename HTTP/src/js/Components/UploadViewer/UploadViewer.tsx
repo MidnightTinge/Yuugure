@@ -8,7 +8,7 @@ export type UploadViewerProps = {
   censored?: boolean;
 };
 
-export default function UploadViewer({upload, media, constrained = true, censored = false}: UploadViewerProps) {
+export const UploadViewer: React.FC<UploadViewerProps> = ({upload, media, constrained = true, censored = false}: UploadViewerProps) => {
   return (
     <div className={`MediaViewer ${constrained ? 'constrained' : ''}`.trim()}>
       <div className="MediaObject">
@@ -16,4 +16,6 @@ export default function UploadViewer({upload, media, constrained = true, censore
       </div>
     </div>
   );
-}
+};
+
+export default UploadViewer;

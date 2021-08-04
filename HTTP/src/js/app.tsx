@@ -2,7 +2,6 @@ import * as React from 'react';
 import {useMemo} from 'react';
 import {render} from 'react-dom';
 import {QueryClient, QueryClientProvider} from 'react-query';
-
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import AlertsProvider from './Components/Alerts/AlertsProvider';
 import PageRenderer from './Components/PageRenderer';

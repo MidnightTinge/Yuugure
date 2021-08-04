@@ -1,4 +1,4 @@
-/*! Animation helpers pulled from https://stackoverflow.com/a/54114180 */
+/* ! Animation helpers pulled from https://stackoverflow.com/a/54114180 */
 
 import clsx from 'clsx';
 import * as React from 'react';
@@ -39,7 +39,7 @@ export type ModalProps = React.HTMLProps<HTMLDivElement> & {
 };
 
 const Modal: React.FC<ModalProps> & IModalComposition = (props: ModalProps) => {
-  let {show, children, onCloseRequest, className, closeButton = false, onOpen = noop, onClose = noop, ...elProps} = props;
+  const {show, children, onCloseRequest, className, closeButton = false, onOpen = noop, onClose = noop, ...elProps} = props;
 
   const render = useDelayUnmount(show, ANIMATION_LENGTH + 1);
   const [style, setStyle] = useState<React.CSSProperties>({});
@@ -76,11 +76,11 @@ const Modal: React.FC<ModalProps> & IModalComposition = (props: ModalProps) => {
     }
   }
 
-  const closeRequestHandler = typeof props.onCloseRequest === 'function' ? props.onCloseRequest : ((e: CloseSource) => e);
+  const closeRequestHandler = typeof onCloseRequest === 'function' ? onCloseRequest : ((e: CloseSource) => e);
 
   return render ? (
     createPortal((
-      <ModalContext.Provider value={{closeButton: props.closeButton === true, onCloseRequest: closeRequestHandler}}>
+      <ModalContext.Provider value={{closeButton: closeButton === true, onCloseRequest: closeRequestHandler}}>
         <ModalBackdrop onBackdropCloseRequest={closeRequestHandler} style={{...style, animation}} onAnimationStart={handleAnimationStart} onAnimationEnd={handleAnimationEnd}>
           <div className={clsx('Modal', className)} role="dialog" aria-modal="true" {...elProps}>
             {children}

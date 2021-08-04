@@ -10,7 +10,7 @@ export type ReportActionProps = {
   upload: RenderableUpload;
 };
 
-export default function ReportAction(props: ReportActionProps) {
+export const ReportAction: React.FC<ReportActionProps> = (props: ReportActionProps) => {
   const [showModal, setShowModal] = useState(false);
 
   function handleReport() {
@@ -29,4 +29,6 @@ export default function ReportAction(props: ReportActionProps) {
       <Button variant="yellow" onClick={handleReport}><Icon path={mdiAlertOctagon} size={1} className="mr-1 inline-block relative bottom-px"/>Report</Button>
     </>
   );
-}
+};
+
+export default ReportAction;

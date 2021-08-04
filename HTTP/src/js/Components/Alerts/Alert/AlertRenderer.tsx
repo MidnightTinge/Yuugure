@@ -63,7 +63,7 @@ function animateOut(el: HTMLDivElement) {
   });
 }
 
-export default function AlertRenderer({alert, onCloseRequest: closeRequest, onClosed: closed}: AlertProps) {
+export const AlertRenderer: React.FC<AlertProps> = ({alert, onCloseRequest: closeRequest, onClosed: closed}: AlertProps) => {
   const onCloseRequest: AlertCloseRequest = typeof closeRequest === 'function' ? closeRequest : () => undefined;
   const onClosed: AlertClosed = typeof closed === 'function' ? closed : () => undefined;
 
@@ -105,6 +105,8 @@ export default function AlertRenderer({alert, onCloseRequest: closeRequest, onCl
     </div>
   ) : null;
 };
+
+export default AlertRenderer;
 
 function getColors(alert: Alert): AlertColors {
   switch (alert.type) {

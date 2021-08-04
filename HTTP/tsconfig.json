@@ -1,19 +1,16 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
-    "noImplicitAny": true,
-    "removeComments": false,
-    "preserveConstEnums": true,
-    "sourceMap": true,
     "target": "ES2020",
-    "jsx": "react",
-    "skipLibCheck": true
+    "module": "ES6",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "Node",
+    "noImplicitAny": true,
+    "outDir": "dist",
+    "jsx": "react"
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules"
+    "src/js/**/*"
   ]
 }

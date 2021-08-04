@@ -53,16 +53,16 @@ const AuthStateReducer = (state: AuthState, action: ReducerAction): AuthState =>
   return state;
 };
 
-export default function AuthStateProvider({children}: any) {
+export const AuthStateProvider: React.FC = ({children}: any) => {
   const [state, dispatch] = useReducer(AuthStateReducer, {...defaultAuthState}, () => ({...defaultAuthState}));
 
   const reloadAuth = useCallback(async () => {
     try {
       const data = await KY.get('/auth/check').json<RouterResponse>();
-      let consumed = RouterResponseConsumer<AuthStateResponse>(data);
+      const consumed = RouterResponseConsumer<AuthStateResponse>(data);
 
       if (consumed.success) {
-        let [resp] = consumed.data;
+        const [resp] = consumed.data;
         dispatch({
           type: 'fetched', payload: {
             authed: resp.authenticated,
@@ -93,9 +93,11 @@ export default function AuthStateProvider({children}: any) {
       {children}
     </AuthStateContext.Provider>
   );
-}
+};
 
-export function useAuthState() {
+export default AuthStateProvider;
+
+export function useAuthState(): AuthState {
   const context = useContext(AuthStateContext);
 
   return context.state;

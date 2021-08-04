@@ -11,7 +11,7 @@ export type AccountSettingsProps = {
   account: SafeAccount;
 };
 
-export default function AccountSettings({account}: AccountSettingsProps) {
+export const AccountSettings: React.FC<AccountSettingsProps> = ({account}: AccountSettingsProps) => {
   return (
     <AccountSettingsContext.Provider value={{account}}>
       <div className="grid grid-cols-2">
@@ -35,5 +35,6 @@ export default function AccountSettings({account}: AccountSettingsProps) {
       </div>
     </AccountSettingsContext.Provider>
   );
-}
+};
 
+export default AccountSettings;

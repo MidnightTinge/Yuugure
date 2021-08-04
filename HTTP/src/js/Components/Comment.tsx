@@ -13,7 +13,7 @@ export type CommentProps = {
   comment: RenderableComment;
 };
 
-export default function Comment({comment}: CommentProps) {
+export const Comment: React.FC<CommentProps> = ({comment}: CommentProps) => {
   const [showReport, setShowReport] = useState(false);
   const {state: authState} = useContext(AuthStateContext);
 
@@ -70,4 +70,6 @@ export default function Comment({comment}: CommentProps) {
       </div>
     </>
   );
-}
+};
+
+export default Comment;

@@ -36,15 +36,16 @@ const LINK_VARIANTS = Object.freeze({
 });
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>((props: ButtonProps, ref: React.ForwardedRef<HTMLButtonElement>) => {
-  let {variant = 'gray', link, block, ...buttonProps} = props;
+  const {variant, link, block, ...buttonProps} = props;
+  let buttonVariant = variant;
 
-  if (!BLOCK_VARIANTS[variant]) {
+  if (!BLOCK_VARIANTS[buttonVariant]) {
     // invalid variant supplied - reset to gray
-    variant = 'gray';
+    buttonVariant = 'gray';
   }
 
   const _base = link ? BASE_FOR_LINK : BASE_FOR_BLOCK;
-  const _variant = (link ? LINK_VARIANTS : BLOCK_VARIANTS)[variant];
+  const _variant = (link ? LINK_VARIANTS : BLOCK_VARIANTS)[buttonVariant];
 
   return (
     <button {...buttonProps} ref={ref} className={clsx(buttonProps.className, BUTTON_BASE, _base, _variant, block && 'block w-full')}>{props.children}</button>

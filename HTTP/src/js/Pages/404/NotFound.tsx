@@ -6,7 +6,7 @@ export type NotFoundProps = {
   //
 };
 
-export default function NotFound(props: NotFoundProps) {
+export const NotFound: React.FC<NotFoundProps> = () => {
   const history = useHistory();
 
   function handleHomeNavigation(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
@@ -20,4 +20,6 @@ export default function NotFound(props: NotFoundProps) {
       <p>The resource you requested could not be found. Click <a href="/" className="underline text-blue-500 hover:text-blue-600" onClick={handleHomeNavigation}>here</a> to go home.</p>
     </CenteredBlockPage>
   );
-}
+};
+
+export default NotFound;

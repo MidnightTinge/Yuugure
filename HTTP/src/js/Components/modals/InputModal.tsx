@@ -10,7 +10,7 @@ export type InputModalProps = {
   children: React.ReactNode
 };
 
-export default function InputModal(props: InputModalProps) {
+export const InputModal: React.FC<InputModalProps> = (props: InputModalProps) => {
   const txtInput = useRef<HTMLTextAreaElement>(null);
   const id = useId();
 
@@ -43,4 +43,6 @@ export default function InputModal(props: InputModalProps) {
       </Modal.Body>
     </Modal>
   );
-}
+};
+
+export default InputModal;

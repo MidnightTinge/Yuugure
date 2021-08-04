@@ -9,7 +9,7 @@ export type MediaPreviewProps = {
   upload: RenderableUpload;
 };
 
-export default function MediaPreview({upload}: MediaPreviewProps) {
+export const MediaPreview: React.FC<MediaPreviewProps> = ({upload}: MediaPreviewProps) => {
   const history = useHistory();
   const isImage = /^image\//i.test(upload.media.mime);
 
@@ -56,4 +56,6 @@ export default function MediaPreview({upload}: MediaPreviewProps) {
       </div>
     </div>
   );
-}
+};
+
+export default MediaPreview;

@@ -15,7 +15,7 @@ export type UpdatePasswordProps = {
   //
 };
 
-export default function UpdatePassword(props: UpdatePasswordProps) {
+export const UpdatePassword: React.FC<UpdatePasswordProps> = () => {
   const [showModal, setShowModal] = useState(false);
   const [posting, setPosting] = useState(false);
   const [posted, setPosted] = useState(false);
@@ -46,7 +46,7 @@ export default function UpdatePassword(props: UpdatePasswordProps) {
       } else {
         setError(consumed.message);
 
-        let [authRes] = consumed.data;
+        const [authRes] = consumed.data;
         if (authRes) {
           if ('current' in authRes.inputErrors) {
             setCurrentValidity({valid: false, error: authRes.inputErrors.current.join('\n')});
@@ -134,4 +134,6 @@ export default function UpdatePassword(props: UpdatePasswordProps) {
       </div>
     </>
   );
-}
+};
+
+export default UpdatePassword;

@@ -10,7 +10,7 @@ export type ActionLoadingProps = {
   children?: React.ReactFragment;
 };
 
-export default function ActionLoading({posting, error, response, children}: ActionLoadingProps) {
+export const ActionLoading: React.FC<ActionLoadingProps> = ({posting, error, response, children}: ActionLoadingProps) => {
   return (
     posting ? (
       <>
@@ -26,4 +26,6 @@ export default function ActionLoading({posting, error, response, children}: Acti
       )
     )
   );
-}
+};
+
+export default ActionLoading;

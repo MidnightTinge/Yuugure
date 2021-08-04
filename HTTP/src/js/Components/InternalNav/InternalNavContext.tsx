@@ -4,9 +4,5 @@ type InternalNavContextProps = {
   path: string;
 }
 
-export const CreateNavContext = (props?: InternalNavContextProps) => {
-  return namedContext('NavContext', props);
-};
-
-export const InternalNavContext = CreateNavContext();
+export const InternalNavContext = namedContext<InternalNavContextProps>('NavContext');
 export default InternalNavContext;

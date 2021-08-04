@@ -45,14 +45,14 @@ const ratings = [
   },
 ];
 
-export default function RatingGroup(props: RatingGroupProps) {
+export const RatingGroup: React.FC<RatingGroupProps> = (props: RatingGroupProps) => {
   return (
     <div className="w-full">
       <RadioGroup value={props.rating} onChange={props.onChange}>
         <RadioGroup.Label className="pb-2 text-sm font-medium text-gray-800">Rating</RadioGroup.Label>
         <div className="space-y-3 px-2">
           {
-            ratings.map((rating, idx) => (
+            ratings.map((rating) => (
               <RadioGroup.Option key={rating.header} value={rating.header.toLowerCase()} className={({active, checked}: OptionRenderPropArg) => clsx(getBaseClass(active, checked), checked && rating.bg, checked && rating.border)}>
                 {({checked}: OptionRenderPropArg) => (
                   <div className="flex items-center justify-between w-full">
@@ -80,7 +80,9 @@ export default function RatingGroup(props: RatingGroupProps) {
       </RadioGroup>
     </div>
   );
-}
+};
+
+export default RatingGroup;
 
 function getBaseClass(active: boolean, checked: boolean) {
   return clsx('bg-white border border-gray-200 relative rounded-lg shadow-md px-5 py-4 cursor-pointer flex focus:outline-none hover:shadow-lg transition-all', checked && 'shadow-md');

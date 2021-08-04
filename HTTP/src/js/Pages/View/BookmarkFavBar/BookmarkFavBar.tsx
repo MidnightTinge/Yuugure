@@ -41,7 +41,7 @@ export default class BookmarkFavBar extends React.Component<BookmarkFavBarProps,
     };
   }
 
-  _doUpvote() {
+  _doUpvote(): void {
     this._doAction({
       type: 'vote',
       args: {
@@ -52,7 +52,7 @@ export default class BookmarkFavBar extends React.Component<BookmarkFavBarProps,
     });
   }
 
-  _doDownvote() {
+  _doDownvote(): void {
     this._doAction({
       type: 'vote',
       args: {
@@ -63,16 +63,17 @@ export default class BookmarkFavBar extends React.Component<BookmarkFavBarProps,
     });
   }
 
-  _doAction(action: Action) {
+  _doAction(action: Action): void {
     if (typeof this.props.onAction === 'function') {
       this.props.onAction(action);
     }
   }
 
+  // eslint-disable-next-line
   render() {
-    let bookmarkColor = this.props.bookmarkState.bookmark.active ? 'text-pink-500' : 'text-blue-500';
-    let upvoteColor = this.props.bookmarkState.upvote ? 'text-green-500' : 'text-blue-500';
-    let downvoteColor = this.props.bookmarkState.downvote ? 'text-red-500' : 'text-blue-500';
+    const bookmarkColor = this.props.bookmarkState.bookmark.active ? 'text-pink-500' : 'text-blue-500';
+    const upvoteColor = this.props.bookmarkState.upvote ? 'text-green-500' : 'text-blue-500';
+    const downvoteColor = this.props.bookmarkState.downvote ? 'text-red-500' : 'text-blue-500';
 
     return (
       <div className="flex flex-row rounded w-full">

@@ -10,7 +10,7 @@ export type ToggleSwitchProps = {
   onChange?: (checked: boolean) => void;
 };
 
-export default function ToggleSwitch(props: ToggleSwitchProps) {
+export const ToggleSwitch: React.FC<ToggleSwitchProps> = (props: ToggleSwitchProps) => {
   function handleChange(checked: boolean) {
     if (typeof props.onChange === 'function') {
       props.onChange(checked);
@@ -38,4 +38,6 @@ export default function ToggleSwitch(props: ToggleSwitchProps) {
       </Switch.Group>
     )
   );
-}
+};
+
+export default ToggleSwitch;

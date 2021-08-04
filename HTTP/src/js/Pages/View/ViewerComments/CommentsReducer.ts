@@ -27,7 +27,7 @@ function CommentsReducer(state: CommentsState, action: { type: string, payload?:
       };
     }
     case 'comments/add': {
-      let payload = Array.isArray(action.payload) ? action.payload : [action.payload];
+      const payload = Array.isArray(action.payload) ? action.payload : [action.payload];
       return {
         ...state,
         comments: [...payload, ...state.comments],
@@ -46,7 +46,7 @@ function CommentsReducer(state: CommentsState, action: { type: string, payload?:
       };
     }
     case 'comments/set': {
-      let payload = Array.isArray(action.payload) ? action.payload : [action.payload];
+      const payload = Array.isArray(action.payload) ? action.payload : [action.payload];
       return {
         ...state,
         comments: [...payload],
@@ -63,6 +63,7 @@ const _defaultState: CommentsState = {
   comments: [],
 };
 
+// eslint-disable-next-line
 export default function useCommentsReducer() {
   return useReducer(CommentsReducer, {..._defaultState}, () => ({..._defaultState}));
 }

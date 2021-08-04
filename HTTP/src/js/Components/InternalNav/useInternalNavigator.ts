@@ -18,7 +18,7 @@ export default function useInternalNavigator(push: boolean): InteralNavigator {
   function setQueryString(q: string) {
     if (typeof q !== 'string' || q.trim().length === 0) return;
 
-    let qs = q.startsWith('?') ? q : '?' + q;
+    const qs = q.startsWith('?') ? q : '?' + q;
     if (push) {
       history.push(qs);
     } else {

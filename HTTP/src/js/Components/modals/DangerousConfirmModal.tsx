@@ -14,7 +14,7 @@ export type DangerousConfirmModalProps = {
   cancelText?: string;
 };
 
-export default function DangerousConfirmModal(props: DangerousConfirmModalProps) {
+export const DangerousConfirmModal: React.FC<DangerousConfirmModalProps> = (props: DangerousConfirmModalProps) => {
   const [value, setValue] = useState<string>('');
 
   const phraseMatches = useMemo(() => value.trim() === props.confirmPhrase.trim(), [value]);
@@ -43,10 +43,6 @@ export default function DangerousConfirmModal(props: DangerousConfirmModalProps)
     setValue(e.target.value);
   }
 
-  function handleKeyUp(e: React.KeyboardEvent<HTMLInputElement>) {
-    setValue(e.currentTarget.value);
-  }
-
   function handleModalClosed() {
     setValue('');
   }
@@ -69,4 +65,6 @@ export default function DangerousConfirmModal(props: DangerousConfirmModalProps)
       </Modal.Body>
     </Modal>
   );
-}
+};
+
+export default DangerousConfirmModal;

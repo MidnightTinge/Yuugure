@@ -18,7 +18,7 @@ export type ViewerDetailsProps = {
   //
 };
 
-export default function ViewerDetails(props: ViewerDetailsProps) {
+export const ViewerDetails: React.FC<ViewerDetailsProps> = () => {
   const {upload} = useContext(PageViewContext);
 
   const details: ViewerDetails = useMemo(() => {
@@ -79,4 +79,6 @@ export default function ViewerDetails(props: ViewerDetailsProps) {
       ) : null}
     </DetailsBox>
   );
-}
+};
+
+export default ViewerDetails;

@@ -3,7 +3,6 @@ import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {usePopper} from 'react-popper';
-import Util from '../../../classes/Util';
 import {ActionHandler, BookmarkState} from './BookmarkFavBar';
 
 export type BookmarkPopupProps = {
@@ -13,7 +12,7 @@ export type BookmarkPopupProps = {
   children: React.ReactFragment;
 };
 
-export default function BookmarkPopup(props: BookmarkPopupProps) {
+export const BookmarkPopup: React.FC<BookmarkPopupProps> = (props: BookmarkPopupProps) => {
   const [referenceElement, setReferenceElement] = React.useState(null);
   const [popperElement, setPopperElement] = React.useState(null);
   const {styles, attributes} = usePopper(referenceElement, popperElement);
@@ -22,7 +21,7 @@ export default function BookmarkPopup(props: BookmarkPopupProps) {
   useEffect(function mounted() {
     function handleWindowClick(e: PointerEvent) {
       if (popperElement == null) return;
-      let target = e.target as HTMLElement;
+      const target = e.target as HTMLElement;
 
       if (target.closest('.BookmarksPopupTrigger') != null) return;
       setShow(target.closest('.BookmarksPopup') != null);
@@ -74,4 +73,6 @@ export default function BookmarkPopup(props: BookmarkPopupProps) {
       ), document.body) : null}
     </>
   );
-}
+};
+
+export default BookmarkPopup;

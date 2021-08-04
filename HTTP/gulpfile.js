@@ -1,4 +1,5 @@
 const gulp = require('gulp');
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 const inRoot = './src';
 const outRoot = '../src/main/resources';
@@ -52,22 +53,7 @@ function js() {
             resolve: {
               extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
             },
-            use: [
-              {
-                loader: 'babel-loader',
-                options: {
-                  presets: [
-                    '@babel/preset-env',
-                    '@babel/preset-typescript',
-                    '@babel/preset-react',
-                  ],
-                  plugins: [
-                    ['@babel/plugin-transform-runtime', {regenerator: true}],
-                    ['@babel/plugin-proposal-class-properties'],
-                  ],
-                },
-              },
-            ],
+            use: ['babel-loader'],
           },
           {
             test: /\.m?js$/,
@@ -85,6 +71,13 @@ function js() {
           },
         ],
       },
+      plugins: [
+        new ForkTsCheckerWebpackPlugin({
+          eslint: {
+            files: './src/**/*.{ts,tsx,js,jsx}',
+          },
+        }),
+      ],
     }))
     .pipe(gulp.dest(`${outRoot}/static/`));
 }

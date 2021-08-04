@@ -1,7 +1,7 @@
-import KY from '../classes/KY';
 import * as React from 'react';
 import {useContext, useState} from 'react';
 import {Link} from 'react-router-dom';
+import KY from '../classes/KY';
 import {AuthStateContext} from '../Context/AuthStateProvider';
 import Spinner from './Spinner';
 
@@ -27,7 +27,7 @@ export type NavProps = {
   active?: NavActive
 };
 
-export default function Nav(props: NavProps) {
+export const Nav: React.FC<NavProps> = (props: NavProps) => {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const {state: authState, reloadAuth} = useContext(AuthStateContext);
@@ -41,7 +41,7 @@ export default function Nav(props: NavProps) {
       console.error('[logout]', err);
     }).then(() => {
       setLoggingOut(false);
-      reloadAuth();
+      reloadAuth().catch(console.error);
     });
   }
 
@@ -62,7 +62,7 @@ export default function Nav(props: NavProps) {
             <>
               <NavItem href={`/user/${authState.account.id}?settings`}>Profile</NavItem>
               {loggingOut ? (
-                <li className={`p-2 mr-1`}>
+                <li className={'p-2 mr-1'}>
                   <span className="text-gray-300 cursor-not-allowed select-none"><Spinner inline/> Logging out...</span>
                 </li>
               ) : (
@@ -79,4 +79,6 @@ export default function Nav(props: NavProps) {
       </div>
     </nav>
   );
-}
+};
+
+export default Nav;

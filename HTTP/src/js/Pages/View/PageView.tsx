@@ -11,9 +11,7 @@ import Util from '../../classes/Util';
 import {AlertType} from '../../Components/Alerts/Alert/Alert';
 import {useAlerts} from '../../Components/Alerts/AlertsProvider';
 import Button from '../../Components/Button';
-
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
-
 import InternalNavContext from '../../Components/InternalNav/InternalNavContext';
 import InternalRoute from '../../Components/InternalNav/InternalRoute';
 import InternalRouter from '../../Components/InternalNav/InternalRouter';
@@ -145,7 +143,7 @@ function UploadReducer(state: UploadState, action: ReducerAction): UploadState {
       if (state.upload) {
         const toSet = Object.assign({}, state);
 
-        let toMerge: Partial<UploadVoteState> = (action.payload.upvote) ? ({total_upvotes: toSet.upload.votes.total_upvotes + 1}) : ({total_downvotes: toSet.upload.votes.total_downvotes + 1});
+        const toMerge: Partial<UploadVoteState> = (action.payload.upvote) ? ({total_upvotes: toSet.upload.votes.total_upvotes + 1}) : ({total_downvotes: toSet.upload.votes.total_downvotes + 1});
         toSet.upload.votes = Object.assign({}, toSet.upload.votes, toMerge);
 
         return toSet;
@@ -158,7 +156,7 @@ function UploadReducer(state: UploadState, action: ReducerAction): UploadState {
       if (state.upload) {
         const toSet = Object.assign({}, state);
 
-        let toMerge: Partial<UploadVoteState> = (action.payload.upvote) ? ({total_upvotes: toSet.upload.votes.total_upvotes - 1}) : ({total_downvotes: toSet.upload.votes.total_downvotes - 1});
+        const toMerge: Partial<UploadVoteState> = (action.payload.upvote) ? ({total_upvotes: toSet.upload.votes.total_upvotes - 1}) : ({total_downvotes: toSet.upload.votes.total_downvotes - 1});
         toSet.upload.votes = Object.assign({}, toSet.upload.votes, toMerge);
 
         return toSet;
@@ -189,7 +187,7 @@ type PageViewContextProps = {
 }
 export const PageViewContext = namedContext<PageViewContextProps>('PageViewContext', {upload: null, comments: {comments: [], fetching: false, error: null}});
 
-export default function PageView(props: PageViewProps) {
+export const PageView: React.FC<PageViewProps> = () => {
   const params = useParams<{ uploadId: string }>();
   const authState = useAuthState();
   const navigator = useInternalNavigator(true);
@@ -345,14 +343,6 @@ export default function PageView(props: PageViewProps) {
     }
   }, [upload?.state]);
 
-  function handleReport() {
-    setShowReport(true);
-  }
-
-  function handleDelete() {
-    console.warn('Need to delete (not yet implemented)');
-  }
-
   function handleToggleResize() {
     setConstrain(!constrain);
   }
@@ -395,10 +385,11 @@ export default function PageView(props: PageViewProps) {
     const method = action.args.remove ? 'DELETE' : 'PATCH';
     KY(url, {
       method,
-    }).json<RouterResponse>().then(data => {
+    })
+      .json<RouterResponse>().then(data => {
         const consumed = RouterResponseConsumer<boolean>(data);
         if (consumed.success) {
-          let [updated] = consumed.data;
+          const [updated] = consumed.data;
           if (updated) {
             // note: I'm having issues getting consistent results using spread, not sure if I'm
             //       doing something wrong or what but I'm moving forward with assign until I can
@@ -489,7 +480,7 @@ export default function PageView(props: PageViewProps) {
                       <BookmarkFavBar resourceType="upload" bookmarkState={bookmarkState} onAction={handleBookmarkBarAction} resourceId={upload.upload.id}/>
                     </section>
                   ) : null}
-                  <section className={authState.authed ? `mt-1` : `mt-1.5`}>
+                  <section className={authState.authed ? 'mt-1' : 'mt-1.5'}>
                     <ViewerDetails/>
                   </section>
                   <section className="mt-1">
@@ -526,4 +517,6 @@ export default function PageView(props: PageViewProps) {
       </>
     </PageViewContext.Provider>
   );
-}
+};
+
+export default PageView;

@@ -5,35 +5,35 @@ export default class Account {
     this._account = account;
   }
 
-  get id() {
+  get id(): number {
     return this._account.id;
   }
 
-  get username() {
+  get username(): string {
     return this._account.username;
   }
 
-  get state() {
+  get state(): AccountState {
     return {...this._account.state};
   }
 
-  get roles() {
+  get roles(): AccountRoles {
     return {...this._account.roles};
   }
 
-  get canUpload() {
+  get canUpload(): boolean {
     return !(this._account.state.BANNED || this._account.state.UPLOAD_RESTRICTED);
   }
 
-  get canComment() {
+  get canComment(): boolean {
     return !(this._account.state.BANNED || this._account.state.COMMENTS_RESTRICTED);
   }
 
-  get hasModPerms() {
+  get hasModPerms(): boolean {
     return this._account.roles.MOD || this._account.roles.ADMIN;
   }
 
-  get hasAdminPerms() {
+  get hasAdminPerms(): boolean {
     return this._account.roles.ADMIN;
   }
 }

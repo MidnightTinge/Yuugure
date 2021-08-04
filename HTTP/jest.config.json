@@ -1,0 +1,24 @@
+{
+  "preset": "ts-jest",
+  "transform": {
+    "\\.[jt]sx?$": "babel-jest"
+  },
+  "transformIgnorePatterns": [
+    "node_modules/(?!(remark(-.*)?|unified(-.*)?|rehype(-.*)?|hast(-.*)?|unist(-.*)?|mdast(-.*)?|nlcst(-.*)?|micromark(-.*)?|vfile(-.*)?|property-information|html-void-elements|(space|comma)-separated-tokens|stringify-entities(-.*)?|character-entities(-.*)?|ccount|parse-entities|bail|is-plain-obj|trough|hastscript)/)"
+  ],
+  "testEnvironment": "jsdom",
+  "setupFilesAfterEnv": [
+    "./test/_meta/setupGlobal.js"
+  ],
+  "globals": {
+    "ts-jest": {
+      "diagnostics": {
+        "ignoreCodes": [
+          151001
+        ]
+      }
+    }
+  },
+  "collectCoverage": true,
+  "coverageDirectory": "./test/_coverage/"
+}
