@@ -1,0 +1,1 @@
+it('stub', () => undefined);
