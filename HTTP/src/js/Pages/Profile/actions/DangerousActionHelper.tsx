@@ -4,7 +4,6 @@ import {create} from 'react-modal-promise';
 import {InstanceProps} from 'react-modal-promise/lib/types';
 import KY from '../../../classes/KY';
 import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
-import Util from '../../../classes/Util';
 
 import Modal from '../../../Components/Modal/Modal';
 import ConfirmPasswordModal from '../../../Components/modals/ConfirmPasswordModal';
@@ -64,7 +63,7 @@ export const ResourceDeletion: React.FC<DeleteStatusProps> = (props: DeleteStatu
   useEffect(function mounted() {
     setPosting(true);
     KY.delete(props.endpoint, {
-      body: Util.formatUrlEncodedBody({
+      body: new URLSearchParams({
         confirmation_token: props.confirmationToken,
       }),
     }).json<RouterResponse>().then(data => {

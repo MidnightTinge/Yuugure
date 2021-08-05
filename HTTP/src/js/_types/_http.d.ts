@@ -98,6 +98,7 @@ type SafeComment = {
 
 type RenderableComment = {
   id: number;
+  parent: number;
   timestamp: number;
   account: SafeAccount;
   content_raw: string;

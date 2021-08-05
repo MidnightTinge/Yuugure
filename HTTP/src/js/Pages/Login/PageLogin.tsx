@@ -2,7 +2,6 @@ import * as React from 'react';
 import {FormEvent, useRef, useState} from 'react';
 import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
-import Util from '../../classes/Util';
 import Button from '../../Components/Button';
 
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
@@ -30,7 +29,7 @@ export const PageLogin: React.FC<LoginProps> = () => {
 
     setPosting(true);
     KY.post('/auth/login', {
-      body: Util.formatUrlEncodedBody({
+      body: new URLSearchParams({
         email: txtEmail.current.value,
         password: txtPassword.current.value,
       }),

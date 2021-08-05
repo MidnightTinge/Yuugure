@@ -25,7 +25,7 @@ export const NewCommentBlock: React.FC<NewCommentBlockProps> = (props: NewCommen
 
     setPosting(true);
     KY.post(`/api/comment/${props.targetType}/${props.targetId}`, {
-      body: Util.formatUrlEncodedBody({
+      body: new URLSearchParams({
         body: txtComment.current.value,
       }),
     }).json<RouterResponse>().then(data => {

@@ -29,7 +29,7 @@ export const ReportModal: React.FC<ReportModalProps> = (props: ReportModalProps)
     e.preventDefault();
     setPosting(true);
     KY.post(`/api/${props.targetType}/${props.targetId}/report`, {
-      body: Util.formatUrlEncodedBody({
+      body: new URLSearchParams({
         reason: txtReason.current.value,
       }),
     }).json<RouterResponse>().then(data => {

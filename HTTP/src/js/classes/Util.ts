@@ -38,15 +38,6 @@ export default class Util {
     return ret;
   }
 
-  static formatUrlEncodedBody(body: Record<string, any>): URLSearchParams {
-    const params = new URLSearchParams();
-    for (const x of Object.entries(body)) {
-      params.set(x[0], x[1]);
-    }
-
-    return params;
-  }
-
   static formatFormData(body: Record<string, any>): FormData {
     const fd = new FormData();
     for (const x of Object.entries(body)) {
@@ -56,9 +47,11 @@ export default class Util {
     return fd;
   }
 
-  static formatBytes(bytes: number, decimals = 2): string {
+  static formatBytes(bytes: number, decimals: number = 2): string {
     // https://stackoverflow.com/a/18650828
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) {
+      return '0 Bytes';
+    }
 
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;

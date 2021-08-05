@@ -4,7 +4,6 @@ import * as React from 'react';
 import {useState} from 'react';
 import KY from '../../../classes/KY';
 import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
-import Util from '../../../classes/Util';
 import ToggleSwitch from '../../../Components/ToggleSwitch/ToggleSwitch';
 
 export type PrivateActionProps = {
@@ -18,8 +17,8 @@ export const PrivateAction: React.FC<PrivateActionProps> = ({upload, checked}: P
   function handleChange(checked: boolean) {
     setPosting(true);
     KY.patch(`/api/upload/${upload.upload.id}/private`, {
-      body: Util.formatUrlEncodedBody({
-        private: checked,
+      body: new URLSearchParams({
+        private: String(checked),
       }),
     }).json<RouterResponse>().then(data => {
       const consumed = RouterResponseConsumer(data);

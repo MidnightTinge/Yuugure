@@ -38,7 +38,7 @@ export default function RouterResponseConsumer<T = any>(response: RouterResponse
       message = response.messages.join('\n');
     } else if (!data.length) {
       // only set a default message if we don't have any returned data
-      message = MESSAGES[response.code] || MESSAGES[0];
+      message = MESSAGES[response.code] ?? MESSAGES[0];
     } else {
       // it is assumed the RouterResponse being consumed will have messages/errors on its datum.
       message = '';

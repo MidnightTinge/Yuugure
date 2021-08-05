@@ -7,7 +7,6 @@ import {Container, create} from 'react-modal-promise';
 import {InstanceProps} from 'react-modal-promise/lib/types';
 import KY from '../../../classes/KY';
 import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
-import Util from '../../../classes/Util';
 import {AlertType} from '../../../Components/Alerts/Alert/Alert';
 import {useAlerts} from '../../../Components/Alerts/AlertsProvider';
 import Button from '../../../Components/Button';
@@ -65,7 +64,7 @@ export const DeleteAction: React.FC<DeleteActionProps> = (props: DeleteActionPro
       setDeleting(true);
       const opts: Options = reason != null ? (
         {
-          body: Util.formatUrlEncodedBody({
+          body: new URLSearchParams({
             reason,
           }),
         }

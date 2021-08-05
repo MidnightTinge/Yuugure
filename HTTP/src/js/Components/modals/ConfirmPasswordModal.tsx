@@ -2,7 +2,6 @@ import * as React from 'react';
 import {useRef, useState} from 'react';
 import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
-import Util from '../../classes/Util';
 import Button from '../Button';
 import FormBlock from '../FormBlock';
 import Modal from '../Modal/Modal';
@@ -26,7 +25,7 @@ export const ConfirmPasswordModal: React.FC<ConfirmPasswordModalProps> = (props:
     setPosting(true);
 
     KY.post('/auth/confirm', {
-      body: Util.formatUrlEncodedBody({
+      body: new URLSearchParams({
         password: txtPassword.current.value,
       }),
     }).json<RouterResponse>().then(data => {

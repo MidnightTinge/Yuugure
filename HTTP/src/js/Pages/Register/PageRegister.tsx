@@ -2,7 +2,6 @@ import * as React from 'react';
 import {FormEvent, useRef, useState} from 'react';
 import KY from '../../classes/KY';
 import RouterResponseConsumer from '../../classes/RouterResponseConsumer';
-import Util from '../../classes/Util';
 import Button from '../../Components/Button';
 
 import CenteredBlockPage from '../../Components/CenteredBlockPage';
@@ -38,7 +37,7 @@ export const PageRegister: React.FC<PageRegisterProps> = () => {
 
     setPosting(true);
     KY.post('/auth/register', {
-      body: Util.formatUrlEncodedBody({
+      body: new URLSearchParams({
         email: txtEmail.current.value,
         username: txtUsername.current.value,
         password: txtPassword.current.value,

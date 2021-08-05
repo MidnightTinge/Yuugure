@@ -4,7 +4,6 @@ import * as React from 'react';
 import {useRef, useState} from 'react';
 import KY from '../../../classes/KY';
 import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
-import Util from '../../../classes/Util';
 import Button from '../../../Components/Button';
 
 import FormBlock from '../../../Components/FormBlock';
@@ -34,7 +33,7 @@ export const UpdatePassword: React.FC<UpdatePasswordProps> = () => {
     setPosting(true);
     setPosted(false);
     KY.patch('/api/account/@me/password', {
-      body: Util.formatUrlEncodedBody({
+      body: new URLSearchParams({
         newPassword: txtNewPassword.current.value,
         repeat: txtRepeat.current.value,
         currentPassword: txtCurrentPassword.current.value,

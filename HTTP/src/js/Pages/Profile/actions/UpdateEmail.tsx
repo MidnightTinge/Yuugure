@@ -4,7 +4,6 @@ import * as React from 'react';
 import {useRef, useState} from 'react';
 import KY from '../../../classes/KY';
 import RouterResponseConsumer from '../../../classes/RouterResponseConsumer';
-import Util from '../../../classes/Util';
 import Button from '../../../Components/Button';
 
 import FormBlock from '../../../Components/FormBlock';
@@ -32,7 +31,7 @@ export const UpdateEmail: React.FC<UpdateEmailProps> = () => {
     setPosting(true);
     setPosted(false);
     KY.patch('/api/account/@me/email', {
-      body: Util.formatUrlEncodedBody({
+      body: new URLSearchParams({
         email: txtEmail.current.value,
         password: txtPassword.current.value,
       }),
